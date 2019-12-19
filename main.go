@@ -1,16 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"crypto/elliptic"
-	"crypto/rand"
 	"fmt"
-	"os"
+	"sync"
 
 	libp2p "github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	quic "github.com/libp2p/go-libp2p-quic-transport"
@@ -22,101 +18,87 @@ import (
 // - multiplex: (supported by QUIC)
 // - peer discovery: Kademlia DHT
 
-func handleStream(stream network.Stream) {
-	fmt.Println("new stream")
-
-	// init buffer stream for non blocking read & write
-	rw := bufio.NewReadWriter(
-		bufio.NewReader(stream),
-		bufio.NewWriter(stream),
-	)
-
-	// go routine for read & write data
-	go func(rw *bufio.ReadWriter) {
-		for {
-			data, err := rw.ReadString('\n')
-			if err != nil {
-				panic(err)
-			}
-
-			// ignore empty line
-			if data == "" || data == "\n" {
-				return
-			}
-
-			fmt.Println(data)
-		}
-	}(rw)
-	go func(rw *bufio.ReadWriter) {
-		// reader(stdin) -> data -> bufio -> stream
-
-		// init reader reading data from stdin
-		reader := bufio.NewReader(os.Stdin)
-
-		for {
-			fmt.Printf("> ")
-
-			// reader -> data
-			data, err := reader.ReadString('\n')
-			if err != nil {
-				panic(err)
-			}
-
-			// data -> bufio
-			_, err = rw.WriteString(data + "\n")
-			if err != nil {
-				panic(err)
-			}
-
-			// bufio -> stream (flush)
-			err = rw.Flush()
-			if err != nil {
-				panic(err)
-			}
-		}
-	}(rw)
-}
+// global variables
+var (
+	cfg  Config
+	node Node
+)
 
 func main() {
-	// init of empty context
-	ctx := context.Background()
-
-	privKey, pubKey, err := crypto.GenerateECDSAKeyPairWithCurve(elliptic.P256(), rand.Reader)
+	n, err := NewNode()
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("private key:", privKey)
-	fmt.Println("public key: ", pubKey)
+	node = n
 
-	quicTpt, err := quic.NewTransport(privKey)
+	quicTpt, err := quic.NewTransport(node.PrivKey)
 	if err != nil {
 		panic(err)
 	}
 
-	host, err := libp2p.New(ctx, libp2p.Transport(quicTpt), libp2p.DefaultSecurity)
+	host, err := libp2p.New(
+		cfg.Context,
+		libp2p.ListenAddrs(cfg.ListenAddrs...),
+		libp2p.Identity(node.PrivKey),
+		libp2p.Transport(quicTpt),
+		libp2p.DefaultSecurity,
+	)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("host ID:", host.ID())
+	fmt.Println("host ID:", host.ID().Pretty())
+	fmt.Println("host addrs:", host.Addrs())
 
-	host.SetStreamHandler(protocol.ID("petit-chat"), handleStream)
+	fmt.Printf("%s/p2p/%s\n", host.Addrs()[0], host.ID().Pretty())
+
+	host.SetStreamHandler(protocol.ID(ProtocolID), handleStream)
 
 	// init peer discovery alg.
-	peerDiscovery, err := dht.New(ctx, host)
+	peerDiscovery, err := dht.New(cfg.Context, host)
 	if err != nil {
 		panic(err)
 	}
 
 	// bootstrap peer discovery
-	err = peerDiscovery.Bootstrap(ctx)
+	err = peerDiscovery.Bootstrap(cfg.Context)
 	if err != nil {
 		panic(err)
 	}
 
 	// TODO: connect to bootstrap nodes
+	var wg sync.WaitGroup
+	for _, bsn := range cfg.BootstrapNodes {
+		peerInfo, err := peer.AddrInfoFromP2pAddr(bsn)
+		if err != nil {
+			panic(err)
+		}
+
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			err = host.Connect(cfg.Context, *peerInfo)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println("connected to:", *peerInfo)
+		}()
+
+	}
+	wg.Wait()
 
 	// to keep the app alive
 	select {}
+}
+
+func init() {
+	err := cfg.parseFlags()
+	if err != nil {
+		panic(err)
+	}
+
+	cfg.Context = context.Background()
 }
