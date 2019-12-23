@@ -1,4 +1,4 @@
-package main
+package p2p
 
 import (
 	"crypto/elliptic"

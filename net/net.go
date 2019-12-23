@@ -1,4 +1,4 @@
-package main
+package net
 
 import (
 	"bufio"
@@ -20,7 +20,7 @@ const (
 	MaxListenPort     = 65535
 )
 
-func handleStream(stream network.Stream) {
+func HandleStream(stream network.Stream) {
 	fmt.Println("new stream")
 
 	// init buffer stream for non blocking read & write
