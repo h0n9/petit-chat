@@ -1,24 +1,25 @@
-package net
+package p2p
 
 import (
-	"context"
 	"fmt"
 	"sync"
 
 	"github.com/libp2p/go-libp2p-core/peer"
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+
+	"github.com/h0n9/petit-chat/crypto"
 )
 
-func DiscoverPeers(ctx context.Context, h Host, bsNodes Addrs) error {
+func (n *Node) DiscoverPeers(bsNodes crypto.Addrs) error {
 	// init peer discovery alg.
-	peerDiscovery, err := dht.New(ctx, h)
+	peerDiscovery, err := dht.New(n.ctx, n.Host)
 	if err != nil {
 		return err
 	}
 
 	// bootstrap peer discovery
-	err = peerDiscovery.Bootstrap(ctx)
+	err = peerDiscovery.Bootstrap(n.ctx)
 	if err != nil {
 		return err
 	}
@@ -33,7 +34,7 @@ func DiscoverPeers(ctx context.Context, h Host, bsNodes Addrs) error {
 
 		go func() {
 			defer wg.Done()
-			err = h.Connect(ctx, *peerInfo)
+			err = n.Host.Connect(n.ctx, *peerInfo)
 			if err != nil {
 				panic(err)
 			}
@@ -46,25 +47,27 @@ func DiscoverPeers(ctx context.Context, h Host, bsNodes Addrs) error {
 
 	// advertise rendez-vous annoucement
 	routingDiscovery := discovery.NewRoutingDiscovery(peerDiscovery)
-	discovery.Advertise(ctx, routingDiscovery, RendezVous)
+	discovery.Advertise(n.ctx, routingDiscovery, RendezVous)
 
-	peers, err := routingDiscovery.FindPeers(ctx, RendezVous)
+	peers, err := routingDiscovery.FindPeers(n.ctx, RendezVous)
 	if err != nil {
 		return err
 	}
 
 	for peer := range peers {
-		if peer.ID == h.ID() {
+		if peer.ID == n.Host.ID() {
 			continue
 		}
 
-		err = h.Connect(ctx, peer)
+		stream, err := n.Host.NewStream(n.ctx, peer.ID, ProtocolID)
+		// err = h.Connect(ctx, peer)
 		if err != nil {
 			fmt.Println("failed to connect to:", peer)
 			continue
 		}
 
 		fmt.Println("connected to:", peer)
+		handleStream(stream)
 	}
 
 	return nil

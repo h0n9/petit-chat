@@ -1,36 +1,39 @@
 package p2p
 
 import (
-	"crypto/elliptic"
-	"crypto/rand"
+	"context"
 	"fmt"
 
-	"github.com/libp2p/go-libp2p-core/crypto"
-
-	"github.com/h0n9/petit-chat/net"
+	"github.com/h0n9/petit-chat/crypto"
+	"github.com/h0n9/petit-chat/util"
 )
 
 type Node struct {
+	ctx context.Context
+
 	PrivKey crypto.PrivKey
 	PubKey  crypto.PubKey
+	Address crypto.Addr
 
-	Host net.Host
+	Host   Host
+	PubSub PubSub
 }
 
-func NewNode(cfg Config) (Node, error) {
+func NewNode(cfg util.Config) (Node, error) {
 	node := Node{}
-	privKey, pubKey, err := crypto.GenerateECDSAKeyPairWithCurve(
-		elliptic.P256(),
-		rand.Reader,
-	)
+
+	node.ctx = context.Background()
+
+	privKey, err := crypto.GenPrivKey()
 	if err != nil {
 		return Node{}, nil
 	}
 
 	node.PrivKey = privKey
-	node.PubKey = pubKey
+	node.PubKey = privKey.PubKey()
+	node.Address = node.PubKey.Address()
 
-	host, err := net.NewHost(cfg.Context, node.PrivKey, cfg.ListenAddrs)
+	host, err := NewHost(node.ctx, node.PrivKey, cfg.ListenAddrs)
 	if err != nil {
 		return Node{}, nil
 	}
@@ -45,6 +48,7 @@ func (n *Node) Info() {
 		return
 	}
 
+	fmt.Println("address:", n.Address)
 	fmt.Println("host ID:", n.Host.ID().Pretty())
 	fmt.Println("host addrs:", n.Host.Addrs())
 

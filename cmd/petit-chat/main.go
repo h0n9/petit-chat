@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
-
-	"github.com/h0n9/petit-chat/net"
 	"github.com/h0n9/petit-chat/p2p"
+	"github.com/h0n9/petit-chat/util"
 )
 
 // Expected implementation as follows
@@ -15,7 +13,7 @@ import (
 
 // global variables
 var (
-	cfg  p2p.Config
+	cfg  util.Config
 	node p2p.Node
 )
 
@@ -27,9 +25,9 @@ func main() {
 
 	node.Info()
 
-	net.SetStreamHandler(node.Host)
+	p2p.SetStreamHandler(node.Host)
 
-	err = net.DiscoverPeers(cfg.Context, node.Host, cfg.BootstrapNodes)
+	err = node.DiscoverPeers(cfg.BootstrapNodes)
 	if err != nil {
 		panic(err)
 	}
@@ -45,6 +43,4 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
-	cfg.Context = context.Background()
 }

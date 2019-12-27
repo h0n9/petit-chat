@@ -1,4 +1,4 @@
-package net
+package p2p
 
 import (
 	"bufio"
@@ -34,11 +34,13 @@ func readData(rw *bufio.ReadWriter) {
 		}
 
 		// ignore empty line
-		if data == "" || data == "\n" {
+		if data == "" {
 			return
 		}
 
-		fmt.Println(data)
+		if data != "\n" {
+			fmt.Printf("\x1b[32m%s\x1b[0m> ", data)
+		}
 	}
 }
 
@@ -58,7 +60,7 @@ func writeData(rw *bufio.ReadWriter) {
 		}
 
 		// data -> bufio
-		_, err = rw.WriteString(data + "\n")
+		_, err = rw.WriteString(fmt.Sprintf("%s\n", data))
 		if err != nil {
 			panic(err)
 		}
