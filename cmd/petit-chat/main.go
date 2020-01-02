@@ -10,6 +10,7 @@ import (
 // - security: (expected to get supported by QUIC)
 // - multiplex: (supported by QUIC)
 // - peer discovery: Kademlia DHT
+// - pubish subscribe: GossipSub
 
 // global variables
 var (
@@ -25,14 +26,12 @@ func main() {
 
 	node.Info()
 
-	p2p.SetStreamHandler(node.Host)
+	node.SetStreamHandler()
 
 	err = node.DiscoverPeers(cfg.BootstrapNodes)
 	if err != nil {
 		panic(err)
 	}
-
-	// TODO: pub/sub nodes
 
 	// to keep the app alive
 	select {}

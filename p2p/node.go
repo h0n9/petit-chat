@@ -15,42 +15,47 @@ type Node struct {
 	PubKey  crypto.PubKey
 	Address crypto.Addr
 
-	Host   Host
-	PubSub PubSub
+	host   Host
+	pubSub *PubSub
+	topics []*Topic
 }
 
 func NewNode(cfg util.Config) (Node, error) {
 	node := Node{}
+	node.topics = []*Topic{}
 
 	node.ctx = context.Background()
 
 	privKey, err := crypto.GenPrivKey()
 	if err != nil {
-		return Node{}, nil
+		return Node{}, err
 	}
 
 	node.PrivKey = privKey
 	node.PubKey = privKey.PubKey()
 	node.Address = node.PubKey.Address()
 
-	host, err := NewHost(node.ctx, node.PrivKey, cfg.ListenAddrs)
+	err = node.NewHost(cfg.ListenAddrs)
 	if err != nil {
-		return Node{}, nil
+		return Node{}, err
 	}
 
-	node.Host = host
+	err = node.NewPubSub()
+	if err != nil {
+		return Node{}, err
+	}
 
 	return node, nil
 }
 
 func (n *Node) Info() {
-	if n.Host == nil {
+	if n.host == nil {
 		return
 	}
 
 	fmt.Println("address:", n.Address)
-	fmt.Println("host ID:", n.Host.ID().Pretty())
-	fmt.Println("host addrs:", n.Host.Addrs())
+	fmt.Println("host ID:", n.host.ID().Pretty())
+	fmt.Println("host addrs:", n.host.Addrs())
 
-	fmt.Printf("%s/p2p/%s\n", n.Host.Addrs()[0], n.Host.ID())
+	fmt.Printf("%s/p2p/%s\n", n.host.Addrs()[0], n.host.ID())
 }

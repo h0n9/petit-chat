@@ -13,7 +13,7 @@ import (
 
 func (n *Node) DiscoverPeers(bsNodes crypto.Addrs) error {
 	// init peer discovery alg.
-	peerDiscovery, err := dht.New(n.ctx, n.Host)
+	peerDiscovery, err := dht.New(n.ctx, n.host)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func (n *Node) DiscoverPeers(bsNodes crypto.Addrs) error {
 
 		go func() {
 			defer wg.Done()
-			err = n.Host.Connect(n.ctx, *peerInfo)
+			err = n.host.Connect(n.ctx, *peerInfo)
 			if err != nil {
 				panic(err)
 			}
@@ -55,11 +55,11 @@ func (n *Node) DiscoverPeers(bsNodes crypto.Addrs) error {
 	}
 
 	for peer := range peers {
-		if peer.ID == n.Host.ID() {
+		if peer.ID == n.host.ID() {
 			continue
 		}
 
-		stream, err := n.Host.NewStream(n.ctx, peer.ID, ProtocolID)
+		stream, err := n.host.NewStream(n.ctx, peer.ID, ProtocolID)
 		// err = h.Connect(ctx, peer)
 		if err != nil {
 			fmt.Println("failed to connect to:", peer)

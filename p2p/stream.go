@@ -8,8 +8,8 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 )
 
-func SetStreamHandler(h Host) {
-	h.SetStreamHandler(ProtocolID, handleStream)
+func (n *Node) SetStreamHandler() {
+	n.host.SetStreamHandler(ProtocolID, handleStream)
 }
 
 func handleStream(stream network.Stream) {
