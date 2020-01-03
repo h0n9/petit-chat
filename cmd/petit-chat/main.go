@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/h0n9/petit-chat/p2p"
 	"github.com/h0n9/petit-chat/util"
 )
@@ -33,8 +35,57 @@ func main() {
 		panic(err)
 	}
 
-	// to keep the app alive
-	select {}
+	prompt := util.NewCmd("petit-chat", "entry point for petit-chat", nil,
+		util.NewCmd("list", "list of subscribing topics",
+			func(input string) error {
+				for _, s := range node.GetSubs() {
+					fmt.Printf("%s\n", s.Topic())
+					for _, p := range node.GetPeers(s.Topic()) {
+						fmt.Printf("  - %s\n", p)
+					}
+				}
+				return nil
+			},
+		),
+		util.NewCmd("pub", "publish to topic",
+			func(input string) error {
+				err := node.Publish("hello", []byte("wow"))
+				if err != nil {
+					return err
+				}
+				return nil
+			},
+		),
+		util.NewCmd("sub", "subscribe to topic",
+			func(input string) error {
+				err := node.Subscribe("hello")
+				if err != nil {
+					return err
+				}
+				return nil
+			},
+		),
+		util.NewCmd("unsub", "unsubscribe topic",
+			func(input string) error {
+				err := node.Unsubscribe("hello")
+				if err != nil {
+					return err
+				}
+				return nil
+			},
+		),
+		util.NewCmd("test", "several cmds", nil,
+			util.NewCmd("hello", "hello world",
+				func(input string) error {
+					fmt.Println("hello world")
+					return nil
+				},
+			),
+			util.NewCmd("other", "good", nil),
+		),
+	)
+
+	prompt.Run()
 }
 
 func init() {

@@ -17,13 +17,11 @@ type Node struct {
 
 	host   Host
 	pubSub *PubSub
-	topics []*Topic
+	subs   []*Sub
 }
 
 func NewNode(cfg util.Config) (Node, error) {
 	node := Node{}
-	node.topics = []*Topic{}
-
 	node.ctx = context.Background()
 
 	privKey, err := crypto.GenPrivKey()
@@ -57,5 +55,8 @@ func (n *Node) Info() {
 	fmt.Println("host ID:", n.host.ID().Pretty())
 	fmt.Println("host addrs:", n.host.Addrs())
 
-	fmt.Printf("%s/p2p/%s\n", n.host.Addrs()[0], n.host.ID())
+	fmt.Printf("./petit-chat --bootstrap %s/p2p/%s\n",
+		n.host.Addrs()[0],
+		n.host.ID(),
+	)
 }

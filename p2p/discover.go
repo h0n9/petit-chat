@@ -59,15 +59,15 @@ func (n *Node) DiscoverPeers(bsNodes crypto.Addrs) error {
 			continue
 		}
 
-		stream, err := n.host.NewStream(n.ctx, peer.ID, ProtocolID)
-		// err = h.Connect(ctx, peer)
+		// stream, err := n.host.NewStream(n.ctx, peer.ID, ProtocolID)
+		err = n.host.Connect(n.ctx, peer)
 		if err != nil {
 			fmt.Println("failed to connect to:", peer)
 			continue
 		}
 
 		fmt.Println("connected to:", peer)
-		handleStream(stream)
+		// handleStream(stream)
 	}
 
 	return nil
