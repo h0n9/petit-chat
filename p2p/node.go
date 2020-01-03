@@ -17,12 +17,13 @@ type Node struct {
 
 	host   Host
 	pubSub *PubSub
-	subs   []*Sub
+	subs   map[string]*Sub
 }
 
 func NewNode(cfg util.Config) (Node, error) {
 	node := Node{}
 	node.ctx = context.Background()
+	node.subs = map[string]*Sub{}
 
 	privKey, err := crypto.GenPrivKey()
 	if err != nil {

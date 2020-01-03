@@ -24,7 +24,7 @@ func (n *Node) NewPubSub() error {
 	return nil
 }
 
-func (n *Node) GetSubs() []*Sub {
+func (n *Node) GetSubs() map[string]*Sub {
 	return n.subs
 }
 
@@ -42,12 +42,17 @@ func (n *Node) Publish(topic string, data []byte) error {
 }
 
 func (n *Node) Subscribe(topic string) error {
+	_, exist := n.subs[topic]
+	if exist {
+		return fmt.Errorf("already subscried to %s", topic)
+	}
+
 	sub, err := n.pubSub.Subscribe(topic)
 	if err != nil {
 		return err
 	}
 
-	n.subs = append(n.subs, sub)
+	n.subs[topic] = sub
 
 	go func() {
 		for {
@@ -73,10 +78,11 @@ func (n *Node) Subscribe(topic string) error {
 }
 
 func (n *Node) Unsubscribe(topic string) error {
-	for i, s := range n.subs {
-		if topic == s.Topic() {
-			s.Cancel()
-			n.subs = append(n.subs[:i], n.subs[i+1:]...)
+	for t, sub := range n.subs {
+		if topic == t {
+			sub.Cancel()
+			delete(n.subs, t)
+
 			return nil
 		}
 	}
