@@ -3,20 +3,20 @@ package p2p
 import (
 	"fmt"
 
-	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+
+	"github.com/h0n9/petit-chat/code"
 )
 
 type (
-	PubSub = pubsub.PubSub
-	Topic  = pubsub.Topic
-	Sub    = pubsub.Subscription
+	Topic = pubsub.Topic
+	Sub   = pubsub.Subscription
 )
 
 func (n *Node) NewPubSub() error {
 	ps, err := pubsub.NewGossipSub(n.ctx, n.host)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	n.pubSub = ps
@@ -24,15 +24,7 @@ func (n *Node) NewPubSub() error {
 	return nil
 }
 
-func (n *Node) GetSubs() map[string]*Sub {
-	return n.subs
-}
-
-func (n *Node) GetPeers(topic string) []peer.ID {
-	return n.pubSub.ListPeers(topic)
-}
-
-func (n *Node) Publish(topic string, data []byte) error {
+func (n *Node) publish(topic string, data []byte) error {
 	err := n.pubSub.Publish(topic, data)
 	if err != nil {
 		return err
@@ -41,10 +33,10 @@ func (n *Node) Publish(topic string, data []byte) error {
 	return nil
 }
 
-func (n *Node) Subscribe(topic string) error {
+func (n *Node) subscribe(topic string) error {
 	_, exist := n.subs[topic]
 	if exist {
-		return fmt.Errorf("already subscried to %s", topic)
+		return code.NonSubscribingTopic
 	}
 
 	sub, err := n.pubSub.Subscribe(topic)
@@ -77,7 +69,7 @@ func (n *Node) Subscribe(topic string) error {
 	return nil
 }
 
-func (n *Node) Unsubscribe(topic string) error {
+func (n *Node) unsubscribe(topic string) error {
 	for t, sub := range n.subs {
 		if topic == t {
 			sub.Cancel()
@@ -87,5 +79,5 @@ func (n *Node) Unsubscribe(topic string) error {
 		}
 	}
 
-	return fmt.Errorf("not subscribed to '%s'", topic)
+	return code.NonSubscribingTopic
 }

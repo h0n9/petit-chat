@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/h0n9/petit-chat/crypto"
+	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/util"
 )
 
@@ -16,8 +17,10 @@ type Node struct {
 	Address crypto.Addr
 
 	host   Host
-	pubSub *PubSub
+	pubSub *msg.PubSub
 	subs   map[string]*Sub
+
+	msgCenter *msg.MsgCenter
 }
 
 func NewNode(cfg util.Config) (Node, error) {
@@ -43,6 +46,13 @@ func NewNode(cfg util.Config) (Node, error) {
 	if err != nil {
 		return Node{}, err
 	}
+
+	msgCenter, err := msg.NewMsgCenter(node.pubSub)
+	if err != nil {
+		return Node{}, err
+	}
+
+	node.msgCenter = msgCenter
 
 	return node, nil
 }
