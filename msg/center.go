@@ -1,38 +1,67 @@
 package msg
 
 import (
+	"context"
 	"crypto/sha256"
+	"sort"
 
 	"github.com/h0n9/petit-chat/code"
 )
 
 type MsgCenter struct {
+	ctx    context.Context
 	pubsub *PubSub
 
-	Peers    map[Peer][]*MsgBox
+	// TODO: better way to manage topics with peerList
+	Peers    []Peer
 	MsgBoxes map[string]*MsgBox
 }
 
-func NewMsgCenter(pubsub *PubSub) (*MsgCenter, error) {
+func NewMsgCenter(ctx context.Context, pubsub *PubSub, peers ...Peer,
+) (*MsgCenter, error) {
 	if pubsub == nil {
 		return nil, code.ImproperPubSub
 	}
 
 	return &MsgCenter{
-		pubsub:   pubsub,
-		MsgBoxes: map[string]*MsgBox{},
+		ctx:    ctx,
+		pubsub: pubsub,
+
+		Peers:    peers,
+		MsgBoxes: make(map[string]*MsgBox),
 	}, nil
 }
 
-func (mc *MsgCenter) SendMsg(data []byte, dests ...Peer) error {
-	topic := genTopic(data, dests...)
+func (mc *MsgCenter) SendMsg(data []byte, from Peer, tos []Peer) error {
+	topic := genTopic(data, append(tos, from))
 
 	msgBox, exist := mc.MsgBoxes[topic]
 	if !exist {
-		msgBox = NewMsgBox(topic, dests)
+		sub, err := mc.pubsub.Subscribe(topic)
+		if err != nil {
+			return err
+		}
+
+		msgBox, err := NewMsgBox(mc.ctx, sub, from, "", tos...)
+		if err != nil {
+			return err
+		}
+
+		mc.add(topic, msgBox)
 	}
 
-	err := mc.pubsub.Publish(topic, data)
+	msg := NewMsg(data, from, tos)
+	msgJSON, err := msg.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	err = mc.pubsub.Publish(topic, msgJSON)
+	if err != nil {
+		return err
+	}
+
+	err = msgBox.Append(msg)
 	if err != nil {
 		return err
 	}
@@ -45,13 +74,7 @@ func (mc *MsgCenter) GetMsgBoxes() map[string]*MsgBox {
 }
 
 func (mc *MsgCenter) GetPeers() []Peer {
-	peers := make([]Peer, 0, len(mc.Peers))
-
-	for key := range mc.Peers {
-		peers = append(peers, key)
-	}
-
-	return peers
+	return mc.Peers
 }
 
 func (mc *MsgCenter) add(topic string, msgBox *MsgBox) error {
@@ -76,12 +99,17 @@ func (mc *MsgCenter) remove(topic string) error {
 	return nil
 }
 
-func genTopic(init []byte, dests ...Peer) string {
-	clay := make([]byte, 0, 50*len(dests)+len(init))
+func genTopic(init []byte, peers []Peer) string {
+	// TODO: compact way to allocate memory for clay variable
+	clay := make([]byte, 0, 50*(len(peers))+len(init))
 
-	for _, dest := range dests {
-		mb, _ := dest.ID.MarshalBinary()
-		clay = append(clay, mb...)
+	sort.Slice(peers, func(i, j int) bool {
+		return peers[i].ID > peers[j].ID
+	})
+
+	for _, peer := range peers {
+		b, _ := peer.ID.MarshalBinary()
+		clay = append(clay, b...)
 	}
 
 	clay = append(clay, init...)

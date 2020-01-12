@@ -16,17 +16,15 @@ type Node struct {
 	PubKey  crypto.PubKey
 	Address crypto.Addr
 
-	host   Host
-	pubSub *msg.PubSub
-	subs   map[string]*Sub
+	host Host
 
+	pubSub    *msg.PubSub
 	msgCenter *msg.MsgCenter
 }
 
 func NewNode(cfg util.Config) (Node, error) {
 	node := Node{}
 	node.ctx = context.Background()
-	node.subs = map[string]*Sub{}
 
 	privKey, err := crypto.GenPrivKey()
 	if err != nil {
@@ -47,7 +45,7 @@ func NewNode(cfg util.Config) (Node, error) {
 		return Node{}, err
 	}
 
-	msgCenter, err := msg.NewMsgCenter(node.pubSub)
+	msgCenter, err := msg.NewMsgCenter(node.ctx, node.pubSub)
 	if err != nil {
 		return Node{}, err
 	}
@@ -55,6 +53,18 @@ func NewNode(cfg util.Config) (Node, error) {
 	node.msgCenter = msgCenter
 
 	return node, nil
+}
+
+func (n *Node) GetHostID() msg.ID {
+	return n.host.ID()
+}
+
+func (n *Node) GetMsgCenter() *msg.MsgCenter {
+	return n.msgCenter
+}
+
+func (n *Node) GetPeers() []msg.ID {
+	return n.host.Network().Peers()
 }
 
 func (n *Node) Info() {

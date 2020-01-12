@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type CmdFunc func(input string) error
+type CmdFunc func(reader *bufio.Reader) error
 
 type Cmd struct {
 	Name    string
@@ -53,7 +53,7 @@ func (cmd *Cmd) Run() error {
 		fmt.Printf("%d. %s\n", 0, "exit")
 
 		// user input
-		data, err := getInput(reader)
+		data, err := GetInput(reader)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -74,7 +74,7 @@ func (cmd *Cmd) Run() error {
 		if val.CmdFunc == nil && len(val.Cmds) != 0 {
 			val.Run()
 		} else if val.CmdFunc != nil {
-			err = val.CmdFunc(data)
+			err = val.CmdFunc(reader)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -101,8 +101,8 @@ func (cmd *Cmd) getCmds() map[string]*Cmd {
 	return result
 }
 
-func getInput(reader *bufio.Reader) (string, error) {
-	fmt.Printf("> ")
+func GetInput(reader *bufio.Reader) (string, error) {
+	fmt.Printf("\n> ")
 
 	data, err := reader.ReadString('\n')
 	if err != nil {

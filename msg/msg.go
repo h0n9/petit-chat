@@ -1,6 +1,7 @@
 package msg
 
 import (
+	"encoding/json"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -12,20 +13,45 @@ type (
 )
 
 type Msg struct {
-	Timestamp time.Time
+	read     bool
+	received bool
 
-	Incoming bool
-	Read     bool
-	Received bool
-
-	Value pubsub.Message
+	Timestamp time.Time `json:"timestamp"`
+	From      Peer      `json:"from"` // always ONE from
+	To        []Peer    `json:"to"`   // could be SEVERAL to
+	Data      []byte    `json:"data"`
 }
 
-func NewMsg(value pubsub.Message) *Msg {
+func NewMsg(data []byte, from Peer, to []Peer) *Msg {
 	return &Msg{
+		read:     false,
+		received: false,
+
 		Timestamp: time.Now(),
-		Read:      false,
-		Received:  true,
-		Value:     value,
+		From:      from,
+		To:        to,
+		Data:      data,
 	}
+}
+
+func (msg *Msg) GetFrom() Peer {
+	return msg.From
+}
+
+func (msg *Msg) GetData() []byte {
+	return msg.Data
+}
+
+func (msg *Msg) MarshalJSON() ([]byte, error) {
+	return json.Marshal(msg)
+}
+
+func UnmarshalJSON(data []byte) (*Msg, error) {
+	msg := Msg{}
+	err := json.Unmarshal(data, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &msg, nil
 }

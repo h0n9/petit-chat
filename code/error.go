@@ -10,4 +10,6 @@ var (
 	AlreadyAppendedMsg      = fmt.Errorf("already appended msg")
 
 	ImproperPubSub = fmt.Errorf("improper pubsub")
+	ImproperSub    = fmt.Errorf("improper sub")
+	ImproperNodeID = fmt.Errorf("improper node id")
 )
