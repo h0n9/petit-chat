@@ -48,7 +48,7 @@ func (msg *Msg) MarshalJSON() ([]byte, error) {
 
 func UnmarshalJSON(data []byte) (*Msg, error) {
 	msg := Msg{}
-	err := json.Unmarshal(data, msg)
+	err := json.Unmarshal(data, &msg)
 	if err != nil {
 		return nil, err
 	}
