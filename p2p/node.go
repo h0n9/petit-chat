@@ -55,6 +55,10 @@ func NewNode(cfg util.Config) (Node, error) {
 	return node, nil
 }
 
+func (n *Node) Close() error {
+	return n.host.Close()
+}
+
 func (n *Node) GetHostID() msg.ID {
 	return n.host.ID()
 }

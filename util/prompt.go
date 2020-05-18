@@ -36,10 +36,15 @@ func (cmd *Cmd) Run() error {
 	cmds := cmd.getCmds()
 
 	for {
-		fmt.Printf("# %s #", cmd.Name)
-		if cmd.Desc != "" {
-			fmt.Printf(" - %s\n", cmd.Desc)
+		for i := 0; i < len(cmd.Name)+len(cmd.Desc)+7; i++ {
+			fmt.Printf("#")
 		}
+		fmt.Printf("\n")
+		fmt.Printf("# %s | %s #\n", cmd.Name, cmd.Desc)
+		for i := 0; i < len(cmd.Name)+len(cmd.Desc)+7; i++ {
+			fmt.Printf("#")
+		}
+		fmt.Printf("\n")
 
 		// display cmds
 		for i, c := range cmd.Cmds {
@@ -65,7 +70,7 @@ func (cmd *Cmd) Run() error {
 
 		val, exists := cmds[data]
 		if !exists {
-			fmt.Printf("'%s' not proper command\n", data)
+			fmt.Printf("'%s' not proper command\n\n", data)
 			continue
 		}
 

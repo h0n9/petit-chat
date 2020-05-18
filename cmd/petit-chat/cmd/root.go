@@ -7,9 +7,13 @@ import (
 	"github.com/h0n9/petit-chat/util"
 )
 
-func NewRootCmd(node *p2p.Node) *util.Cmd {
+var node *p2p.Node
+
+func NewRootCmd(n *p2p.Node) *util.Cmd {
+	node = n
 	return util.NewCmd("petit-chat", "entry point for petit-chat", nil,
-		peer.NewPeerCmd(node),
-		chat.NewChatCmd(node),
+		infoCmd,
+		peer.NewPeerCmd(n),
+		chat.NewChatCmd(n),
 	)
 }
