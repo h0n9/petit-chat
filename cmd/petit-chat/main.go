@@ -27,16 +27,25 @@ func main() {
 		panic(err)
 	}
 
+	// handle signal
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		err = node.Close()
+		if err != nil {
+			panic(err)
+		}
+		os.Exit(0)
+	}()
+
 	node.SetStreamHandler()
 
 	err = node.DiscoverPeers(cfg.BootstrapNodes)
 	if err != nil {
 		panic(err)
 	}
-
-	// handle signal
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 
 	// CLI
 	prompt := cmd.NewRootCmd(&node)
@@ -45,12 +54,7 @@ func main() {
 		panic(err)
 	}
 
-	<-c
-
-	err = node.Close()
-	if err != nil {
-		panic(err)
-	}
+	sigs <- syscall.SIGTERM
 }
 
 func init() {
