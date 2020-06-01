@@ -9,6 +9,9 @@ var (
 	NonExistingTopic        = fmt.Errorf("non existing topic")
 	AlreadyAppendedMsg      = fmt.Errorf("already appended msg")
 
+	AlreadyExistingNickname = fmt.Errorf("already existing nickname")
+	NonExistingNickname     = fmt.Errorf("non existing nickname")
+
 	ImproperPubSub = fmt.Errorf("improper pubsub")
 	ImproperSub    = fmt.Errorf("improper sub")
 	ImproperNodeID = fmt.Errorf("improper node id")

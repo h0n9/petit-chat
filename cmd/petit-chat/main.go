@@ -40,8 +40,6 @@ func main() {
 		os.Exit(0)
 	}()
 
-	node.SetStreamHandler()
-
 	err = node.DiscoverPeers(cfg.BootstrapNodes)
 	if err != nil {
 		panic(err)

@@ -16,22 +16,21 @@ var listCmd = util.NewCmd(
 )
 
 func listFunc(reader *bufio.Reader) error {
-	printMsgBoxes()
+	msgBoxes := node.GetMsgCenter().GetMsgBoxes()
+	printMsgBoxes(msgBoxes)
 	return nil
 }
 
-func printMsgBoxes() map[string]*msg.MsgBox {
-	msgBoxes := node.GetMsgCenter().GetMsgBoxes()
+func printMsgBoxes(msgBoxes map[string]*msg.MsgBox) {
 	n := 1
 	for topic, msgBox := range msgBoxes {
 		nStr := strconv.Itoa(n)
-		n += 1
 		msgBoxes[nStr] = msgBox
 
-		fmt.Printf("%s\n", topic)
+		fmt.Printf("%d. %s\n", n, topic)
 		for _, p := range msgBox.GetPeers() {
 			fmt.Printf(" - %s\n", p)
 		}
+		n++
 	}
-	return msgBoxes
 }

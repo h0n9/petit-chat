@@ -14,16 +14,15 @@ type MsgBox struct {
 	sub        *Sub
 	subRoutine bool
 
-	Nickname string
-	Host     Peer
-	Peers    []Peer
-	Msgs     map[time.Time]*Msg
+	host  Peer
+	peers []Peer
+	msgs  map[time.Time]*Msg
 
-	LatestTimestamp time.Time
+	latestTimestamp time.Time
 }
 
-func NewMsgBox(ctx context.Context, sub *Sub, host Peer,
-	nickname string, peers ...Peer) (*MsgBox, error) {
+func NewMsgBox(ctx context.Context, sub *Sub, host Peer, peers ...Peer) (
+	*MsgBox, error) {
 	if sub == nil {
 		return nil, code.ImproperSub
 	}
@@ -32,29 +31,32 @@ func NewMsgBox(ctx context.Context, sub *Sub, host Peer,
 		sub:        sub,
 		subRoutine: false,
 
-		Nickname:        nickname,
-		Host:            host,
-		Peers:           peers,
-		Msgs:            make(map[time.Time]*Msg),
-		LatestTimestamp: time.Now(),
+		host:            host,
+		peers:           peers,
+		msgs:            make(map[time.Time]*Msg),
+		latestTimestamp: time.Now(),
 	}, nil
 }
 
+func (mb *MsgBox) GetHost() Peer {
+	return mb.host
+}
+
 func (mb *MsgBox) GetPeers() []Peer {
-	return mb.Peers
+	return mb.peers
 }
 
 func (mb *MsgBox) Append(msg *Msg) error {
-	_, exist := mb.Msgs[msg.Timestamp]
+	_, exist := mb.msgs[msg.Timestamp]
 	if exist {
 		return code.AlreadyAppendedMsg
 	}
 
-	if mb.LatestTimestamp.Before(msg.Timestamp) {
-		mb.LatestTimestamp = msg.Timestamp
+	if mb.latestTimestamp.Before(msg.Timestamp) {
+		mb.latestTimestamp = msg.Timestamp
 	}
 
-	mb.Msgs[msg.Timestamp] = msg
+	mb.msgs[msg.Timestamp] = msg
 
 	return nil
 }
@@ -71,7 +73,7 @@ func (mb *MsgBox) turnOnSubRoutine() {
 			if len(rawMsg.Data) == 0 {
 				continue
 			}
-			if rawMsg.GetFrom().String() == mb.Host.ID.String() {
+			if rawMsg.GetFrom().String() == mb.host.ID.String() {
 				continue
 			}
 

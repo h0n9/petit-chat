@@ -15,7 +15,8 @@ var enterCmd = util.NewCmd(
 )
 
 func enterFunc(reader *bufio.Reader) error {
-	msgBoxes := printMsgBoxes()
+	msgBoxes := node.GetMsgCenter().GetMsgBoxes()
+	printMsgBoxes(msgBoxes)
 	if len(msgBoxes) == 0 {
 		return nil
 	}
@@ -37,5 +38,9 @@ func enterFunc(reader *bufio.Reader) error {
 }
 
 func interact(msgBox *msg.MsgBox) {
-
+	// interact with msgBox
+	// expected features:
+	// - send msg
+	// - receive msg
+	// - etc
 }

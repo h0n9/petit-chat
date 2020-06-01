@@ -13,11 +13,12 @@ type MsgCenter struct {
 	pubsub *PubSub
 
 	// TODO: better way to manage topics with peerList
-	Peers    []Peer
-	MsgBoxes map[string]*MsgBox
+	host     Peer
+	peers    []Peer
+	msgBoxes map[string]*MsgBox
 }
 
-func NewMsgCenter(ctx context.Context, pubsub *PubSub, peers ...Peer,
+func NewMsgCenter(ctx context.Context, pubsub *PubSub, host Peer, peers ...Peer,
 ) (*MsgCenter, error) {
 	if pubsub == nil {
 		return nil, code.ImproperPubSub
@@ -27,41 +28,29 @@ func NewMsgCenter(ctx context.Context, pubsub *PubSub, peers ...Peer,
 		ctx:    ctx,
 		pubsub: pubsub,
 
-		Peers:    peers,
-		MsgBoxes: make(map[string]*MsgBox),
+		host:     host,
+		peers:    peers,
+		msgBoxes: make(map[string]*MsgBox),
 	}, nil
 }
 
-func (mc *MsgCenter) SendMsg(data []byte, from Peer, tos []Peer) error {
-	topic := genTopic(data, append(tos, from))
-
-	msgBox, exist := mc.MsgBoxes[topic]
-	if !exist {
-		sub, err := mc.pubsub.Subscribe(topic)
-		if err != nil {
-			return err
-		}
-
-		msgBox, err := NewMsgBox(mc.ctx, sub, from, "", tos...)
-		if err != nil {
-			return err
-		}
-
-		mc.add(topic, msgBox)
-	}
-
-	msg := NewMsg(data, from, tos)
-	msgJSON, err := msg.MarshalJSON()
+func (mc *MsgCenter) CreateMsgBox(topic string) error {
+	err := mc.check(topic)
 	if err != nil {
 		return err
 	}
 
-	err = mc.pubsub.Publish(topic, msgJSON)
+	sub, err := mc.pubsub.Subscribe(topic)
 	if err != nil {
 		return err
 	}
 
-	err = msgBox.Append(msg)
+	msgBox, err := NewMsgBox(mc.ctx, sub, mc.host)
+	if err != nil {
+		return err
+	}
+
+	err = mc.add(topic, msgBox)
 	if err != nil {
 		return err
 	}
@@ -70,31 +59,40 @@ func (mc *MsgCenter) SendMsg(data []byte, from Peer, tos []Peer) error {
 }
 
 func (mc *MsgCenter) GetMsgBoxes() map[string]*MsgBox {
-	return mc.MsgBoxes
+	return mc.msgBoxes
 }
 
 func (mc *MsgCenter) GetPeers() []Peer {
-	return mc.Peers
+	return mc.peers
 }
 
-func (mc *MsgCenter) add(topic string, msgBox *MsgBox) error {
-	_, exist := mc.MsgBoxes[topic]
+func (mc *MsgCenter) check(topic string) error {
+	_, exist := mc.msgBoxes[topic]
 	if exist {
 		return code.AlreadyExistingTopic
 	}
 
-	mc.MsgBoxes[topic] = msgBox
+	return nil
+}
+
+func (mc *MsgCenter) add(topic string, msgBox *MsgBox) error {
+	err := mc.check(topic)
+	if err != nil {
+		return err
+	}
+
+	mc.msgBoxes[topic] = msgBox
 
 	return nil
 }
 
 func (mc *MsgCenter) remove(topic string) error {
-	_, exist := mc.MsgBoxes[topic]
+	_, exist := mc.msgBoxes[topic]
 	if !exist {
 		return code.NonExistingTopic
 	}
 
-	delete(mc.MsgBoxes, topic)
+	delete(mc.msgBoxes, topic)
 
 	return nil
 }
