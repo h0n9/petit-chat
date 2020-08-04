@@ -3,7 +3,6 @@ package chat
 import (
 	"bufio"
 	"fmt"
-	"strconv"
 
 	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/util"
@@ -16,20 +15,25 @@ var listCmd = util.NewCmd(
 )
 
 func listFunc(reader *bufio.Reader) error {
-	msgBoxes := node.GetMsgCenter().GetMsgBoxes()
-	printMsgBoxes(msgBoxes)
+	msgCenter, err := node.GetCenter(hostPeer.GetNickname())
+	if err != nil {
+		return err
+	}
+	msgBoxes := msgCenter.GetBoxes()
+	printBoxes(msgBoxes)
 	return nil
 }
 
-func printMsgBoxes(msgBoxes map[string]*msg.MsgBox) {
+func printBoxes(msgBoxes map[string]*msg.Box) {
+	if len(msgBoxes) == 0 {
+		fmt.Printf("none\n")
+		return
+	}
 	n := 1
 	for topic, msgBox := range msgBoxes {
-		nStr := strconv.Itoa(n)
-		msgBoxes[nStr] = msgBox
-
 		fmt.Printf("%d. %s\n", n, topic)
 		for _, p := range msgBox.GetPeers() {
-			fmt.Printf(" - %s\n", p)
+			fmt.Printf(" - %s\n", p.GetNickname())
 		}
 		n++
 	}

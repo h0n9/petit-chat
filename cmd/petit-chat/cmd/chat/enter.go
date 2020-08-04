@@ -15,21 +15,21 @@ var enterCmd = util.NewCmd(
 )
 
 func enterFunc(reader *bufio.Reader) error {
-	msgBoxes := node.GetMsgCenter().GetMsgBoxes()
-	printMsgBoxes(msgBoxes)
-	if len(msgBoxes) == 0 {
-		return nil
+	Center, err := node.GetCenter(hostPeer.GetNickname())
+	if err != nil {
+		return err
 	}
 
 	// get user input
+	fmt.Printf("Type chat room name:")
 	data, err := util.GetInput(reader)
 	if err != nil {
 		return err
 	}
 
-	msgBox, exist := msgBoxes[data]
-	if !exist {
-		return fmt.Errorf("'%s' not proper chat room", data)
+	msgBox, err := Center.GetBox(data)
+	if err != nil {
+		return err
 	}
 
 	interact(msgBox)
@@ -37,7 +37,7 @@ func enterFunc(reader *bufio.Reader) error {
 	return nil
 }
 
-func interact(msgBox *msg.MsgBox) {
+func interact(msgBox *msg.Box) {
 	// interact with msgBox
 	// expected features:
 	// - send msg

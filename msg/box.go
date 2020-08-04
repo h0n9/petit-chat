@@ -8,8 +8,8 @@ import (
 	"github.com/h0n9/petit-chat/code"
 )
 
-// MsgBox refers to a chat room
-type MsgBox struct {
+// Box refers to a chat room
+type Box struct {
 	ctx        context.Context
 	sub        *Sub
 	subRoutine bool
@@ -21,13 +21,13 @@ type MsgBox struct {
 	latestTimestamp time.Time
 }
 
-func NewMsgBox(ctx context.Context, sub *Sub, host Peer, peers ...Peer) (
-	*MsgBox, error) {
+func NewBox(ctx context.Context, sub *Sub, host Peer, peers ...Peer) (
+	*Box, error) {
 	if sub == nil {
 		return nil, code.ImproperSub
 	}
 
-	return &MsgBox{
+	return &Box{
 		sub:        sub,
 		subRoutine: false,
 
@@ -38,42 +38,42 @@ func NewMsgBox(ctx context.Context, sub *Sub, host Peer, peers ...Peer) (
 	}, nil
 }
 
-func (mb *MsgBox) GetHost() Peer {
-	return mb.host
+func (b *Box) GetHost() Peer {
+	return b.host
 }
 
-func (mb *MsgBox) GetPeers() []Peer {
-	return mb.peers
+func (b *Box) GetPeers() []Peer {
+	return b.peers
 }
 
-func (mb *MsgBox) Append(msg *Msg) error {
-	_, exist := mb.msgs[msg.Timestamp]
+func (b *Box) Append(msg *Msg) error {
+	_, exist := b.msgs[msg.Timestamp]
 	if exist {
 		return code.AlreadyAppendedMsg
 	}
 
-	if mb.latestTimestamp.Before(msg.Timestamp) {
-		mb.latestTimestamp = msg.Timestamp
+	if b.latestTimestamp.Before(msg.Timestamp) {
+		b.latestTimestamp = msg.Timestamp
 	}
 
-	mb.msgs[msg.Timestamp] = msg
+	b.msgs[msg.Timestamp] = msg
 
 	return nil
 }
 
-func (mb *MsgBox) turnOnSubRoutine() {
-	mb.subRoutine = true
+func (b *Box) turnOnSubRoutine() {
+	b.subRoutine = true
 
 	go func() {
 		for {
-			rawMsg, err := mb.sub.Next(mb.ctx)
+			rawMsg, err := b.sub.Next(b.ctx)
 			if err != nil {
 				continue
 			}
 			if len(rawMsg.Data) == 0 {
 				continue
 			}
-			if rawMsg.GetFrom().String() == mb.host.ID.String() {
+			if rawMsg.GetFrom().String() == b.host.GetID().String() {
 				continue
 			}
 
@@ -84,7 +84,7 @@ func (mb *MsgBox) turnOnSubRoutine() {
 			}
 
 			fmt.Printf("\x1b[32m%s: %s\x1b[0m\n> ",
-				msg.GetFrom(),
+				msg.GetFrom().id,
 				msg.GetData(),
 			)
 		}

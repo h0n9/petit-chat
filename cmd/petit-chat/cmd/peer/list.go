@@ -15,6 +15,10 @@ var listCmd = util.NewCmd(
 
 func listFunc(reader *bufio.Reader) error {
 	peers := node.GetPeers()
+	if len(peers) == 0 {
+		fmt.Printf("none\n")
+		return nil
+	}
 
 	for i, peer := range peers {
 		fmt.Printf("%d. %s\n", i+1, peer)

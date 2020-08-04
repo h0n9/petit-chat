@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/h0n9/petit-chat/cmd/petit-chat/cmd"
+	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/p2p"
 	"github.com/h0n9/petit-chat/util"
 )
@@ -22,7 +24,8 @@ var cfg util.Config
 
 func main() {
 	// init node
-	node, err := p2p.NewNode(cfg)
+	ctx := context.Background()
+	node, err := p2p.NewNode(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -45,8 +48,19 @@ func main() {
 		panic(err)
 	}
 
+	hostPeer := msg.NewPeer(node.GetHostID(), "defaultHost")
+	msgCenter, err := msg.NewCenter(ctx, node.GetPubSub(), hostPeer)
+	if err != nil {
+		panic(err)
+	}
+
+	err = node.SetCenter(hostPeer.GetNickname(), msgCenter)
+	if err != nil {
+		panic(err)
+	}
+
 	// CLI
-	prompt := cmd.NewRootCmd(&node)
+	prompt := cmd.NewRootCmd(&node, hostPeer)
 	err = prompt.Run()
 	if err != nil {
 		panic(err)

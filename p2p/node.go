@@ -19,13 +19,13 @@ type Node struct {
 
 	host Host
 
-	pubSub    *msg.PubSub
-	msgCenter map[string]*msg.MsgCenter
+	pubSub *msg.PubSub
+	Center map[string]*msg.Center
 }
 
-func NewNode(cfg util.Config) (Node, error) {
+func NewNode(ctx context.Context, cfg util.Config) (Node, error) {
 	node := Node{}
-	node.ctx = context.Background()
+	node.ctx = ctx
 
 	privKey, err := crypto.GenPrivKey()
 	if err != nil {
@@ -46,6 +46,8 @@ func NewNode(cfg util.Config) (Node, error) {
 		return Node{}, err
 	}
 
+	node.Center = map[string]*msg.Center{}
+
 	return node, nil
 }
 
@@ -57,17 +59,32 @@ func (n *Node) GetHostID() msg.ID {
 	return n.host.ID()
 }
 
-func (n *Node) GetMsgCenter(nickname string) (*msg.MsgCenter, error) {
-	msgCenter, exist := n.msgCenter[nickname]
+func (n *Node) GetCenter(nickname string) (*msg.Center, error) {
+	Center, exist := n.Center[nickname]
 	if !exist {
 		return nil, code.NonExistingNickname
 	}
 
-	return msgCenter, nil
+	return Center, nil
+}
+
+func (n *Node) SetCenter(nickname string, Center *msg.Center) error {
+	_, exist := n.Center[nickname]
+	if exist {
+		return code.AlreadyExistingNickname
+	}
+
+	n.Center[nickname] = Center
+
+	return nil
 }
 
 func (n *Node) GetPeers() []msg.ID {
 	return n.host.Network().Peers()
+}
+
+func (n *Node) GetPubSub() *msg.PubSub {
+	return n.pubSub
 }
 
 func (n *Node) Info() {
