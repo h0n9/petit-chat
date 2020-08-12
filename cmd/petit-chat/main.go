@@ -1,8 +1,13 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/h0n9/petit-chat/cmd/petit-chat/cmd"
+	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/p2p"
 	"github.com/h0n9/petit-chat/util"
 )
@@ -15,77 +20,53 @@ import (
 // - pubish subscribe: GossipSub
 
 // global variables
-var (
-	cfg  util.Config
-	node p2p.Node
-)
+var cfg util.Config
 
 func main() {
-	node, err := p2p.NewNode(cfg)
+	// init node
+	ctx := context.Background()
+	node, err := p2p.NewNode(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}
 
-	node.Info()
+	// handle signal
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	node.SetStreamHandler()
+	go func() {
+		<-sigs
+		err = node.Close()
+		if err != nil {
+			panic(err)
+		}
+		os.Exit(0)
+	}()
 
 	err = node.DiscoverPeers(cfg.BootstrapNodes)
 	if err != nil {
 		panic(err)
 	}
 
-	prompt := util.NewCmd("petit-chat", "entry point for petit-chat", nil,
-		util.NewCmd("list", "list of subscribing topics",
-			func(input string) error {
-				for _, s := range node.GetSubs() {
-					fmt.Printf("%s\n", s.Topic())
-					for _, p := range node.GetPeers(s.Topic()) {
-						fmt.Printf("  - %s\n", p)
-					}
-				}
-				return nil
-			},
-		),
-		util.NewCmd("pub", "publish to topic",
-			func(input string) error {
-				err := node.Publish("hello", []byte("wow"))
-				if err != nil {
-					return err
-				}
-				return nil
-			},
-		),
-		util.NewCmd("sub", "subscribe to topic",
-			func(input string) error {
-				err := node.Subscribe("hello")
-				if err != nil {
-					return err
-				}
-				return nil
-			},
-		),
-		util.NewCmd("unsub", "unsubscribe topic",
-			func(input string) error {
-				err := node.Unsubscribe("hello")
-				if err != nil {
-					return err
-				}
-				return nil
-			},
-		),
-		util.NewCmd("test", "several cmds", nil,
-			util.NewCmd("hello", "hello world",
-				func(input string) error {
-					fmt.Println("hello world")
-					return nil
-				},
-			),
-			util.NewCmd("other", "good", nil),
-		),
-	)
+	hostPeer := msg.NewPeer(node.GetHostID(), "defaultHost")
+	msgCenter, err := msg.NewCenter(ctx, node.GetPubSub(), hostPeer)
+	if err != nil {
+		panic(err)
+	}
 
-	prompt.Run()
+	err = node.SetCenter(hostPeer.GetNickname(), msgCenter)
+	if err != nil {
+		panic(err)
+	}
+
+	// CLI
+	prompt := cmd.NewRootCmd(&node, hostPeer)
+	err = prompt.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	sigs <- syscall.SIGTERM
 }
 
 func init() {

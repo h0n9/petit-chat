@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type CmdFunc func(input string) error
+type CmdFunc func(reader *bufio.Reader) error
 
 type Cmd struct {
 	Name    string
@@ -36,10 +36,15 @@ func (cmd *Cmd) Run() error {
 	cmds := cmd.getCmds()
 
 	for {
-		fmt.Printf("# %s #", cmd.Name)
-		if cmd.Desc != "" {
-			fmt.Printf(" - %s\n", cmd.Desc)
+		for i := 0; i < len(cmd.Name)+len(cmd.Desc)+7; i++ {
+			fmt.Printf("#")
 		}
+		fmt.Printf("\n")
+		fmt.Printf("# %s | %s #\n", cmd.Name, cmd.Desc)
+		for i := 0; i < len(cmd.Name)+len(cmd.Desc)+7; i++ {
+			fmt.Printf("#")
+		}
+		fmt.Printf("\n")
 
 		// display cmds
 		for i, c := range cmd.Cmds {
@@ -53,7 +58,7 @@ func (cmd *Cmd) Run() error {
 		fmt.Printf("%d. %s\n", 0, "exit")
 
 		// user input
-		data, err := getInput(reader)
+		data, err := GetInput(reader)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -65,7 +70,7 @@ func (cmd *Cmd) Run() error {
 
 		val, exists := cmds[data]
 		if !exists {
-			fmt.Printf("'%s' not proper command\n", data)
+			fmt.Printf("'%s' not proper command\n\n", data)
 			continue
 		}
 
@@ -74,7 +79,7 @@ func (cmd *Cmd) Run() error {
 		if val.CmdFunc == nil && len(val.Cmds) != 0 {
 			val.Run()
 		} else if val.CmdFunc != nil {
-			err = val.CmdFunc(data)
+			err = val.CmdFunc(reader)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -101,8 +106,8 @@ func (cmd *Cmd) getCmds() map[string]*Cmd {
 	return result
 }
 
-func getInput(reader *bufio.Reader) (string, error) {
-	fmt.Printf("> ")
+func GetInput(reader *bufio.Reader) (string, error) {
+	fmt.Printf("\n> ")
 
 	data, err := reader.ReadString('\n')
 	if err != nil {
