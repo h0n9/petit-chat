@@ -21,6 +21,6 @@ func NewPeerCmd(n *p2p.Node, h msg.Peer) *util.Cmd {
 		listCmd,
 		addCmd,
 		removeCmd,
-		blackCmd,
+		blockCmd,
 	)
 }
