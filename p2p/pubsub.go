@@ -4,6 +4,11 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 )
 
+type (
+	PubSub = pubsub.PubSub
+	Sub    = pubsub.Subscription
+)
+
 func (n *Node) NewPubSub() error {
 	ps, err := pubsub.NewGossipSub(n.ctx, n.host)
 	if err != nil {

@@ -3,13 +3,6 @@ package msg
 import (
 	"encoding/json"
 	"time"
-
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
-)
-
-type (
-	PubSub = pubsub.PubSub
-	Sub    = pubsub.Subscription
 )
 
 type Msg struct {
