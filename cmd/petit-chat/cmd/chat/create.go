@@ -14,11 +14,6 @@ var createCmd = util.NewCmd(
 )
 
 func createFunc(reader *bufio.Reader) error {
-	msgCenter, err := node.GetCenter(hostPeer.GetNickname())
-	if err != nil {
-		return err
-	}
-
 	// get user input
 	fmt.Printf("Type chat room name:")
 	data, err := util.GetInput(reader)
@@ -26,7 +21,7 @@ func createFunc(reader *bufio.Reader) error {
 		return err
 	}
 
-	_, err = msgCenter.CreateBox(data)
+	err = cli.CreateMsgBox(data)
 	if err != nil {
 		return err
 	}

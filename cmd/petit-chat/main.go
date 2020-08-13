@@ -8,8 +8,6 @@ import (
 
 	"github.com/h0n9/petit-chat/client"
 	"github.com/h0n9/petit-chat/cmd/petit-chat/cmd"
-	"github.com/h0n9/petit-chat/msg"
-	"github.com/h0n9/petit-chat/p2p"
 	"github.com/h0n9/petit-chat/util"
 )
 
@@ -20,10 +18,13 @@ import (
 // - peer discovery: Kademlia DHT
 // - pubish subscribe: GossipSub
 
-// global variables
-var cfg util.Config
-
 func main() {
+	var cfg = util.Config{}
+	err := cfg.ParseFlags()
+	if err != nil {
+		panic(err)
+	}
+
 	// init node
 	ctx := context.Background()
 	cli, err := client.NewClient(ctx, cfg)
@@ -50,18 +51,11 @@ func main() {
 	}
 
 	// CLI
-	prompt := cmd.NewRootCmd(&node, hostPeer)
+	prompt := cmd.NewRootCmd(cli)
 	err = prompt.Run()
 	if err != nil {
 		panic(err)
 	}
 
 	sigs <- syscall.SIGTERM
-}
-
-func init() {
-	err := cfg.ParseFlags()
-	if err != nil {
-		panic(err)
-	}
 }

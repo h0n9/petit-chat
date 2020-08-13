@@ -14,7 +14,7 @@ var listCmd = util.NewCmd(
 )
 
 func listFunc(reader *bufio.Reader) error {
-	peers := node.GetPeers()
+	peers := cli.GetPeers()
 	if len(peers) == 0 {
 		fmt.Printf("none\n")
 		return nil

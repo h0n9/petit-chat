@@ -15,10 +15,7 @@ var listCmd = util.NewCmd(
 )
 
 func listFunc(reader *bufio.Reader) error {
-	msgCenter, err := node.GetCenter(hostPeer.GetNickname())
-	if err != nil {
-		return err
-	}
+	msgCenter := cli.GetMsgCenter()
 	msgBoxes := msgCenter.GetBoxes()
 	printBoxes(msgBoxes)
 	return nil
@@ -30,11 +27,8 @@ func printBoxes(msgBoxes map[string]*msg.Box) {
 		return
 	}
 	n := 1
-	for topic, msgBox := range msgBoxes {
+	for topic, _ := range msgBoxes {
 		fmt.Printf("%d. %s\n", n, topic)
-		for _, p := range msgBox.GetPeers() {
-			fmt.Printf(" - %s\n", p.GetNickname())
-		}
 		n++
 	}
 }

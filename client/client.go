@@ -38,6 +38,10 @@ func (c *Client) Close() error {
 	return c.node.Close()
 }
 
+func (c *Client) Info() {
+	c.node.Info()
+}
+
 func (c *Client) GetID() types.ID {
 	return c.node.GetHostID()
 }
@@ -50,6 +54,22 @@ func (c *Client) DiscoverPeers() error {
 	return c.node.DiscoverPeers(c.cfg.BootstrapNodes)
 }
 
+func (c *Client) GetPeers() []types.ID {
+	return c.node.GetPeers()
+}
+
 func (c *Client) GetMsgCenter() *msg.Center {
 	return c.msgCenter
+}
+
+func (c *Client) CreateMsgBox(topic string) error {
+	return nil
+}
+
+func (c *Client) EnterMsgBox(topic string) error {
+	return nil
+}
+
+func (c *Client) LeaveMsgBox(topic string) error {
+	return nil
 }

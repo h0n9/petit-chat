@@ -3,19 +3,21 @@ package msg
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/h0n9/petit-chat/types"
 )
 
 type Msg struct {
 	read     bool
 	received bool
 
-	Timestamp time.Time `json:"timestamp"`
-	From      Peer      `json:"from"` // always ONE from
-	To        []Peer    `json:"to"`   // could be SEVERAL to
-	Data      []byte    `json:"data"`
+	Timestamp time.Time  `json:"timestamp"`
+	From      types.ID   `json:"from"` // always ONE from
+	To        []types.ID `json:"to"`   // could be SEVERAL to
+	Data      []byte     `json:"data"`
 }
 
-func NewMsg(data []byte, from Peer, to []Peer) *Msg {
+func NewMsg(data []byte, from types.ID, to []types.ID) *Msg {
 	return &Msg{
 		read:     false,
 		received: false,
@@ -27,7 +29,7 @@ func NewMsg(data []byte, from Peer, to []Peer) *Msg {
 	}
 }
 
-func (msg *Msg) GetFrom() Peer {
+func (msg *Msg) GetFrom() types.ID {
 	return msg.From
 }
 

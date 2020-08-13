@@ -22,17 +22,17 @@ type Node struct {
 }
 
 func NewNode(ctx context.Context, cfg util.Config) (*Node, error) {
-	node := Node{}
-	node.ctx = ctx
-
 	privKey, err := crypto.GenPrivKey()
 	if err != nil {
 		return nil, err
 	}
 
-	node.PrivKey = privKey
-	node.PubKey = privKey.PubKey()
-	node.Address = node.PubKey.Address()
+	node := Node{
+		ctx:     ctx,
+		PrivKey: privKey,
+		PubKey:  privKey.PubKey(),
+		Address: privKey.PubKey().Address(),
+	}
 
 	err = node.NewHost(cfg.ListenAddrs)
 	if err != nil {

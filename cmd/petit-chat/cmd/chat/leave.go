@@ -14,11 +14,6 @@ var leaveCmd = util.NewCmd(
 )
 
 func leaveFunc(reader *bufio.Reader) error {
-	msgCenter, err := node.GetCenter(hostPeer.GetNickname())
-	if err != nil {
-		return err
-	}
-
 	// get user input
 	fmt.Printf("Type chat room name:")
 	data, err := util.GetInput(reader)
@@ -26,7 +21,7 @@ func leaveFunc(reader *bufio.Reader) error {
 		return err
 	}
 
-	err = msgCenter.LeaveBox(data)
+	err = cli.LeaveMsgBox(data)
 	if err != nil {
 		return err
 	}
