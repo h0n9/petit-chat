@@ -16,9 +16,9 @@ type Node struct {
 	PubKey  crypto.PubKey
 	Address crypto.Addr
 
-	host Host
+	host types.Host
 
-	pubSub *PubSub
+	pubSub *types.PubSub
 }
 
 func NewNode(ctx context.Context, cfg util.Config) (*Node, error) {
@@ -59,7 +59,7 @@ func (n *Node) GetPeers() []types.ID {
 	return n.host.Network().Peers()
 }
 
-func (n *Node) GetPubSub() *PubSub {
+func (n *Node) GetPubSub() *types.PubSub {
 	return n.pubSub
 }
 

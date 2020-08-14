@@ -10,6 +10,8 @@ import (
 )
 
 type Client struct {
+	ctx context.Context
+
 	nickname string
 
 	node      *p2p.Node
@@ -22,11 +24,12 @@ func NewClient(ctx context.Context, cfg util.Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	msgCenter, err := msg.NewCenter()
+	msgCenter, err := msg.NewCenter(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &Client{
+		ctx:       ctx,
 		nickname:  "",
 		node:      node,
 		msgCenter: msgCenter,
@@ -36,6 +39,10 @@ func NewClient(ctx context.Context, cfg util.Config) (*Client, error) {
 
 func (c *Client) Close() error {
 	return c.node.Close()
+}
+
+func (c *Client) GetContext() context.Context {
+	return c.ctx
 }
 
 func (c *Client) Info() {
@@ -62,14 +69,22 @@ func (c *Client) GetMsgCenter() *msg.Center {
 	return c.msgCenter
 }
 
-func (c *Client) CreateMsgBox(topic string) error {
+func (c *Client) CreateMsgBox(topicStr string) error {
+	topic, err := c.node.Join(topicStr)
+	if err != nil {
+		return err
+	}
+	_, err = c.msgCenter.CreateBox(topicStr, topic)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (c *Client) EnterMsgBox(topic string) error {
-	return nil
+func (c *Client) GetMsgBox(topicStr string) (*msg.Box, error) {
+	return c.msgCenter.GetBox(topicStr)
 }
 
-func (c *Client) LeaveMsgBox(topic string) error {
+func (c *Client) LeaveMsgBox(topicStr string) error {
 	return nil
 }

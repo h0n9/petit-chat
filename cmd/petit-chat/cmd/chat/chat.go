@@ -16,8 +16,8 @@ func NewChatCmd(c *client.Client) *util.Cmd {
 		"chat related commands",
 		nil,
 		listCmd,
-		enterCmd,
 		createCmd,
+		enterCmd,
 		leaveCmd,
 	)
 }

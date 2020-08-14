@@ -2,11 +2,8 @@ package p2p
 
 import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-)
 
-type (
-	PubSub = pubsub.PubSub
-	Sub    = pubsub.Subscription
+	"github.com/h0n9/petit-chat/types"
 )
 
 func (n *Node) NewPubSub() error {
@@ -18,6 +15,14 @@ func (n *Node) NewPubSub() error {
 	n.pubSub = ps
 
 	return nil
+}
+
+func (n *Node) Join(topic string) (*types.Topic, error) {
+	tp, err := n.pubSub.Join(topic)
+	if err != nil {
+		return nil, err
+	}
+	return tp, nil
 }
 
 /*

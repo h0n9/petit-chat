@@ -1,30 +1,37 @@
 package msg
 
 import (
+	"context"
+
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/types"
 )
 
 type Center struct {
 	// TODO: better way to manage topics with peerList
+	ctx      context.Context
 	msgBoxes map[string]*Box
 }
 
-func NewCenter() (*Center, error) {
-	return &Center{msgBoxes: make(map[string]*Box)}, nil
+func NewCenter(ctx context.Context) (*Center, error) {
+	return &Center{
+		ctx:      ctx,
+		msgBoxes: make(map[string]*Box),
+	}, nil
 }
 
-func (mc *Center) CreateBox(topic string) (*Box, error) {
-	_, exist := mc.getBox(topic)
+func (mc *Center) CreateBox(topicStr string, topic *types.Topic) (*Box, error) {
+	_, exist := mc.getBox(topicStr)
 	if exist {
 		return nil, code.AlreadyExistingTopic
 	}
 
-	msgBox, err := NewBox()
+	msgBox, err := NewBox(mc.ctx, topic)
 	if err != nil {
 		return nil, err
 	}
 
-	err = mc.add(topic, msgBox)
+	err = mc.add(topicStr, msgBox)
 	if err != nil {
 		return nil, err
 	}
@@ -32,13 +39,13 @@ func (mc *Center) CreateBox(topic string) (*Box, error) {
 	return msgBox, nil
 }
 
-func (mc *Center) LeaveBox(topic string) error {
-	_, exist := mc.getBox(topic)
+func (mc *Center) LeaveBox(topicStr string) error {
+	_, exist := mc.getBox(topicStr)
 	if !exist {
 		return code.NonExistingTopic
 	}
 
-	delete(mc.msgBoxes, topic)
+	delete(mc.msgBoxes, topicStr)
 
 	return nil
 }

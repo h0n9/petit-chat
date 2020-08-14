@@ -27,7 +27,7 @@ func printBoxes(msgBoxes map[string]*msg.Box) {
 		return
 	}
 	n := 1
-	for topic, _ := range msgBoxes {
+	for topic := range msgBoxes {
 		fmt.Printf("%d. %s\n", n, topic)
 		n++
 	}

@@ -4,13 +4,10 @@ import (
 	"fmt"
 
 	libp2p "github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/host"
 	quic "github.com/libp2p/go-libp2p-quic-transport"
 
 	"github.com/h0n9/petit-chat/crypto"
 )
-
-type Host = host.Host
 
 func (n *Node) NewHost(listenAddrs crypto.Addrs) error {
 	if len(listenAddrs) == 0 {
