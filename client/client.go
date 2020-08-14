@@ -69,19 +69,15 @@ func (c *Client) GetMsgCenter() *msg.Center {
 	return c.msgCenter
 }
 
-func (c *Client) CreateMsgBox(topicStr string) error {
+func (c *Client) CreateMsgBox(topicStr string) (*msg.Box, error) {
 	topic, err := c.node.Join(topicStr)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = c.msgCenter.CreateBox(topicStr, topic)
-	if err != nil {
-		return err
-	}
-	return nil
+	return c.msgCenter.CreateBox(topicStr, topic)
 }
 
-func (c *Client) GetMsgBox(topicStr string) (*msg.Box, error) {
+func (c *Client) GetMsgBox(topicStr string) (*msg.Box, bool) {
 	return c.msgCenter.GetBox(topicStr)
 }
 

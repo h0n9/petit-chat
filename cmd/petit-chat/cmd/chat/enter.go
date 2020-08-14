@@ -21,9 +21,13 @@ func enterFunc(reader *bufio.Reader) error {
 		return err
 	}
 
-	msgBox, err := cli.GetMsgBox(data)
-	if err != nil {
-		return err
+	msgBox, exist := cli.GetMsgBox(data)
+	if !exist {
+		mb, err := cli.CreateMsgBox(data)
+		if err != nil {
+			return err
+		}
+		msgBox = mb
 	}
 
 	sub, err := msgBox.Subscribe()

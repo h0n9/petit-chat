@@ -54,13 +54,8 @@ func (mc *Center) GetBoxes() map[string]*Box {
 	return mc.msgBoxes
 }
 
-func (mc *Center) GetBox(topic string) (*Box, error) {
-	msgBox, exist := mc.getBox(topic)
-	if !exist {
-		return nil, code.NonExistingTopic
-	}
-
-	return msgBox, nil
+func (mc *Center) GetBox(topic string) (*Box, bool) {
+	return mc.getBox(topic)
 }
 
 func (mc *Center) getBox(topic string) (*Box, bool) {
