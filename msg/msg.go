@@ -11,20 +11,18 @@ type Msg struct {
 	read     bool
 	received bool
 
-	Timestamp time.Time  `json:"timestamp"`
-	From      types.ID   `json:"from"` // always ONE from
-	To        []types.ID `json:"to"`   // could be SEVERAL to
-	Data      []byte     `json:"data"`
+	Timestamp time.Time `json:"timestamp"`
+	From      types.ID  `json:"from"` // always ONE from
+	Data      []byte    `json:"data"`
 }
 
-func NewMsg(data []byte, from types.ID, to []types.ID) *Msg {
+func NewMsg(from types.ID, data []byte) *Msg {
 	return &Msg{
 		read:     false,
 		received: false,
 
 		Timestamp: time.Now(),
 		From:      from,
-		To:        to,
 		Data:      data,
 	}
 }

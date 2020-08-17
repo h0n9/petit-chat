@@ -19,7 +19,7 @@ import (
 // - pubish subscribe: GossipSub
 
 func main() {
-	var cfg = util.Config{}
+	var cfg util.Config
 	err := cfg.ParseFlags()
 	if err != nil {
 		panic(err)

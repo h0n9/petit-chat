@@ -6,9 +6,8 @@ import (
 )
 
 type (
-	Host         = host.Host
-	PubSub       = pubsub.PubSub
-	Sub          = pubsub.Subscription
-	Topic        = pubsub.Topic
-	Subscription = pubsub.Subscription
+	Host   = host.Host
+	PubSub = pubsub.PubSub
+	Sub    = pubsub.Subscription
+	Topic  = pubsub.Topic
 )

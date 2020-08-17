@@ -16,7 +16,7 @@ var enterCmd = util.NewCmd(
 func enterFunc(reader *bufio.Reader) error {
 	// get user input
 	fmt.Printf("Type chat room name: ")
-	data, err := util.GetInput(reader, true)
+	data, err := util.GetInput(reader, false)
 	if err != nil {
 		return err
 	}
@@ -30,42 +30,45 @@ func enterFunc(reader *bufio.Reader) error {
 		msgBox = mb
 	}
 
-	sub, err := msgBox.Subscribe()
-	if err != nil {
-		return err
-	}
-	defer sub.Cancel()
-
-	ctx := cli.GetContext()
-	myID := cli.GetID()
+	errs := make(chan error, 1)
 	go func() {
 		for {
-			received, err := sub.Next(ctx)
+			fmt.Printf("> ")
+			data, err = util.GetInput(reader, false)
 			if err != nil {
+				errs <- err
 				return
 			}
-			if received.GetFrom() != myID {
-				fmt.Printf("%s> %s\n", received.GetFrom(), received.GetData())
+			switch data {
+			case "/exit":
+				return
+			case "/close":
+				err = msgBox.Close()
+				if err != nil {
+					errs <- err
+				}
+				return
+			case "/msgs":
+				msgs := msgBox.GetMsgs()
+				for time, msg := range msgs {
+					fmt.Println("time:", time, ", from:", msg.GetFrom(), ",", msg.GetData())
+				}
+				continue
+			case "":
+				continue
 			}
-			fmt.Printf("> ")
+
+			err = msgBox.Publish([]byte(data))
+			if err != nil {
+				errs <- err
+				return
+			}
 		}
 	}()
 
-	fmt.Printf("> ")
-	for {
-		data, err = util.GetInput(reader, false)
-		if err != nil {
-			return err
-		}
-		if data == "/exit" {
-			break
-		}
-		if data == "" {
-			fmt.Printf("> ")
-			continue
-		}
-
-		msgBox.Publish([]byte(data))
+	err = msgBox.Open()
+	if err != nil {
+		return err
 	}
 
 	return nil
