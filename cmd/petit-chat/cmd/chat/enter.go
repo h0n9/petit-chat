@@ -3,6 +3,7 @@ package chat
 import (
 	"bufio"
 	"fmt"
+	"sync"
 
 	"github.com/h0n9/petit-chat/util"
 )
@@ -30,7 +31,16 @@ func enterFunc(reader *bufio.Reader) error {
 		msgBox = mb
 	}
 
+	var (
+		wait sync.WaitGroup
+		stop bool = false
+	)
+	wait.Add(1)
+
+	// TODO: Fix error handling of goroutines
 	errs := make(chan error, 1)
+	defer close(errs)
+
 	go func() {
 		for {
 			fmt.Printf("> ")
@@ -41,21 +51,19 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 			switch data {
 			case "/exit":
-				return
-			case "/close":
-				err = msgBox.Close()
-				if err != nil {
-					errs <- err
-				}
-				return
+				stop = true
 			case "/msgs":
 				msgs := msgBox.GetMsgs()
 				for time, msg := range msgs {
-					fmt.Println("time:", time, ", from:", msg.GetFrom(), ",", msg.GetData())
+					fmt.Printf("[%s, %s] %s\n", time, msg.GetFrom(), string(msg.GetData()))
 				}
 				continue
 			case "":
 				continue
+			}
+
+			if stop {
+				break
 			}
 
 			err = msgBox.Publish([]byte(data))
@@ -64,12 +72,12 @@ func enterFunc(reader *bufio.Reader) error {
 				return
 			}
 		}
+		defer wait.Done()
 	}()
 
-	err = msgBox.Open()
-	if err != nil {
-		return err
-	}
+	go msgBox.Subscribe()
+
+	wait.Wait()
 
 	return nil
 }

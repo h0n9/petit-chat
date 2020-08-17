@@ -1,31 +1,33 @@
 package msg
 
 import (
+	"bytes"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/types"
 )
 
+const EOS = "EOS" // End Of Subscription
+
 // Box refers to a chat room
 type Box struct {
-	ctx     context.Context
-	topic   *types.Topic
-	sub     *types.Sub
-	closeCh chan bool
+	ctx   context.Context
+	myID  types.ID
+	topic *types.Topic
+	sub   *types.Sub
 
 	msgs            map[time.Time]*Msg
 	latestTimestamp time.Time
 }
 
-func NewBox(ctx context.Context, topic *types.Topic) (*Box, error) {
+func NewBox(ctx context.Context, myID types.ID, topic *types.Topic) (*Box, error) {
 	return &Box{
 		ctx:             ctx,
+		myID:            myID,
 		topic:           topic,
 		sub:             nil,
-		closeCh:         make(chan bool, 1),
 		msgs:            make(map[time.Time]*Msg),
 		latestTimestamp: time.Now(),
 	}, nil
@@ -43,7 +45,7 @@ func (b *Box) Publish(data []byte) error {
 	return nil
 }
 
-func (b *Box) Open() error {
+func (b *Box) Subscribe() error {
 	if b.sub != nil {
 		return code.AlreadySubscribingTopic
 	}
@@ -54,54 +56,41 @@ func (b *Box) Open() error {
 	}
 	b.sub = sub
 
-	fmt.Println("open")
-
-	errs := make(chan error, 1)
-
-	// routine for receiving data
-	go func() {
-		fmt.Println("start routine")
-		for {
-			select {
-			case <-b.closeCh:
+	for {
+		received, err := sub.Next(b.ctx)
+		if err != nil {
+			return err
+		}
+		// TODO: consider if this a right way to handle closing subscription
+		if bytes.Equal(received.GetData(), []byte(EOS)) {
+			if received.GetFrom() == b.myID {
 				sub.Cancel()
+				err := b.topic.Close()
+				if err != nil {
+					return err
+				}
 				b.sub = nil
 				break
-			default:
-			}
-			received, err := sub.Next(b.ctx)
-			if err != nil {
-				errs <- err
-				fmt.Println(err)
-				return
-			}
-			msg := NewMsg(received.GetFrom(), received.GetData())
-			fmt.Println(msg)
-			err = b.append(msg)
-			if err != nil {
-				fmt.Println(err)
-				errs <- err
-				return
+			} else {
+				continue
 			}
 		}
-	}()
-
-	// TODO: not pretty...
-	select {
-	case errS := <-errs:
-		err = errS
-	}
-	if err != nil {
-		return err
+		msg := NewMsg(received.GetFrom(), received.GetData())
+		err = b.append(msg)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (b *Box) Close() error {
-	b.closeCh <- true
-	close(b.closeCh)
-	return nil
+	return b.Publish([]byte(EOS))
+}
+
+func (b *Box) Subscribing() bool {
+	return b.sub != nil
 }
 
 func (b *Box) GetMsgs() map[time.Time]*Msg {

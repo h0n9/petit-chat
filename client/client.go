@@ -24,7 +24,7 @@ func NewClient(ctx context.Context, cfg util.Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	msgCenter, err := msg.NewCenter(ctx)
+	msgCenter, err := msg.NewCenter(ctx, node.GetHostID())
 	if err != nil {
 		return nil, err
 	}
@@ -39,10 +39,6 @@ func NewClient(ctx context.Context, cfg util.Config) (*Client, error) {
 
 func (c *Client) Close() error {
 	return c.node.Close()
-}
-
-func (c *Client) GetContext() context.Context {
-	return c.ctx
 }
 
 func (c *Client) Info() {
@@ -77,10 +73,10 @@ func (c *Client) CreateMsgBox(topicStr string) (*msg.Box, error) {
 	return c.msgCenter.CreateBox(topicStr, topic)
 }
 
-func (c *Client) GetMsgBox(topicStr string) (*msg.Box, bool) {
-	return c.msgCenter.GetBox(topicStr)
+func (c *Client) LeaveMsgBox(topicStr string) error {
+	return c.msgCenter.LeaveBox(topicStr)
 }
 
-func (c *Client) LeaveMsgBox(topicStr string) error {
-	return nil
+func (c *Client) GetMsgBox(topicStr string) (*msg.Box, bool) {
+	return c.msgCenter.GetBox(topicStr)
 }

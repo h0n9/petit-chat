@@ -15,8 +15,8 @@ var leaveCmd = util.NewCmd(
 
 func leaveFunc(reader *bufio.Reader) error {
 	// get user input
-	fmt.Printf("Type chat room name:")
-	data, err := util.GetInput(reader, true)
+	fmt.Printf("Type chat room name: ")
+	data, err := util.GetInput(reader, false)
 	if err != nil {
 		return err
 	}

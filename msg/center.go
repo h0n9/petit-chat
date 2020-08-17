@@ -10,12 +10,14 @@ import (
 type Center struct {
 	// TODO: better way to manage topics with peerList
 	ctx      context.Context
+	myID     types.ID
 	msgBoxes map[string]*Box
 }
 
-func NewCenter(ctx context.Context) (*Center, error) {
+func NewCenter(ctx context.Context, myID types.ID) (*Center, error) {
 	return &Center{
 		ctx:      ctx,
+		myID:     myID,
 		msgBoxes: make(map[string]*Box),
 	}, nil
 }
@@ -26,7 +28,7 @@ func (mc *Center) CreateBox(topicStr string, topic *types.Topic) (*Box, error) {
 		return nil, code.AlreadyExistingTopic
 	}
 
-	msgBox, err := NewBox(mc.ctx, topic)
+	msgBox, err := NewBox(mc.ctx, mc.myID, topic)
 	if err != nil {
 		return nil, err
 	}
@@ -40,12 +42,22 @@ func (mc *Center) CreateBox(topicStr string, topic *types.Topic) (*Box, error) {
 }
 
 func (mc *Center) LeaveBox(topicStr string) error {
-	_, exist := mc.getBox(topicStr)
+	box, exist := mc.getBox(topicStr)
 	if !exist {
 		return code.NonExistingTopic
 	}
 
-	delete(mc.msgBoxes, topicStr)
+	if box.Subscribing() {
+		err := box.Close()
+		if err != nil {
+			return err
+		}
+	}
+
+	err := mc.remove(topicStr)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -54,33 +66,33 @@ func (mc *Center) GetBoxes() map[string]*Box {
 	return mc.msgBoxes
 }
 
-func (mc *Center) GetBox(topic string) (*Box, bool) {
-	return mc.getBox(topic)
+func (mc *Center) GetBox(topicStr string) (*Box, bool) {
+	return mc.getBox(topicStr)
 }
 
-func (mc *Center) getBox(topic string) (*Box, bool) {
-	msgBox, exist := mc.msgBoxes[topic]
+func (mc *Center) getBox(topicStr string) (*Box, bool) {
+	msgBox, exist := mc.msgBoxes[topicStr]
 	return msgBox, exist
 }
 
-func (mc *Center) add(topic string, msgBox *Box) error {
-	_, exist := mc.getBox(topic)
+func (mc *Center) add(topicStr string, msgBox *Box) error {
+	_, exist := mc.getBox(topicStr)
 	if exist {
 		return code.AlreadyExistingTopic
 	}
 
-	mc.msgBoxes[topic] = msgBox
+	mc.msgBoxes[topicStr] = msgBox
 
 	return nil
 }
 
-func (mc *Center) remove(topic string) error {
-	_, exist := mc.getBox(topic)
+func (mc *Center) remove(topicStr string) error {
+	_, exist := mc.getBox(topicStr)
 	if !exist {
 		return code.NonExistingTopic
 	}
 
-	delete(mc.msgBoxes, topic)
+	delete(mc.msgBoxes, topicStr)
 
 	return nil
 }
