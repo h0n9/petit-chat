@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/util"
 )
 
@@ -35,12 +36,47 @@ func enterFunc(reader *bufio.Reader) error {
 		wait sync.WaitGroup
 		stop bool = false
 	)
-	wait.Add(1)
 
 	// TODO: Fix error handling of goroutines
 	errs := make(chan error, 1)
 	defer close(errs)
 
+	// open subscription
+	go msgBox.Subscribe()
+
+	// get and print out new msgs
+	var (
+		msgSubCh     = make(chan *msg.Msg, 1)
+		msgStopSubCh = make(chan bool, 1)
+	)
+	defer close(msgSubCh)
+	defer close(msgStopSubCh)
+
+	msgBox.SetMsgSubCh(msgSubCh)
+	defer msgBox.SetMsgSubCh(nil)
+
+	wait.Add(1)
+	go func() {
+		var (
+			stop bool     = false
+			msg  *msg.Msg = nil
+		)
+		for {
+			select {
+			case msg = <-msgSubCh:
+				printMsg(msg)
+			case <-msgStopSubCh:
+				stop = true
+			}
+			if stop {
+				break
+			}
+		}
+		wait.Done()
+	}()
+
+	// get user input
+	wait.Add(1)
 	go func() {
 		for {
 			fmt.Printf("> ")
@@ -51,17 +87,17 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 			switch data {
 			case "/exit":
+				msgStopSubCh <- true
 				stop = true
 			case "/msgs":
 				msgs := msgBox.GetMsgs()
-				for time, msg := range msgs {
-					fmt.Printf("[%s, %s] %s\n", time, msg.GetFrom(), string(msg.GetData()))
+				for _, msg := range msgs {
+					printMsg(msg)
 				}
 				continue
 			case "":
 				continue
 			}
-
 			if stop {
 				break
 			}
@@ -72,12 +108,18 @@ func enterFunc(reader *bufio.Reader) error {
 				return
 			}
 		}
-		defer wait.Done()
+		wait.Done()
 	}()
-
-	go msgBox.Subscribe()
 
 	wait.Wait()
 
 	return nil
+}
+
+func printMsg(msg *msg.Msg) {
+	fmt.Printf("[%s, %s] %s\n",
+		msg.GetTime(),
+		msg.GetFrom(),
+		string(msg.GetData()),
+	)
 }

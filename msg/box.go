@@ -19,6 +19,7 @@ type Box struct {
 	sub   *types.Sub
 
 	msgs            map[time.Time]*Msg
+	msgSubCh        chan *Msg
 	latestTimestamp time.Time
 }
 
@@ -29,6 +30,7 @@ func NewBox(ctx context.Context, myID types.ID, topic *types.Topic) (*Box, error
 		topic:           topic,
 		sub:             nil,
 		msgs:            make(map[time.Time]*Msg),
+		msgSubCh:        nil,
 		latestTimestamp: time.Now(),
 	}, nil
 }
@@ -80,6 +82,9 @@ func (b *Box) Subscribe() error {
 		if err != nil {
 			return err
 		}
+		if received.GetFrom() != b.myID && b.msgSubCh != nil {
+			b.msgSubCh <- msg
+		}
 	}
 
 	return nil
@@ -93,21 +98,26 @@ func (b *Box) Subscribing() bool {
 	return b.sub != nil
 }
 
+func (b *Box) SetMsgSubCh(msgSubCh chan *Msg) {
+	b.msgSubCh = msgSubCh
+}
+
 func (b *Box) GetMsgs() map[time.Time]*Msg {
 	return b.msgs
 }
 
 func (b *Box) append(msg *Msg) error {
-	_, exist := b.msgs[msg.Timestamp]
+	timestamp := msg.GetTime()
+	_, exist := b.msgs[timestamp]
 	if exist {
 		return code.AlreadyAppendedMsg
 	}
 
-	if b.latestTimestamp.Before(msg.Timestamp) {
-		b.latestTimestamp = msg.Timestamp
+	if b.latestTimestamp.Before(timestamp) {
+		b.latestTimestamp = timestamp
 	}
 
-	b.msgs[msg.Timestamp] = msg
+	b.msgs[timestamp] = msg
 
 	return nil
 }

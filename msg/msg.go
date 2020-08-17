@@ -11,9 +11,9 @@ type Msg struct {
 	read     bool
 	received bool
 
-	Timestamp time.Time `json:"timestamp"`
-	From      types.ID  `json:"from"` // always ONE from
-	Data      []byte    `json:"data"`
+	timestamp time.Time `json:"timestamp"`
+	from      types.ID  `json:"from"` // always ONE from
+	data      []byte    `json:"data"`
 }
 
 func NewMsg(from types.ID, data []byte) *Msg {
@@ -21,18 +21,22 @@ func NewMsg(from types.ID, data []byte) *Msg {
 		read:     false,
 		received: false,
 
-		Timestamp: time.Now(),
-		From:      from,
-		Data:      data,
+		timestamp: time.Now(),
+		from:      from,
+		data:      data,
 	}
 }
 
 func (msg *Msg) GetFrom() types.ID {
-	return msg.From
+	return msg.from
 }
 
 func (msg *Msg) GetData() []byte {
-	return msg.Data
+	return msg.data
+}
+
+func (msg *Msg) GetTime() time.Time {
+	return msg.timestamp
 }
 
 func (msg *Msg) MarshalJSON() ([]byte, error) {
