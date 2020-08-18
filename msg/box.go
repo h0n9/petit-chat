@@ -22,8 +22,8 @@ type Box struct {
 	latestTimestamp time.Time
 	readUntilIndex  int
 
-	msgs      []*Msg
-	msgHashes map[types.Hash]*Msg
+	msgs      []*Msg              // TODO: limit the size of msgs slice
+	msgHashes map[types.Hash]*Msg // TODO: limit the size of msgHashes map
 }
 
 func NewBox(ctx context.Context, topic *types.Topic, myID types.ID) (*Box, error) {
@@ -89,9 +89,13 @@ func (b *Box) Subscribe() error {
 		if err != nil {
 			return err
 		}
-		if received.GetFrom() != b.myID && b.msgSubCh != nil {
-			b.msgSubCh <- msg
+		if received.GetFrom() == b.myID {
 			b.readUntilIndex = readUntilIndex
+		} else {
+			if b.msgSubCh != nil {
+				b.msgSubCh <- msg
+				b.readUntilIndex = readUntilIndex
+			}
 		}
 	}
 
@@ -114,8 +118,13 @@ func (b *Box) GetMsgs() []*Msg {
 	return b.msgs
 }
 
-func (b *Box) GetMsgsFromRead() []*Msg {
-	return append([]*Msg{}, b.msgs[b.readUntilIndex:]...)
+func (b *Box) GetUnreadMsgs() []*Msg {
+	msgs := []*Msg{}
+	if b.readUntilIndex+1 < len(b.msgs) {
+		msgs = append(msgs, b.msgs[b.readUntilIndex+1:]...)
+	}
+	b.readUntilIndex = len(b.msgs) - 1
+	return msgs
 }
 
 func (b *Box) append(msg *Msg) (int, error) {

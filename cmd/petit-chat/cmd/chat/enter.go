@@ -45,7 +45,7 @@ func enterFunc(reader *bufio.Reader) error {
 	go msgBox.Subscribe()
 
 	// get and print out received msgs
-	msgs := msgBox.GetMsgsFromRead()
+	msgs := msgBox.GetUnreadMsgs()
 	for _, msg := range msgs {
 		printMsg(msg)
 	}
