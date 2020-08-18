@@ -31,7 +31,7 @@ func (n *Node) NewHost(listenAddrs crypto.Addrs) error {
 		return err
 	}
 
-	tpt, err := quic.NewTransport(privKeyP2P)
+	tpt, err := quic.NewTransport(privKeyP2P, nil, nil)
 	if err != nil {
 		return err
 	}
