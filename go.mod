@@ -1,6 +1,6 @@
 module github.com/h0n9/petit-chat
 
-go 1.13
+go 1.15
 
 require (
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
