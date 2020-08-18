@@ -14,24 +14,31 @@ const EOS = "EOS" // End Of Subscription
 // Box refers to a chat room
 type Box struct {
 	ctx   context.Context
-	myID  types.ID
 	topic *types.Topic
 	sub   *types.Sub
 
-	msgs            map[time.Time]*Msg
+	myID            types.ID
 	msgSubCh        chan *Msg
 	latestTimestamp time.Time
+	readUntilIndex  int
+
+	msgs      []*Msg
+	msgHashes map[types.Hash]*Msg
 }
 
-func NewBox(ctx context.Context, myID types.ID, topic *types.Topic) (*Box, error) {
+func NewBox(ctx context.Context, topic *types.Topic, myID types.ID) (*Box, error) {
 	return &Box{
-		ctx:             ctx,
+		ctx:   ctx,
+		topic: topic,
+		sub:   nil,
+
 		myID:            myID,
-		topic:           topic,
-		sub:             nil,
-		msgs:            make(map[time.Time]*Msg),
 		msgSubCh:        nil,
 		latestTimestamp: time.Now(),
+		readUntilIndex:  0,
+
+		msgs:      make([]*Msg, 0),
+		msgHashes: make(map[types.Hash]*Msg),
 	}, nil
 }
 
@@ -78,12 +85,13 @@ func (b *Box) Subscribe() error {
 			}
 		}
 		msg := NewMsg(received.GetFrom(), received.GetData())
-		err = b.append(msg)
+		readUntilIndex, err := b.append(msg)
 		if err != nil {
 			return err
 		}
 		if received.GetFrom() != b.myID && b.msgSubCh != nil {
 			b.msgSubCh <- msg
+			b.readUntilIndex = readUntilIndex
 		}
 	}
 
@@ -102,22 +110,32 @@ func (b *Box) SetMsgSubCh(msgSubCh chan *Msg) {
 	b.msgSubCh = msgSubCh
 }
 
-func (b *Box) GetMsgs() map[time.Time]*Msg {
+func (b *Box) GetMsgs() []*Msg {
 	return b.msgs
 }
 
-func (b *Box) append(msg *Msg) error {
-	timestamp := msg.GetTime()
-	_, exist := b.msgs[timestamp]
-	if exist {
-		return code.AlreadyAppendedMsg
+func (b *Box) GetMsgsFromRead() []*Msg {
+	return append([]*Msg{}, b.msgs[b.readUntilIndex:]...)
+}
+
+func (b *Box) append(msg *Msg) (int, error) {
+	hash, err := msg.Hash()
+	if err != nil {
+		return 0, err
 	}
 
+	_, exist := b.msgHashes[hash]
+	if exist {
+		return 0, code.AlreadyAppendedMsg
+	}
+
+	timestamp := msg.GetTime()
 	if b.latestTimestamp.Before(timestamp) {
 		b.latestTimestamp = timestamp
 	}
 
-	b.msgs[timestamp] = msg
+	b.msgs = append(b.msgs, msg)
+	b.msgHashes[hash] = msg
 
-	return nil
+	return len(b.msgs) - 1, nil
 }

@@ -5,42 +5,51 @@ import (
 	"time"
 
 	"github.com/h0n9/petit-chat/types"
+	"github.com/h0n9/petit-chat/util"
 )
 
 type Msg struct {
-	read     bool
-	received bool
+	Timestamp time.Time `json:"timestamp"`
+	From      types.ID  `json:"from"` // always ONE from
+	Data      []byte    `json:"data"`
+}
 
-	timestamp time.Time `json:"timestamp"`
-	from      types.ID  `json:"from"` // always ONE from
-	data      []byte    `json:"data"`
+type MsgEx struct {
+	Read     bool `json:"read"`
+	Received bool `json:"received"`
+	*Msg
 }
 
 func NewMsg(from types.ID, data []byte) *Msg {
 	return &Msg{
-		read:     false,
-		received: false,
-
-		timestamp: time.Now(),
-		from:      from,
-		data:      data,
+		Timestamp: time.Now(),
+		From:      from,
+		Data:      data,
 	}
 }
 
 func (msg *Msg) GetFrom() types.ID {
-	return msg.from
+	return msg.From
 }
 
 func (msg *Msg) GetData() []byte {
-	return msg.data
+	return msg.Data
 }
 
 func (msg *Msg) GetTime() time.Time {
-	return msg.timestamp
+	return msg.Timestamp
+}
+
+func (msg *Msg) Hash() (types.Hash, error) {
+	b, err := msg.MarshalJSON()
+	if err != nil {
+		return types.Hash{}, err
+	}
+	return util.ToSHA256(b), nil
 }
 
 func (msg *Msg) MarshalJSON() ([]byte, error) {
-	return json.Marshal(msg)
+	return json.Marshal(*msg)
 }
 
 func UnmarshalJSON(data []byte) (*Msg, error) {

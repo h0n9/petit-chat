@@ -44,6 +44,12 @@ func enterFunc(reader *bufio.Reader) error {
 	// open subscription
 	go msgBox.Subscribe()
 
+	// get and print out received msgs
+	msgs := msgBox.GetMsgsFromRead()
+	for _, msg := range msgs {
+		printMsg(msg)
+	}
+
 	// get and print out new msgs
 	var (
 		msgSubCh     = make(chan *msg.Msg, 1)

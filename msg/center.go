@@ -28,7 +28,7 @@ func (mc *Center) CreateBox(topicStr string, topic *types.Topic) (*Box, error) {
 		return nil, code.AlreadyExistingTopic
 	}
 
-	msgBox, err := NewBox(mc.ctx, mc.myID, topic)
+	msgBox, err := NewBox(mc.ctx, topic, mc.myID)
 	if err != nil {
 		return nil, err
 	}
