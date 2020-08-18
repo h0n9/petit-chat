@@ -4,37 +4,31 @@ import (
 	"encoding/json"
 	"time"
 
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
-)
-
-type (
-	PubSub = pubsub.PubSub
-	Sub    = pubsub.Subscription
+	"github.com/h0n9/petit-chat/types"
+	"github.com/h0n9/petit-chat/util"
 )
 
 type Msg struct {
-	read     bool
-	received bool
-
 	Timestamp time.Time `json:"timestamp"`
-	From      Peer      `json:"from"` // always ONE from
-	To        []Peer    `json:"to"`   // could be SEVERAL to
+	From      types.ID  `json:"from"` // always ONE from
 	Data      []byte    `json:"data"`
 }
 
-func NewMsg(data []byte, from Peer, to []Peer) *Msg {
-	return &Msg{
-		read:     false,
-		received: false,
+type MsgEx struct {
+	Read     bool `json:"read"`
+	Received bool `json:"received"`
+	*Msg
+}
 
+func NewMsg(from types.ID, data []byte) *Msg {
+	return &Msg{
 		Timestamp: time.Now(),
 		From:      from,
-		To:        to,
 		Data:      data,
 	}
 }
 
-func (msg *Msg) GetFrom() Peer {
+func (msg *Msg) GetFrom() types.ID {
 	return msg.From
 }
 
@@ -42,8 +36,20 @@ func (msg *Msg) GetData() []byte {
 	return msg.Data
 }
 
+func (msg *Msg) GetTime() time.Time {
+	return msg.Timestamp
+}
+
+func (msg *Msg) Hash() (types.Hash, error) {
+	b, err := msg.MarshalJSON()
+	if err != nil {
+		return types.Hash{}, err
+	}
+	return util.ToSHA256(b), nil
+}
+
 func (msg *Msg) MarshalJSON() ([]byte, error) {
-	return json.Marshal(msg)
+	return json.Marshal(*msg)
 }
 
 func UnmarshalJSON(data []byte) (*Msg, error) {

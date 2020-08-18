@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
-	"github.com/h0n9/petit-chat/msg"
+	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
 
@@ -17,73 +16,50 @@ type Node struct {
 	PubKey  crypto.PubKey
 	Address crypto.Addr
 
-	host Host
+	host types.Host
 
-	pubSub *msg.PubSub
-	Center map[string]*msg.Center
+	pubSub *types.PubSub
 }
 
-func NewNode(ctx context.Context, cfg util.Config) (Node, error) {
-	node := Node{}
-	node.ctx = ctx
-
+func NewNode(ctx context.Context, cfg util.Config) (*Node, error) {
 	privKey, err := crypto.GenPrivKey()
 	if err != nil {
-		return Node{}, err
+		return nil, err
 	}
 
-	node.PrivKey = privKey
-	node.PubKey = privKey.PubKey()
-	node.Address = node.PubKey.Address()
+	node := Node{
+		ctx:     ctx,
+		PrivKey: privKey,
+		PubKey:  privKey.PubKey(),
+		Address: privKey.PubKey().Address(),
+	}
 
 	err = node.NewHost(cfg.ListenAddrs)
 	if err != nil {
-		return Node{}, err
+		return nil, err
 	}
 
 	err = node.NewPubSub()
 	if err != nil {
-		return Node{}, err
+		return nil, err
 	}
 
-	node.Center = map[string]*msg.Center{}
-
-	return node, nil
+	return &node, nil
 }
 
 func (n *Node) Close() error {
 	return n.host.Close()
 }
 
-func (n *Node) GetHostID() msg.ID {
+func (n *Node) GetHostID() types.ID {
 	return n.host.ID()
 }
 
-func (n *Node) GetCenter(nickname string) (*msg.Center, error) {
-	Center, exist := n.Center[nickname]
-	if !exist {
-		return nil, code.NonExistingNickname
-	}
-
-	return Center, nil
-}
-
-func (n *Node) SetCenter(nickname string, Center *msg.Center) error {
-	_, exist := n.Center[nickname]
-	if exist {
-		return code.AlreadyExistingNickname
-	}
-
-	n.Center[nickname] = Center
-
-	return nil
-}
-
-func (n *Node) GetPeers() []msg.ID {
+func (n *Node) GetPeers() []types.ID {
 	return n.host.Network().Peers()
 }
 
-func (n *Node) GetPubSub() *msg.PubSub {
+func (n *Node) GetPubSub() *types.PubSub {
 	return n.pubSub
 }
 
