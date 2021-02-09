@@ -16,10 +16,10 @@ type Client struct {
 
 	node      *p2p.Node
 	msgCenter *msg.Center
-	cfg       util.Config
+	cfg       *util.Config
 }
 
-func NewClient(ctx context.Context, cfg util.Config) (*Client, error) {
+func NewClient(ctx context.Context, cfg *util.Config) (*Client, error) {
 	node, err := p2p.NewNode(ctx, cfg)
 	if err != nil {
 		return nil, err
