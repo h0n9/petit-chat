@@ -1,15 +1,12 @@
 package msg
 
 import (
-	"bytes"
 	"context"
 	"time"
 
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/types"
 )
-
-const EOS = "EOS" // End Of Subscription
 
 // Box refers to a chat room
 type Box struct {
@@ -42,12 +39,17 @@ func NewBox(ctx context.Context, topic *types.Topic, myID types.ID) (*Box, error
 	}, nil
 }
 
-func (b *Box) Publish(data []byte) error {
+func (b *Box) Publish(t MsgType, data []byte) error {
 	if len(data) == 0 {
 		// this is not error
 		return nil
 	}
-	err := b.topic.Publish(b.ctx, data)
+	msg := NewMsg(b.myID, t, data)
+	data, err := msg.MarshalJSON()
+	if err != nil {
+		return err
+	}
+	err = b.topic.Publish(b.ctx, data)
 	if err != nil {
 		return err
 	}
@@ -70,8 +72,13 @@ func (b *Box) Subscribe() error {
 		if err != nil {
 			return err
 		}
+		data := received.GetData()
+		msg, err := UnmarshalJSON(data)
+		if err != nil {
+			return err
+		}
 		// TODO: consider if this a right way to handle closing subscription
-		if bytes.Equal(received.GetData(), []byte(EOS)) {
+		if msg.IsEOS() {
 			if received.GetFrom() == b.myID {
 				sub.Cancel()
 				err := b.topic.Close()
@@ -84,7 +91,6 @@ func (b *Box) Subscribe() error {
 				continue
 			}
 		}
-		msg := NewMsg(received.GetFrom(), received.GetData())
 		readUntilIndex, err := b.append(msg)
 		if err != nil {
 			return err
@@ -103,7 +109,7 @@ func (b *Box) Subscribe() error {
 }
 
 func (b *Box) Close() error {
-	return b.Publish([]byte(EOS))
+	return b.Publish(MsgTypeEOS, []byte{})
 }
 
 func (b *Box) Subscribing() bool {
