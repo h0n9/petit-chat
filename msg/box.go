@@ -45,7 +45,7 @@ func (b *Box) Publish(t MsgType, data []byte) error {
 		return nil
 	}
 	msg := NewMsg(b.myID, t, data)
-	data, err := msg.MarshalJSON()
+	data, err := msg.Encapsulate()
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (b *Box) Subscribe() error {
 			return err
 		}
 		data := received.GetData()
-		msg, err := UnmarshalJSON(data)
+		msg, err := Decapsulate(data)
 		if err != nil {
 			return err
 		}

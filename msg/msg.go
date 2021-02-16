@@ -77,6 +77,16 @@ func (msg *Msg) IsEOS() bool {
 	return msg.Type == MsgTypeEOS
 }
 
+func (msg *Msg) Encapsulate() ([]byte, error) {
+	// TODO: change to other format (later)
+	return msg.MarshalJSON()
+}
+
+func Decapsulate(data []byte) (*Msg, error) {
+	// TODO: change to other format (later)
+	return UnmarshalJSON(data)
+}
+
 func (msg *Msg) MarshalJSON() ([]byte, error) {
 	return json.Marshal(*msg)
 }
