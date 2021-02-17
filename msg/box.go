@@ -109,7 +109,13 @@ func (b *Box) Subscribe() error {
 }
 
 func (b *Box) Close() error {
-	return b.Publish(MsgTypeEOS, []byte{})
+	// Announe EOS to others (application layer)
+	err := b.Publish(MsgTypeEOS, []byte{})
+	if err != nil {
+		return err
+	}
+	b.sub.Cancel()
+	return b.topic.Close()
 }
 
 func (b *Box) Subscribing() bool {
