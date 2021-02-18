@@ -21,7 +21,7 @@ type Node struct {
 	pubSub *types.PubSub
 }
 
-func NewNode(ctx context.Context, cfg util.Config) (*Node, error) {
+func NewNode(ctx context.Context, cfg *util.Config) (*Node, error) {
 	privKey, err := crypto.GenPrivKey()
 	if err != nil {
 		return nil, err

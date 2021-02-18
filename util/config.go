@@ -11,6 +11,10 @@ type Config struct {
 	ListenAddrs    crypto.Addrs
 }
 
+func NewConfig() *Config {
+	return &Config{}
+}
+
 func (cfg *Config) ParseFlags() error {
 	flag.Var(&cfg.ListenAddrs, "listen", "addresses to listen from")
 	flag.Var(&cfg.BootstrapNodes, "bootstrap", "bootstrap nodes")
