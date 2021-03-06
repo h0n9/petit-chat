@@ -11,7 +11,8 @@ import (
 type MsgType uint32
 
 const (
-	MsgTypeText MsgType = iota
+	MsgTypeNone MsgType = iota
+	MsgTypeText
 	MsgTypeImage
 	MsgTypeVideo
 	MsgTypeAudio
@@ -20,6 +21,7 @@ const (
 )
 
 var MsgTypeMap = map[MsgType]string{
+	MsgTypeNone:  "MsgTypeNone",
 	MsgTypeText:  "MsgTypeText",
 	MsgTypeVideo: "MsgTypeVideo",
 	MsgTypeAudio: "MsgTypeAudio",

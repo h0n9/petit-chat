@@ -7,10 +7,11 @@ import (
 )
 
 type (
-	ID     = peer.ID
-	Host   = host.Host
-	PubSub = pubsub.PubSub
-	Sub    = pubsub.Subscription
-	Topic  = pubsub.Topic
-	Hash   = [32]byte
+	ID        = peer.ID
+	Host      = host.Host
+	PubSub    = pubsub.PubSub
+	Sub       = pubsub.Subscription
+	Topic     = pubsub.Topic
+	PubSubMsg = pubsub.Message
+	Hash      = [32]byte
 )

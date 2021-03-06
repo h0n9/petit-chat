@@ -42,7 +42,7 @@ func enterFunc(reader *bufio.Reader) error {
 	defer close(errs)
 
 	// open subscription
-	go msgBox.Subscribe()
+	go msgBox.Subscribe(msg.DefaultMsgHandler)
 
 	// get and print out received msgs
 	msgs := msgBox.GetUnreadMsgs()
