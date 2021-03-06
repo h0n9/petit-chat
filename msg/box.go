@@ -23,8 +23,6 @@ type Box struct {
 	msgHashes map[types.Hash]*Msg // TODO: limit the size of msgHashes map
 }
 
-type MsgHandler func(b *Box, psmsg *types.PubSubMsg) error
-
 func NewBox(ctx context.Context, topic *types.Topic, myID types.ID) (*Box, error) {
 	return &Box{
 		ctx:   ctx,
@@ -58,7 +56,7 @@ func (b *Box) Publish(t MsgType, data []byte) error {
 	return nil
 }
 
-func (b *Box) Subscribe(msgHandler MsgHandler) error {
+func (b *Box) Subscribe(handler MsgHandler) error {
 	if b.sub != nil {
 		return code.AlreadySubscribingTopic
 	}
@@ -134,37 +132,4 @@ func (b *Box) append(msg *Msg) (int, error) {
 	b.msgHashes[hash] = msg
 
 	return len(b.msgs) - 1, nil
-}
-
-func DefaultMsgHandler(b *Box, pbmsg *types.PubSubMsg) error {
-	data := pbmsg.GetData()
-	msg, err := Decapsulate(data)
-	if err != nil {
-		return err
-	}
-	// TODO: consider if this a right way to handle closing subscription
-	if msg.IsEOS() {
-		if pbmsg.GetFrom() == b.myID {
-			b.sub.Cancel()
-			err := b.topic.Close()
-			if err != nil {
-				return err
-			}
-			b.sub = nil
-		}
-		return nil
-	}
-	readUntilIndex, err := b.append(msg)
-	if err != nil {
-		return err
-	}
-	if pbmsg.GetFrom() == b.myID {
-		b.readUntilIndex = readUntilIndex
-	} else {
-		if b.msgSubCh != nil {
-			b.msgSubCh <- msg
-			b.readUntilIndex = readUntilIndex
-		}
-	}
-	return nil
 }
