@@ -15,4 +15,6 @@ var (
 	ImproperPubSub = fmt.Errorf("improper pubsub")
 	ImproperSub    = fmt.Errorf("improper sub")
 	ImproperNodeID = fmt.Errorf("improper node id")
+
+	UnknownMsgType = fmt.Errorf("unknown MsgType")
 )

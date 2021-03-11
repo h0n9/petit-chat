@@ -72,9 +72,12 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 		if err != nil {
 			return err
 		}
-		err = msgHandler(b, received)
+		eos, err := handler(b, received)
 		if err != nil {
 			return err
+		}
+		if eos {
+			break
 		}
 	}
 
@@ -83,7 +86,7 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 
 func (b *Box) Close() error {
 	// Announe EOS to others (application layer)
-	err := b.Publish(MsgTypeEOS, []byte{})
+	err := b.Publish(MsgTypeEOS, []byte("bye"))
 	if err != nil {
 		return err
 	}

@@ -8,27 +8,6 @@ import (
 	"github.com/h0n9/petit-chat/util"
 )
 
-type MsgType uint32
-
-const (
-	MsgTypeNone MsgType = iota
-	MsgTypeText
-	MsgTypeImage
-	MsgTypeVideo
-	MsgTypeAudio
-	MsgTypeRaw
-	MsgTypeEOS // End of Subscription
-)
-
-var MsgTypeMap = map[MsgType]string{
-	MsgTypeNone:  "MsgTypeNone",
-	MsgTypeText:  "MsgTypeText",
-	MsgTypeVideo: "MsgTypeVideo",
-	MsgTypeAudio: "MsgTypeAudio",
-	MsgTypeRaw:   "MsgTypeRaw",
-	MsgTypeEOS:   "MsgTypeEOS",
-}
-
 type Msg struct {
 	Timestamp time.Time `json:"timestamp"`
 	From      types.ID  `json:"from"` // always ONE from
@@ -101,4 +80,16 @@ func UnmarshalJSON(data []byte) (*Msg, error) {
 	}
 
 	return &msg, nil
+}
+
+func (msg *Msg) check() error {
+	mt := msg.GetType()
+	err := mt.check()
+	if err != nil {
+		return err
+	}
+
+	// TODO: add more constraints
+
+	return nil
 }

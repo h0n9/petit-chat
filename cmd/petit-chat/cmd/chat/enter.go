@@ -135,7 +135,9 @@ func printMsg(m *msg.Msg) {
 		// TODO: CLI doesn't support this type
 	case msg.MsgTypeRaw:
 		// TODO: CLI doesn't support this type
+	case msg.MsgTypeEOS:
+		// do nothing
 	default:
-		fmt.Println("Unknowm MsgType")
+		fmt.Println("Unknown MsgType")
 	}
 }

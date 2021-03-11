@@ -4,31 +4,37 @@ import (
 	"github.com/h0n9/petit-chat/types"
 )
 
-type MsgHandler func(b *Box, psmsg *types.PubSubMsg) error
+type MsgHandler func(b *Box, psmsg *types.PubSubMsg) (bool, error)
 
-func DefaultMsgHandler(b *Box, pbmsg *types.PubSubMsg) error {
-	data := pbmsg.GetData()
+func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
+	data := psmsg.GetData()
 	msg, err := Decapsulate(data)
 	if err != nil {
-		return err
+		return false, err
 	}
-	// TODO: consider if this a right way to handle closing subscription
-	if msg.IsEOS() {
-		if pbmsg.GetFrom() == b.myID {
-			b.sub.Cancel()
-			err := b.topic.Close()
-			if err != nil {
-				return err
-			}
-			b.sub = nil
-		}
-		return nil
+
+	eos := msg.IsEOS() && (msg.GetFrom() == b.myID)
+
+	// check if msg is proper and can be supported on protocol
+	// improper msgs are dropped here
+	err = msg.check()
+	if err != nil {
+		return eos, err
 	}
+
+	// execute msg with msgFunc
+	msgFunc := msg.getMsgFunc()
+	err = msgFunc(b, msg)
+	if err != nil {
+		return eos, err
+	}
+
+	// append msg
 	readUntilIndex, err := b.append(msg)
 	if err != nil {
-		return err
+		return eos, err
 	}
-	if pbmsg.GetFrom() == b.myID {
+	if psmsg.GetFrom() == b.myID {
 		b.readUntilIndex = readUntilIndex
 	} else {
 		if b.msgSubCh != nil {
@@ -36,5 +42,6 @@ func DefaultMsgHandler(b *Box, pbmsg *types.PubSubMsg) error {
 			b.readUntilIndex = readUntilIndex
 		}
 	}
-	return nil
+
+	return eos, nil
 }
