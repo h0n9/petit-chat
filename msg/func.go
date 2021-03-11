@@ -12,11 +12,11 @@ var msgFuncMap map[MsgType]msgFunc = map[MsgType]msgFunc{
 	},
 }
 
-func (msg *Msg) getMsgFunc() msgFunc {
+func (msg *Msg) execute(b *Box) error {
 	mt := msg.GetType()
 	mf, exist := msgFuncMap[mt]
 	if !exist {
-		return func(b *Box, m *Msg) error { return nil }
+		mf = func(b *Box, m *Msg) error { return nil }
 	}
-	return mf
+	return mf(b, msg)
 }

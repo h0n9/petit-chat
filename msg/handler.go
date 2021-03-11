@@ -23,8 +23,7 @@ func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 	}
 
 	// execute msg with msgFunc
-	msgFunc := msg.getMsgFunc()
-	err = msgFunc(b, msg)
+	err = msg.execute(b)
 	if err != nil {
 		return eos, err
 	}
