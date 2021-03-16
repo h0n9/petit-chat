@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/h0n9/petit-chat/msg"
+	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
 
@@ -109,7 +110,7 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 
 			// CLI supports ONLY MsgTypeText
-			err = msgBox.Publish(msg.MsgTypeText, []byte(data))
+			err = msgBox.Publish(msg.MsgTypeText, types.Hash{}, []byte(data))
 			if err != nil {
 				errs <- err
 				return

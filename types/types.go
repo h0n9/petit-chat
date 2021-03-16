@@ -6,6 +6,10 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 )
 
+const (
+	hashSize = 32
+)
+
 type (
 	ID        = peer.ID
 	Host      = host.Host
@@ -13,5 +17,9 @@ type (
 	Sub       = pubsub.Subscription
 	Topic     = pubsub.Topic
 	PubSubMsg = pubsub.Message
-	Hash      = [32]byte
+	Hash      = [hashSize]byte
 )
+
+func IsHash(h Hash) bool {
+	return len(h) == hashSize
+}

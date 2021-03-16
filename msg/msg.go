@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
 
 type Msg struct {
-	Timestamp time.Time `json:"timestamp"`
-	From      types.ID  `json:"from"` // always ONE from
-	Type      MsgType   `json:"type"`
-	Data      []byte    `json:"data"`
+	Timestamp     time.Time  `json:"timestamp"`
+	From          types.ID   `json:"from"` // always ONE from
+	Type          MsgType    `json:"type"`
+	ParentMsgHash types.Hash `json:"parent_msg_hash"`
+	Data          []byte     `json:"data"`
 }
 
 type MsgEx struct {
@@ -21,12 +23,13 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(from types.ID, msgType MsgType, data []byte) *Msg {
+func NewMsg(from types.ID, msgType MsgType, parentMsgHash types.Hash, data []byte) *Msg {
 	return &Msg{
-		Timestamp: time.Now(),
-		From:      from,
-		Type:      msgType,
-		Data:      data,
+		Timestamp:     time.Now(),
+		From:          from,
+		Type:          msgType,
+		ParentMsgHash: parentMsgHash,
+		Data:          data,
 	}
 }
 
@@ -82,14 +85,19 @@ func UnmarshalJSON(data []byte) (*Msg, error) {
 	return &msg, nil
 }
 
-func (msg *Msg) check() error {
-	mt := msg.GetType()
-	err := mt.check()
-	if err != nil {
-		return err
+func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {
+	pmh := msg.ParentMsgHash
+	if len(pmh) == 0 {
+		return nil, nil
 	}
-
-	// TODO: add more constraints
-
-	return nil
+	// check if hash is available first
+	if !types.IsHash(pmh) {
+		return nil, code.ImproperParentMsgHash
+	}
+	// get msg corresponding to msgHash
+	pm := b.GetMsg(pmh)
+	if pm == nil {
+		return nil, code.NonExistingParentMsg
+	}
+	return pm, nil
 }

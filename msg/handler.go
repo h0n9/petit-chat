@@ -15,9 +15,12 @@ func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 
 	eos := msg.IsEOS() && (msg.GetFrom() == b.myID)
 
+	// msg handling flow:
+	//   check -> execute -> append
+
 	// check if msg is proper and can be supported on protocol
 	// improper msgs are dropped here
-	err = msg.check()
+	err = msg.check(b)
 	if err != nil {
 		return eos, err
 	}

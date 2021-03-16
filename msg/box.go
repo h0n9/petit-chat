@@ -39,17 +39,17 @@ func NewBox(ctx context.Context, topic *types.Topic, myID types.ID) (*Box, error
 	}, nil
 }
 
-func (b *Box) Publish(t MsgType, data []byte) error {
+func (b *Box) Publish(t MsgType, parentMsgHash types.Hash, data []byte) error {
 	if len(data) == 0 {
 		// this is not error
 		return nil
 	}
-	msg := NewMsg(b.myID, t, data)
+	msg := NewMsg(b.myID, t, parentMsgHash, data)
 	data, err := msg.Encapsulate()
 	if err != nil {
 		return err
 	}
-	err = b.topic.Publish(b.ctx, data)
+err = b.topic.Publish(b.ctx, data)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 
 func (b *Box) Close() error {
 	// Announe EOS to others (application layer)
-	err := b.Publish(MsgTypeEOS, []byte("bye"))
+	err := b.Publish(MsgTypeEOS, types.Hash{}, []byte("bye"))
 	if err != nil {
 		return err
 	}
@@ -104,6 +104,10 @@ func (b *Box) SetMsgSubCh(msgSubCh chan *Msg) {
 
 func (b *Box) GetMsgs() []*Msg {
 	return b.msgs
+}
+
+func (b *Box) GetMsg(mh types.Hash) *Msg {
+	return b.msgHashes[mh]
 }
 
 func (b *Box) GetUnreadMsgs() []*Msg {

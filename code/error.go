@@ -16,5 +16,8 @@ var (
 	ImproperSub    = fmt.Errorf("improper sub")
 	ImproperNodeID = fmt.Errorf("improper node id")
 
-	UnknownMsgType = fmt.Errorf("unknown MsgType")
+	UnknownMsgType        = fmt.Errorf("unknown MsgType")
+	ImproperParentMsgHash = fmt.Errorf("improper ParentMsgHash")
+	NonExistingParentMsg  = fmt.Errorf("non existing ParentMsg")
+	AlreadyHavingParentMsg = fmt.Errorf("already having ParentMsg")
 )
