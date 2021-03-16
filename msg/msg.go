@@ -86,13 +86,10 @@ func UnmarshalJSON(data []byte) (*Msg, error) {
 }
 
 func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {
+	// check if parentMsgHash is empty
 	pmh := msg.ParentMsgHash
-	if len(pmh) == 0 {
+	if types.IsEmpty(pmh) {
 		return nil, nil
-	}
-	// check if hash is available first
-	if !types.IsHash(pmh) {
-		return nil, code.ImproperParentMsgHash
 	}
 	// get msg corresponding to msgHash
 	pm := b.GetMsg(pmh)

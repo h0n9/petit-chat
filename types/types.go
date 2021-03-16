@@ -1,6 +1,8 @@
 package types
 
 import (
+	"bytes"
+
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -8,6 +10,10 @@ import (
 
 const (
 	hashSize = 32
+)
+
+var (
+	emptyHash = Hash{}
 )
 
 type (
@@ -20,6 +26,6 @@ type (
 	Hash      = [hashSize]byte
 )
 
-func IsHash(h Hash) bool {
-	return len(h) == hashSize
+func IsEmpty(h Hash) bool {
+	return bytes.Equal(h[:], emptyHash[:])
 }

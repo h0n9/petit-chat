@@ -30,7 +30,7 @@ func (msg *Msg) check(b *Box) error {
 	if err != nil {
 		return err
 	}
-	if pm != nil && types.IsHash(pm.ParentMsgHash) {
+	if pm != nil && !types.IsEmpty(pm.ParentMsgHash) {
 		return code.AlreadyHavingParentMsg
 	}
 
