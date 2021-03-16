@@ -1,8 +1,6 @@
 package msg
 
 import (
-	"fmt"
-
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -24,7 +22,6 @@ func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 	// improper msgs are dropped here
 	err = msg.check(b)
 	if err != nil {
-		fmt.Println(err)
 		return eos, err
 	}
 

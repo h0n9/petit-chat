@@ -2,6 +2,7 @@ package msg
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/h0n9/petit-chat/code"
@@ -49,7 +50,7 @@ func (b *Box) Publish(t MsgType, parentMsgHash types.Hash, data []byte) error {
 	if err != nil {
 		return err
 	}
-err = b.topic.Publish(b.ctx, data)
+	err = b.topic.Publish(b.ctx, data)
 	if err != nil {
 		return err
 	}
@@ -70,12 +71,18 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 	for {
 		received, err := sub.Next(b.ctx)
 		if err != nil {
-			return err
+			// TODO: replace fmt.Println() to logger.Println()
+			fmt.Println(err)
+			continue
 		}
 		eos, err := handler(b, received)
 		if err != nil {
-			return err
+			// TODO: replace fmt.Println() to logger.Println()
+			fmt.Println(err)
+			continue
 		}
+
+		// eos shoud be the only way to break for loop
 		if eos {
 			break
 		}
