@@ -110,7 +110,7 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 
 			// CLI supports ONLY MsgTypeText
-			err = msgBox.Publish(msg.MsgTypeText, types.Hash{}, []byte(data))
+			err = msgBox.Publish(types.MsgText, types.Hash{}, []byte(data))
 			if err != nil {
 				errs <- err
 				return
@@ -126,18 +126,20 @@ func enterFunc(reader *bufio.Reader) error {
 
 func printMsg(m *msg.Msg) {
 	switch m.GetType() {
-	case msg.MsgTypeText:
+	case types.MsgText:
 		fmt.Printf("[%s, %s] %s\n", m.GetTime(), m.GetFrom(), string(m.GetData()))
-	case msg.MsgTypeImage:
+	case types.MsgImage:
 		// TODO: CLI doesn't support this type
-	case msg.MsgTypeVideo:
+	case types.MsgVideo:
 		// TODO: CLI doesn't support this type
-	case msg.MsgTypeAudio:
+	case types.MsgAudio:
 		// TODO: CLI doesn't support this type
-	case msg.MsgTypeRaw:
+	case types.MsgRaw:
 		// TODO: CLI doesn't support this type
-	case msg.MsgTypeEOS:
+	case types.MsgEOS:
 		// do nothing
+	case types.MsgNewbie:
+		fmt.Printf("somebody entered\n")
 	default:
 		fmt.Println("Unknown MsgType")
 	}

@@ -40,7 +40,7 @@ func NewBox(ctx context.Context, topic *types.Topic, myID types.ID) (*Box, error
 	}, nil
 }
 
-func (b *Box) Publish(t MsgType, parentMsgHash types.Hash, data []byte) error {
+func (b *Box) Publish(t types.Msg, parentMsgHash types.Hash, data []byte) error {
 	if len(data) == 0 {
 		// this is not error
 		return nil
@@ -93,7 +93,7 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 
 func (b *Box) Close() error {
 	// Announe EOS to others (application layer)
-	err := b.Publish(MsgTypeEOS, types.Hash{}, []byte("bye"))
+	err := b.Publish(types.MsgEOS, types.Hash{}, []byte("bye"))
 	if err != nil {
 		return err
 	}

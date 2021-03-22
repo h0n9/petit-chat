@@ -12,7 +12,7 @@ import (
 type Msg struct {
 	Timestamp     time.Time  `json:"timestamp"`
 	From          types.ID   `json:"from"` // always ONE from
-	Type          MsgType    `json:"type"`
+	Type          types.Msg  `json:"type"`
 	ParentMsgHash types.Hash `json:"parent_msg_hash"`
 	Data          []byte     `json:"data"`
 }
@@ -23,7 +23,7 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(from types.ID, msgType MsgType, parentMsgHash types.Hash, data []byte) *Msg {
+func NewMsg(from types.ID, msgType types.Msg, parentMsgHash types.Hash, data []byte) *Msg {
 	return &Msg{
 		Timestamp:     time.Now(),
 		From:          from,
@@ -37,7 +37,7 @@ func (msg *Msg) GetFrom() types.ID {
 	return msg.From
 }
 
-func (msg *Msg) GetType() MsgType {
+func (msg *Msg) GetType() types.Msg {
 	return msg.Type
 }
 
@@ -58,7 +58,7 @@ func (msg *Msg) Hash() (types.Hash, error) {
 }
 
 func (msg *Msg) IsEOS() bool {
-	return msg.Type == MsgTypeEOS
+	return msg.Type == types.MsgEOS
 }
 
 func (msg *Msg) Encapsulate() ([]byte, error) {

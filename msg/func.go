@@ -7,12 +7,15 @@ import (
 
 type msgFunc func(b *Box, m *Msg) error
 
-var msgFuncMap map[MsgType]msgFunc = map[MsgType]msgFunc{
-	MsgTypeEOS: func(b *Box, m *Msg) error {
+var msgFuncMap map[types.Msg]msgFunc = map[types.Msg]msgFunc{
+	types.MsgEOS: func(b *Box, m *Msg) error {
 		if m.GetFrom() == b.myID {
 			return nil
 		}
 		// TODO: remove msg.GetFrom() from b.Members
+		return nil
+	},
+	types.MsgNewbie: func(b *Box, m *Msg) error {
 		return nil
 	},
 }
@@ -20,7 +23,7 @@ var msgFuncMap map[MsgType]msgFunc = map[MsgType]msgFunc{
 func (msg *Msg) check(b *Box) error {
 	// check msgType
 	mt := msg.GetType()
-	err := mt.check()
+	err := mt.Check()
 	if err != nil {
 		return err
 	}
