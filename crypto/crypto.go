@@ -19,10 +19,11 @@ var (
 )
 
 const (
-	PrivKeySize = 32
-	PubKeySize  = 65
-	AddrSize    = 47
-	SigSize     = 64
+	PrivKeySize  = 32
+	PubKeySize   = 65
+	PubKeyPrefix = 0x06
+	AddrSize     = 47
+	SigSize      = 64
 )
 
 type (

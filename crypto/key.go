@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/h0n9/petit-chat/code"
 	lc "github.com/libp2p/go-libp2p-core/crypto"
 )
 
@@ -88,7 +89,7 @@ func (privKey PrivKey) FromECDSA(*ecdsa.PrivateKey) {
 // PubKey related functions
 
 func (privKey PrivKey) PubKey() PubKey {
-	pubKey := PubKey{0x06}
+	pubKey := PubKey{PubKeyPrefix}
 
 	priv := privKey.ToECDSA()
 	X := priv.X.Bytes()
@@ -98,6 +99,16 @@ func (privKey PrivKey) PubKey() PubKey {
 	copy(pubKey[65-len(Y):], Y)
 
 	return pubKey
+}
+
+func (pubKey PubKey) Check() error {
+	if len(pubKey) != PubKeySize {
+		return code.ImproperPubKey
+	}
+	if pubKey[0] != PubKeyPrefix {
+		return code.ImproperPubKey
+	}
+	return nil
 }
 
 func (pubKey PubKey) Bytes() []byte {

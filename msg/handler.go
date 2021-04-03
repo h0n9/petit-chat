@@ -8,7 +8,8 @@ type MsgHandler func(b *Box, psmsg *types.PubSubMsg) (bool, error)
 
 func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 	data := psmsg.GetData()
-	msg, err := Decapsulate(data)
+	msg := new(Msg)
+	err := msg.Decapsulate(data)
 	if err != nil {
 		return false, err
 	}

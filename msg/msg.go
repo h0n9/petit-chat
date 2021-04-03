@@ -66,23 +66,17 @@ func (msg *Msg) Encapsulate() ([]byte, error) {
 	return msg.MarshalJSON()
 }
 
-func Decapsulate(data []byte) (*Msg, error) {
+func (msg *Msg) Decapsulate(data []byte) error {
 	// TODO: change to other format (later)
-	return UnmarshalJSON(data)
+	return msg.UnmarshalJSON(data)
 }
 
 func (msg *Msg) MarshalJSON() ([]byte, error) {
 	return json.Marshal(*msg)
 }
 
-func UnmarshalJSON(data []byte) (*Msg, error) {
-	msg := Msg{}
-	err := json.Unmarshal(data, &msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+func (msg *Msg) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, msg)
 }
 
 func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {
