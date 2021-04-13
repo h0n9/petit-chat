@@ -50,7 +50,7 @@ func (msg *Msg) GetTime() time.Time {
 }
 
 func (msg *Msg) Hash() (types.Hash, error) {
-	b, err := msg.MarshalJSON()
+	b, err := MarshalJSON(msg)
 	if err != nil {
 		return types.Hash{}, err
 	}
@@ -63,19 +63,19 @@ func (msg *Msg) IsEOS() bool {
 
 func (msg *Msg) Encapsulate() ([]byte, error) {
 	// TODO: change to other format (later)
-	return msg.MarshalJSON()
+	return MarshalJSON(msg)
 }
 
 func (msg *Msg) Decapsulate(data []byte) error {
 	// TODO: change to other format (later)
-	return msg.UnmarshalJSON(data)
+	return UnmarshalJSON(data, msg)
 }
 
-func (msg *Msg) MarshalJSON() ([]byte, error) {
+func MarshalJSON(msg *Msg) ([]byte, error) {
 	return json.Marshal(*msg)
 }
 
-func (msg *Msg) UnmarshalJSON(data []byte) error {
+func UnmarshalJSON(data []byte, msg *Msg) error {
 	return json.Unmarshal(data, msg)
 }
 
