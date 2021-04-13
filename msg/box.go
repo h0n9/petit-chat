@@ -84,6 +84,11 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 
 		// eos shoud be the only way to break for loop
 		if eos {
+			b.sub.Cancel()
+			err = b.topic.Close()
+			if err != nil {
+				fmt.Println(err)
+			}
 			break
 		}
 	}
@@ -93,12 +98,7 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 
 func (b *Box) Close() error {
 	// Announe EOS to others (application layer)
-	err := b.Publish(types.MsgEOS, types.Hash{}, []byte("bye"))
-	if err != nil {
-		return err
-	}
-	b.sub.Cancel()
-	return b.topic.Close()
+	return b.Publish(types.MsgEOS, types.Hash{}, []byte("bye"))
 }
 
 func (b *Box) Subscribing() bool {
