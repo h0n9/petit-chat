@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/h0n9/petit-chat/msg"
+	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
 
@@ -18,14 +19,19 @@ var enterCmd = util.NewCmd(
 func enterFunc(reader *bufio.Reader) error {
 	// get user input
 	fmt.Printf("Type chat room name: ")
-	data, err := util.GetInput(reader, false)
+	topic, err := util.GetInput(reader, false)
 	if err != nil {
 		return err
 	}
 
-	msgBox, exist := cli.GetMsgBox(data)
+	msgBox, exist := cli.GetMsgBox(topic)
 	if !exist {
-		mb, err := cli.CreateMsgBox(data)
+		fmt.Printf("Type nickname: ")
+		nickname, err := util.GetInput(reader, false)
+		if err != nil {
+			return err
+		}
+		mb, err := cli.CreateMsgBox(topic, nickname)
 		if err != nil {
 			return err
 		}
@@ -42,12 +48,12 @@ func enterFunc(reader *bufio.Reader) error {
 	defer close(errs)
 
 	// open subscription
-	go msgBox.Subscribe()
+	go msgBox.Subscribe(msg.DefaultMsgHandler)
 
 	// get and print out received msgs
 	msgs := msgBox.GetUnreadMsgs()
 	for _, msg := range msgs {
-		printMsg(msg)
+		printMsg(msgBox, msg)
 	}
 
 	// get and print out new msgs
@@ -70,7 +76,7 @@ func enterFunc(reader *bufio.Reader) error {
 		for {
 			select {
 			case msg = <-msgSubCh:
-				printMsg(msg)
+				printMsg(msgBox, msg)
 			case <-msgStopSubCh:
 				stop = true
 			}
@@ -86,7 +92,7 @@ func enterFunc(reader *bufio.Reader) error {
 	go func() {
 		for {
 			fmt.Printf("> ")
-			data, err = util.GetInput(reader, false)
+			data, err := util.GetInput(reader, false)
 			if err != nil {
 				errs <- err
 				return
@@ -98,7 +104,13 @@ func enterFunc(reader *bufio.Reader) error {
 			case "/msgs":
 				msgs := msgBox.GetMsgs()
 				for _, msg := range msgs {
-					printMsg(msg)
+					printMsg(msgBox, msg)
+				}
+				continue
+			case "/peers":
+				peers := msgBox.GetPersonae()
+				for _, peer := range peers {
+					printPeer(peer)
 				}
 				continue
 			case "":
@@ -109,7 +121,7 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 
 			// CLI supports ONLY MsgTypeText
-			err = msgBox.Publish(msg.MsgTypeText, []byte(data))
+			err = msgBox.Publish(types.MsgText, types.Hash{}, []byte(data))
 			if err != nil {
 				errs <- err
 				return
@@ -123,19 +135,36 @@ func enterFunc(reader *bufio.Reader) error {
 	return nil
 }
 
-func printMsg(m *msg.Msg) {
+func printPeer(p *types.Persona) {
+	fmt.Printf("[%s] %s\n", p.Address, p.Nickname)
+}
+
+func printMsg(b *msg.Box, m *msg.Msg) {
+	timestamp := m.GetTime()
+	from := m.GetFrom()
+	persona := b.GetPersona(from.ClientAddr)
+	nickname := "somebody"
+	if persona != nil {
+		nickname = persona.GetNickname()
+	}
 	switch m.GetType() {
-	case msg.MsgTypeText:
-		fmt.Printf("[%s, %s] %s\n", m.GetTime(), m.GetFrom(), string(m.GetData()))
-	case msg.MsgTypeImage:
+	case types.MsgText:
+		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, string(m.GetData()))
+	case types.MsgImage:
 		// TODO: CLI doesn't support this type
-	case msg.MsgTypeVideo:
+	case types.MsgVideo:
 		// TODO: CLI doesn't support this type
-	case msg.MsgTypeAudio:
+	case types.MsgAudio:
 		// TODO: CLI doesn't support this type
-	case msg.MsgTypeRaw:
+	case types.MsgRaw:
 		// TODO: CLI doesn't support this type
+	case types.MsgHello:
+		if types.IsEmpty(m.ParentMsgHash) {
+			fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
+		}
+	case types.MsgBye:
+		// do nothing
 	default:
-		fmt.Println("Unknowm MsgType")
+		fmt.Println("Unknown MsgType")
 	}
 }

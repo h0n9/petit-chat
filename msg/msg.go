@@ -4,34 +4,23 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
 
-type MsgType uint32
-
-const (
-	MsgTypeText MsgType = iota
-	MsgTypeImage
-	MsgTypeVideo
-	MsgTypeAudio
-	MsgTypeRaw
-	MsgTypeEOS // End of Subscription
-)
-
-var MsgTypeMap = map[MsgType]string{
-	MsgTypeText:  "MsgTypeText",
-	MsgTypeVideo: "MsgTypeVideo",
-	MsgTypeAudio: "MsgTypeAudio",
-	MsgTypeRaw:   "MsgTypeRaw",
-	MsgTypeEOS:   "MsgTypeEOS",
+type MsgFrom struct {
+	PeerID     types.ID    `json:"peer_id"`
+	ClientAddr crypto.Addr `json:"client_addr"`
 }
 
 type Msg struct {
-	Timestamp time.Time `json:"timestamp"`
-	From      types.ID  `json:"from"` // always ONE from
-	Type      MsgType   `json:"type"`
-	Data      []byte    `json:"data"`
+	Timestamp     time.Time  `json:"timestamp"`
+	From          MsgFrom    `json:"from"`
+	Type          types.Msg  `json:"type"`
+	ParentMsgHash types.Hash `json:"parent_msg_hash"`
+	Data          []byte     `json:"data"`
 }
 
 type MsgEx struct {
@@ -40,20 +29,24 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(from types.ID, msgType MsgType, data []byte) *Msg {
+func NewMsg(pID types.ID, cAddr crypto.Addr, msgType types.Msg, parentMsgHash types.Hash, data []byte) *Msg {
 	return &Msg{
 		Timestamp: time.Now(),
-		From:      from,
-		Type:      msgType,
-		Data:      data,
+		From: MsgFrom{
+			PeerID:     pID,
+			ClientAddr: cAddr,
+		},
+		Type:          msgType,
+		ParentMsgHash: parentMsgHash,
+		Data:          data,
 	}
 }
 
-func (msg *Msg) GetFrom() types.ID {
+func (msg *Msg) GetFrom() MsgFrom {
 	return msg.From
 }
 
-func (msg *Msg) GetType() MsgType {
+func (msg *Msg) GetType() types.Msg {
 	return msg.Type
 }
 
@@ -66,7 +59,7 @@ func (msg *Msg) GetTime() time.Time {
 }
 
 func (msg *Msg) Hash() (types.Hash, error) {
-	b, err := msg.MarshalJSON()
+	b, err := MarshalJSON(msg)
 	if err != nil {
 		return types.Hash{}, err
 	}
@@ -74,29 +67,37 @@ func (msg *Msg) Hash() (types.Hash, error) {
 }
 
 func (msg *Msg) IsEOS() bool {
-	return msg.Type == MsgTypeEOS
+	return msg.Type == types.MsgBye
 }
 
 func (msg *Msg) Encapsulate() ([]byte, error) {
 	// TODO: change to other format (later)
-	return msg.MarshalJSON()
+	return MarshalJSON(msg)
 }
 
-func Decapsulate(data []byte) (*Msg, error) {
+func (msg *Msg) Decapsulate(data []byte) error {
 	// TODO: change to other format (later)
-	return UnmarshalJSON(data)
+	return UnmarshalJSON(data, msg)
 }
 
-func (msg *Msg) MarshalJSON() ([]byte, error) {
+func MarshalJSON(msg *Msg) ([]byte, error) {
 	return json.Marshal(*msg)
 }
 
-func UnmarshalJSON(data []byte) (*Msg, error) {
-	msg := Msg{}
-	err := json.Unmarshal(data, &msg)
-	if err != nil {
-		return nil, err
-	}
+func UnmarshalJSON(data []byte, msg *Msg) error {
+	return json.Unmarshal(data, msg)
+}
 
-	return &msg, nil
+func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {
+	// check if parentMsgHash is empty
+	pmh := msg.ParentMsgHash
+	if types.IsEmpty(pmh) {
+		return nil, nil
+	}
+	// get msg corresponding to msgHash
+	pm := b.GetMsg(pmh)
+	if pm == nil {
+		return nil, code.NonExistingParentMsg
+	}
+	return pm, nil
 }

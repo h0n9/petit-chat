@@ -2,9 +2,11 @@ package msg
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -15,36 +17,53 @@ type Box struct {
 	sub   *types.Sub
 
 	myID            types.ID
+	myPersona       *types.Persona
 	msgSubCh        chan *Msg
 	latestTimestamp time.Time
 	readUntilIndex  int
 
+	personae  map[crypto.Addr]*types.Persona
 	msgs      []*Msg              // TODO: limit the size of msgs slice
 	msgHashes map[types.Hash]*Msg // TODO: limit the size of msgHashes map
 }
 
-func NewBox(ctx context.Context, topic *types.Topic, myID types.ID) (*Box, error) {
-	return &Box{
+func NewBox(ctx context.Context, tp *types.Topic, mi types.ID, mp *types.Persona) (*Box, error) {
+	err := mp.Check()
+	if err != nil {
+		return nil, err
+	}
+	b := Box{
 		ctx:   ctx,
-		topic: topic,
+		topic: tp,
 		sub:   nil,
 
-		myID:            myID,
+		myID:            mi,
+		myPersona:       mp,
 		msgSubCh:        nil,
 		latestTimestamp: time.Now(),
 		readUntilIndex:  0,
 
+		personae:  make(map[crypto.Addr]*types.Persona),
 		msgs:      make([]*Msg, 0),
 		msgHashes: make(map[types.Hash]*Msg),
-	}, nil
+	}
+	mpd, err := b.myPersona.Encapsulate()
+	if err != nil {
+		return nil, err
+	}
+	err = b.Publish(types.MsgHello, types.Hash{}, mpd)
+	if err != nil {
+		return nil, err
+	}
+	return &b, nil
 }
 
-func (b *Box) Publish(t MsgType, data []byte) error {
+func (b *Box) Publish(t types.Msg, parentMsgHash types.Hash, data []byte) error {
 	if len(data) == 0 {
 		// this is not error
 		return nil
 	}
-	msg := NewMsg(b.myID, t, data)
+	msg := NewMsg(b.myID, b.myPersona.Address, t, parentMsgHash, data)
 	data, err := msg.Encapsulate()
 	if err != nil {
 		return err
@@ -56,7 +75,7 @@ func (b *Box) Publish(t MsgType, data []byte) error {
 	return nil
 }
 
-func (b *Box) Subscribe() error {
+func (b *Box) Subscribe(handler MsgHandler) error {
 	if b.sub != nil {
 		return code.AlreadySubscribingTopic
 	}
@@ -70,52 +89,50 @@ func (b *Box) Subscribe() error {
 	for {
 		received, err := sub.Next(b.ctx)
 		if err != nil {
-			return err
+			// TODO: replace fmt.Println() to logger.Println()
+			fmt.Println(err)
+			continue
 		}
-		data := received.GetData()
-		msg, err := Decapsulate(data)
+		eos, err := handler(b, received)
 		if err != nil {
-			return err
+			// TODO: replace fmt.Println() to logger.Println()
+			fmt.Println(err)
+			continue
 		}
-		// TODO: consider if this a right way to handle closing subscription
-		if msg.IsEOS() {
-			if received.GetFrom() == b.myID {
-				sub.Cancel()
-				err := b.topic.Close()
-				if err != nil {
-					return err
-				}
-				b.sub = nil
-				break
-			} else {
-				continue
+
+		// eos shoud be the only way to break for loop
+		if eos {
+			b.sub.Cancel()
+			err = b.topic.Close()
+			if err != nil {
+				fmt.Println(err)
 			}
-		}
-		readUntilIndex, err := b.append(msg)
-		if err != nil {
-			return err
-		}
-		if received.GetFrom() == b.myID {
-			b.readUntilIndex = readUntilIndex
-		} else {
-			if b.msgSubCh != nil {
-				b.msgSubCh <- msg
-				b.readUntilIndex = readUntilIndex
-			}
+			break
 		}
 	}
 
 	return nil
 }
 
+func (b *Box) GetPersonae() map[crypto.Addr]*types.Persona {
+	return b.personae
+}
+
+func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
+	personae, exist := b.personae[cAddr]
+	if !exist {
+		return nil
+	}
+	return personae
+}
+
 func (b *Box) Close() error {
 	// Announe EOS to others (application layer)
-	err := b.Publish(MsgTypeEOS, []byte{})
+	mpd, err := b.myPersona.Encapsulate()
 	if err != nil {
 		return err
 	}
-	b.sub.Cancel()
-	return b.topic.Close()
+	return b.Publish(types.MsgBye, types.Hash{}, mpd)
 }
 
 func (b *Box) Subscribing() bool {
@@ -128,6 +145,10 @@ func (b *Box) SetMsgSubCh(msgSubCh chan *Msg) {
 
 func (b *Box) GetMsgs() []*Msg {
 	return b.msgs
+}
+
+func (b *Box) GetMsg(mh types.Hash) *Msg {
+	return b.msgHashes[mh]
 }
 
 func (b *Box) GetUnreadMsgs() []*Msg {
@@ -159,4 +180,27 @@ func (b *Box) append(msg *Msg) (int, error) {
 	b.msgHashes[hash] = msg
 
 	return len(b.msgs) - 1, nil
+}
+
+func (b *Box) join(p *types.Persona) error {
+	_, exist := b.personae[p.Address]
+	if exist {
+		return nil // ignore even if existing
+		// return code.ExistingPersonaInBox
+	}
+	err := p.Check()
+	if err != nil {
+		return err
+	}
+	b.personae[p.Address] = p
+	return nil
+}
+
+func (b *Box) leave(p *types.Persona) error {
+	_, exist := b.personae[p.Address]
+	if !exist {
+		return code.NonExistingPersonaInBox
+	}
+	delete(b.personae, p.Address)
+	return nil
 }

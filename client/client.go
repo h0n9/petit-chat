@@ -65,12 +65,17 @@ func (c *Client) GetMsgCenter() *msg.Center {
 	return c.msgCenter
 }
 
-func (c *Client) CreateMsgBox(topicStr string) (*msg.Box, error) {
-	topic, err := c.node.Join(topicStr)
+func (c *Client) CreateMsgBox(tStr, nickname string) (*msg.Box, error) {
+	topic, err := c.node.Join(tStr)
 	if err != nil {
 		return nil, err
 	}
-	return c.msgCenter.CreateBox(topicStr, topic)
+	// TODO: get metdata from parameters
+	persona, err := types.NewPersona(nickname, []byte{}, c.node.PubKey)
+	if err != nil {
+		return nil, err
+	}
+	return c.msgCenter.CreateBox(topic, &persona)
 }
 
 func (c *Client) LeaveMsgBox(topicStr string) error {

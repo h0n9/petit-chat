@@ -19,15 +19,16 @@ var (
 )
 
 const (
-	PrivKeySize = 32
-	PubKeySize  = 65
-	AddrSize    = 47
-	SigSize     = 64
+	PrivKeySize  = 32
+	PubKeySize   = 65
+	PubKeyPrefix = 0x06
+	AddrSize     = 47
+	SigSize      = 64
 )
 
 type (
 	PrivKey [PrivKeySize]byte
 	PubKey  [PubKeySize]byte
-	Addr    [AddrSize]byte
+	Addr    string
 	Hash    [32]byte
 )

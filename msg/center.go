@@ -22,18 +22,19 @@ func NewCenter(ctx context.Context, myID types.ID) (*Center, error) {
 	}, nil
 }
 
-func (mc *Center) CreateBox(topicStr string, topic *types.Topic) (*Box, error) {
-	_, exist := mc.getBox(topicStr)
+func (mc *Center) CreateBox(topic *types.Topic, p *types.Persona) (*Box, error) {
+	tStr := topic.String()
+	_, exist := mc.getBox(tStr)
 	if exist {
 		return nil, code.AlreadyExistingTopic
 	}
 
-	msgBox, err := NewBox(mc.ctx, topic, mc.myID)
+	msgBox, err := NewBox(mc.ctx, topic, mc.myID, p)
 	if err != nil {
 		return nil, err
 	}
 
-	err = mc.add(topicStr, msgBox)
+	err = mc.add(tStr, msgBox)
 	if err != nil {
 		return nil, err
 	}
