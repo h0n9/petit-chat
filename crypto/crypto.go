@@ -29,6 +29,6 @@ const (
 type (
 	PrivKey [PrivKeySize]byte
 	PubKey  [PubKeySize]byte
-	Addr    [AddrSize]byte
+	Addr    string
 	Hash    [32]byte
 )
