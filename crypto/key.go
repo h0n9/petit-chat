@@ -135,23 +135,20 @@ func (pubKey PubKey) MarshalJSON() ([]byte, error) {
 	data := make([]byte, PubKeySize*2+2)
 	data[0] = '"'
 	data[len(data)-1] = '"'
-
 	copy(data[1:], pubKey.String())
 	return data, nil
 }
 
-func (pubKey PubKey) UnmarshalJSON(data []byte) error {
+func (pubKey *PubKey) UnmarshalJSON(data []byte) error {
 	if len(data) != PubKeySize*2+2 {
 		return fmt.Errorf("pubKeyJSON size %d != expected %d",
 			len(data), PubKeySize*2+2,
 		)
 	}
-
 	_, err := hex.Decode(pubKey[:], data[1:len(data)-1])
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

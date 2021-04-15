@@ -5,13 +5,19 @@ import (
 	"time"
 
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
 
+type MsgFrom struct {
+	PeerID     types.ID    `json:"peer_id"`
+	ClientAddr crypto.Addr `json:"client_addr"`
+}
+
 type Msg struct {
 	Timestamp     time.Time  `json:"timestamp"`
-	From          types.ID   `json:"from"` // always ONE from
+	From          MsgFrom    `json:"from"`
 	Type          types.Msg  `json:"type"`
 	ParentMsgHash types.Hash `json:"parent_msg_hash"`
 	Data          []byte     `json:"data"`
@@ -23,17 +29,20 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(from types.ID, msgType types.Msg, parentMsgHash types.Hash, data []byte) *Msg {
+func NewMsg(pID types.ID, cAddr crypto.Addr, msgType types.Msg, parentMsgHash types.Hash, data []byte) *Msg {
 	return &Msg{
-		Timestamp:     time.Now(),
-		From:          from,
+		Timestamp: time.Now(),
+		From: MsgFrom{
+			PeerID:     pID,
+			ClientAddr: cAddr,
+		},
 		Type:          msgType,
 		ParentMsgHash: parentMsgHash,
 		Data:          data,
 	}
 }
 
-func (msg *Msg) GetFrom() types.ID {
+func (msg *Msg) GetFrom() MsgFrom {
 	return msg.From
 }
 
@@ -58,7 +67,7 @@ func (msg *Msg) Hash() (types.Hash, error) {
 }
 
 func (msg *Msg) IsEOS() bool {
-	return msg.Type == types.MsgEOS
+	return msg.Type == types.MsgBye
 }
 
 func (msg *Msg) Encapsulate() ([]byte, error) {

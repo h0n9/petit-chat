@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -16,28 +17,45 @@ type Box struct {
 	sub   *types.Sub
 
 	myID            types.ID
+	myPersona       *types.Persona
 	msgSubCh        chan *Msg
 	latestTimestamp time.Time
 	readUntilIndex  int
 
+	personae  map[crypto.Addr]*types.Persona
 	msgs      []*Msg              // TODO: limit the size of msgs slice
 	msgHashes map[types.Hash]*Msg // TODO: limit the size of msgHashes map
 }
 
-func NewBox(ctx context.Context, topic *types.Topic, myID types.ID) (*Box, error) {
-	return &Box{
+func NewBox(ctx context.Context, tp *types.Topic, mi types.ID, mp *types.Persona) (*Box, error) {
+	err := mp.Check()
+	if err != nil {
+		return nil, err
+	}
+	b := Box{
 		ctx:   ctx,
-		topic: topic,
+		topic: tp,
 		sub:   nil,
 
-		myID:            myID,
+		myID:            mi,
+		myPersona:       mp,
 		msgSubCh:        nil,
 		latestTimestamp: time.Now(),
 		readUntilIndex:  0,
 
+		personae:  make(map[crypto.Addr]*types.Persona),
 		msgs:      make([]*Msg, 0),
 		msgHashes: make(map[types.Hash]*Msg),
-	}, nil
+	}
+	mpd, err := b.myPersona.Encapsulate()
+	if err != nil {
+		return nil, err
+	}
+	err = b.Publish(types.MsgHello, types.Hash{}, mpd)
+	if err != nil {
+		return nil, err
+	}
+	return &b, nil
 }
 
 func (b *Box) Publish(t types.Msg, parentMsgHash types.Hash, data []byte) error {
@@ -45,7 +63,7 @@ func (b *Box) Publish(t types.Msg, parentMsgHash types.Hash, data []byte) error 
 		// this is not error
 		return nil
 	}
-	msg := NewMsg(b.myID, t, parentMsgHash, data)
+	msg := NewMsg(b.myID, b.myPersona.Address, t, parentMsgHash, data)
 	data, err := msg.Encapsulate()
 	if err != nil {
 		return err
@@ -96,9 +114,25 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 	return nil
 }
 
+func (b *Box) GetPersonae() map[crypto.Addr]*types.Persona {
+	return b.personae
+}
+
+func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
+	personae, exist := b.personae[cAddr]
+	if !exist {
+		return nil
+	}
+	return personae
+}
+
 func (b *Box) Close() error {
 	// Announe EOS to others (application layer)
-	return b.Publish(types.MsgEOS, types.Hash{}, []byte("bye"))
+	mpd, err := b.myPersona.Encapsulate()
+	if err != nil {
+		return err
+	}
+	return b.Publish(types.MsgBye, types.Hash{}, mpd)
 }
 
 func (b *Box) Subscribing() bool {
@@ -146,4 +180,27 @@ func (b *Box) append(msg *Msg) (int, error) {
 	b.msgHashes[hash] = msg
 
 	return len(b.msgs) - 1, nil
+}
+
+func (b *Box) join(p *types.Persona) error {
+	_, exist := b.personae[p.Address]
+	if exist {
+		return nil // ignore even if existing
+		// return code.ExistingPersonaInBox
+	}
+	err := p.Check()
+	if err != nil {
+		return err
+	}
+	b.personae[p.Address] = p
+	return nil
+}
+
+func (b *Box) leave(p *types.Persona) error {
+	_, exist := b.personae[p.Address]
+	if !exist {
+		return code.NonExistingPersonaInBox
+	}
+	delete(b.personae, p.Address)
+	return nil
 }

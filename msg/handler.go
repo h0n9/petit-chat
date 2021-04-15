@@ -14,7 +14,7 @@ func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 		return false, err
 	}
 
-	eos := msg.IsEOS() && (msg.GetFrom() == b.myID)
+	eos := msg.IsEOS() && (msg.GetFrom().PeerID == b.myID)
 
 	// msg handling flow:
 	//   check -> execute -> append

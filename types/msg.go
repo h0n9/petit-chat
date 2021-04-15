@@ -13,8 +13,8 @@ const (
 	MsgVideo
 	MsgAudio
 	MsgRaw
-	MsgEOS // End of Subscription
-	MsgNewbie
+	MsgHello
+	MsgBye // End of Subscription
 )
 
 var msgMap = map[Msg]string{
@@ -24,8 +24,8 @@ var msgMap = map[Msg]string{
 	MsgVideo: "MsgVideo",
 	MsgAudio: "MsgAudio",
 	MsgRaw:   "MsgRaw",
-	MsgEOS:   "MsgEOS",
-	MsgNewbie: "MsgNewbie",
+	MsgBye:   "MsgBye",
+	MsgHello: "MsgHello",
 }
 
 func (mt Msg) String() string {

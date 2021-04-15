@@ -35,6 +35,10 @@ func NewPersona(nickname string, metadata []byte, pubKey crypto.PubKey) (Persona
 	return p, nil
 }
 
+func (p *Persona) GetNickname() string {
+	return p.Nickname
+}
+
 func (p *Persona) SetNickname(nickname string) error {
 	err := checkNickname(nickname)
 	if err != nil {
@@ -63,11 +67,19 @@ func (p *Persona) SetPubKey(pk crypto.PubKey) error {
 	return nil
 }
 
-func (p *Persona) MarshalJSON() ([]byte, error) {
-	return json.Marshal(p)
+func (p *Persona) Encapsulate() ([]byte, error) {
+	return MarshalJSON(p)
 }
 
-func (p *Persona) UnmarshalJSON(data []byte) error {
+func (p *Persona) Decapsulate(data []byte) error {
+	return UnmarshalJSON(data, p)
+}
+
+func MarshalJSON(p *Persona) ([]byte, error) {
+	return json.Marshal(*p)
+}
+
+func UnmarshalJSON(data []byte, p *Persona) error {
 	return json.Unmarshal(data, p)
 }
 
@@ -80,7 +92,7 @@ func (p *Persona) Check() error {
 	if err != nil {
 		return err
 	}
-	err = checkPubkey(p.PubKey)
+	err = checkPubKeyAddress(p.PubKey, p.Address)
 	if err != nil {
 		return err
 	}
@@ -102,10 +114,13 @@ func checkMetadata(md []byte) error {
 	return nil
 }
 
-func checkPubkey(pk crypto.PubKey) error {
+func checkPubKeyAddress(pk crypto.PubKey, addr crypto.Addr) error {
 	err := pk.Check()
 	if err != nil {
 		return err
+	}
+	if !addr.IsDrivenFrom(pk) {
+		return code.ImproperAddress
 	}
 	return nil
 }

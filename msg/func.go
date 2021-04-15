@@ -8,16 +8,8 @@ import (
 type msgFunc func(b *Box, m *Msg) error
 
 var msgFuncMap map[types.Msg]msgFunc = map[types.Msg]msgFunc{
-	types.MsgEOS: func(b *Box, m *Msg) error {
-		if m.GetFrom() == b.myID {
-			return nil
-		}
-		// TODO: remove msg.GetFrom() from b.Members
-		return nil
-	},
-	types.MsgNewbie: func(b *Box, m *Msg) error {
-		return nil
-	},
+	types.MsgHello: msgFuncHello,
+	types.MsgBye:   msgFuncBye,
 }
 
 func (msg *Msg) check(b *Box) error {
@@ -49,4 +41,52 @@ func (msg *Msg) execute(b *Box) error {
 		mf = func(b *Box, m *Msg) error { return nil }
 	}
 	return mf(b, msg)
+}
+
+func msgFuncHello(b *Box, m *Msg) error {
+	p := new(types.Persona)
+	err := p.Decapsulate(m.GetData())
+	if err != nil {
+		return err
+	}
+	err = b.join(p)
+	if err != nil {
+		return err
+	}
+
+	if types.IsEmpty(m.ParentMsgHash) && m.GetFrom().PeerID != b.myID {
+		pmhash, err := m.Hash()
+		if err != nil {
+			return err
+		}
+		mpd, err := b.myPersona.Encapsulate()
+		if err != nil {
+			return err
+		}
+		err = b.Publish(types.MsgHello, pmhash, mpd)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func msgFuncBye(b *Box, m *Msg) error {
+	if m.GetFrom().PeerID == b.myID {
+		return nil
+	}
+
+	p := new(types.Persona)
+	err := p.Decapsulate(m.GetData())
+	if err != nil {
+		return err
+	}
+
+	err = b.leave(p)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
