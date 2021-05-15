@@ -6,16 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEncryptDecrypt(t *testing.T) {
+func TestECIESEncryptDecrypt(t *testing.T) {
 	priv1, err := GenPrivKey()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 
 	priv2, err := GenPrivKey()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 
 	msg := []byte("hello world let's make the better world")
 
