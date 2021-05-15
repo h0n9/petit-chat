@@ -24,7 +24,7 @@ install:
 	$(BUILDENV) go install ./cmd/petit-chat
 
 test:
-	go test ./...
+	go test ./... --cover
 
 clean:
 	rm -f petit-chat *.test
