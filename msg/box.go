@@ -2,6 +2,7 @@ package msg
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -47,18 +48,22 @@ func NewBox(ctx context.Context, tp *types.Topic, mi types.ID, mp *types.Persona
 		msgs:      make([]*Msg, 0),
 		msgHashes: make(map[types.Hash]*Msg),
 	}
-	mpd, err := b.myPersona.Encapsulate()
+	msh := MsgStructHello{
+		Persona:   b.myPersona,
+		SecretKey: nil,
+	}
+	data, err := json.Marshal(msh)
 	if err != nil {
 		return nil, err
 	}
-	err = b.Publish(types.MsgHello, types.Hash{}, mpd)
+	err = b.Publish(MsgTypeHello, types.Hash{}, data)
 	if err != nil {
 		return nil, err
 	}
 	return &b, nil
 }
 
-func (b *Box) Publish(t types.Msg, parentMsgHash types.Hash, data []byte) error {
+func (b *Box) Publish(t MsgType, parentMsgHash types.Hash, data []byte) error {
 	if len(data) == 0 {
 		// this is not error
 		return nil
@@ -132,7 +137,7 @@ func (b *Box) Close() error {
 	if err != nil {
 		return err
 	}
-	return b.Publish(types.MsgBye, types.Hash{}, mpd)
+	return b.Publish(MsgTypeBye, types.Hash{}, mpd)
 }
 
 func (b *Box) Subscribing() bool {

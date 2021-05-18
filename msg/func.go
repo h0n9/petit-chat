@@ -7,9 +7,9 @@ import (
 
 type msgFunc func(b *Box, m *Msg) error
 
-var msgFuncMap map[types.Msg]msgFunc = map[types.Msg]msgFunc{
-	types.MsgHello: msgFuncHello,
-	types.MsgBye:   msgFuncBye,
+var msgFuncMap map[MsgType]msgFunc = map[MsgType]msgFunc{
+	MsgTypeHello: msgFuncHello,
+	MsgTypeBye:   msgFuncBye,
 }
 
 func (msg *Msg) check(b *Box) error {
@@ -44,12 +44,12 @@ func (msg *Msg) execute(b *Box) error {
 }
 
 func msgFuncHello(b *Box, m *Msg) error {
-	p := new(types.Persona)
-	err := p.Decapsulate(m.GetData())
+	msh := NewMsgStructHello(nil, nil)
+	err := msh.Decapsulate(m.GetData())
 	if err != nil {
 		return err
 	}
-	err = b.join(p)
+	err = b.join(msh.Persona)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func msgFuncHello(b *Box, m *Msg) error {
 		if err != nil {
 			return err
 		}
-		err = b.Publish(types.MsgHello, pmhash, mpd)
+		err = b.Publish(MsgTypeHello, pmhash, mpd)
 		if err != nil {
 			return err
 		}

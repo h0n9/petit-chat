@@ -68,18 +68,10 @@ func (p *Persona) SetPubKey(pk crypto.PubKey) error {
 }
 
 func (p *Persona) Encapsulate() ([]byte, error) {
-	return MarshalJSON(p)
+	return json.Marshal(p)
 }
 
 func (p *Persona) Decapsulate(data []byte) error {
-	return UnmarshalJSON(data, p)
-}
-
-func MarshalJSON(p *Persona) ([]byte, error) {
-	return json.Marshal(*p)
-}
-
-func UnmarshalJSON(data []byte, p *Persona) error {
 	return json.Unmarshal(data, p)
 }
 
@@ -125,6 +117,6 @@ func checkPubKeyAddress(pk crypto.PubKey, addr crypto.Addr) error {
 	return nil
 }
 
-func checkRange(l, from, to int) bool {
-	return (from <= l && l <= to)
+func checkRange(l, min, max int) bool {
+	return (min <= l && l <= max)
 }

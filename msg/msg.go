@@ -18,7 +18,7 @@ type MsgFrom struct {
 type Msg struct {
 	Timestamp     time.Time  `json:"timestamp"`
 	From          MsgFrom    `json:"from"`
-	Type          types.Msg  `json:"type"`
+	Type          MsgType    `json:"type"`
 	ParentMsgHash types.Hash `json:"parent_msg_hash"`
 	Data          []byte     `json:"data"`
 }
@@ -29,7 +29,7 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(pID types.ID, cAddr crypto.Addr, msgType types.Msg, parentMsgHash types.Hash, data []byte) *Msg {
+func NewMsg(pID types.ID, cAddr crypto.Addr, msgType MsgType, parentMsgHash types.Hash, data []byte) *Msg {
 	return &Msg{
 		Timestamp: time.Now(),
 		From: MsgFrom{
@@ -46,7 +46,7 @@ func (msg *Msg) GetFrom() MsgFrom {
 	return msg.From
 }
 
-func (msg *Msg) GetType() types.Msg {
+func (msg *Msg) GetType() MsgType {
 	return msg.Type
 }
 
@@ -67,7 +67,7 @@ func (msg *Msg) Hash() (types.Hash, error) {
 }
 
 func (msg *Msg) IsEOS() bool {
-	return msg.Type == types.MsgBye
+	return msg.Type == MsgTypeBye
 }
 
 func (msg *Msg) Encapsulate() ([]byte, error) {

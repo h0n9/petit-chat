@@ -131,7 +131,7 @@ func (pubKey PubKey) String() string {
 	return hex.EncodeToString(pubKey[:])
 }
 
-func (pubKey PubKey) MarshalJSON() ([]byte, error) {
+func (pubKey *PubKey) MarshalJSON() ([]byte, error) {
 	data := make([]byte, PubKeySize*2+2)
 	data[0] = '"'
 	data[len(data)-1] = '"'
