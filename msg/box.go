@@ -12,9 +12,10 @@ import (
 
 // Box refers to a chat room
 type Box struct {
-	ctx   context.Context
-	topic *types.Topic
-	sub   *types.Sub
+	ctx       context.Context
+	topic     *types.Topic
+	sub       *types.Sub
+	secretKey *crypto.SecretKey
 
 	myID            types.ID
 	myPersona       *types.Persona
@@ -32,10 +33,15 @@ func NewBox(ctx context.Context, tp *types.Topic, mi types.ID, mp *types.Persona
 	if err != nil {
 		return nil, err
 	}
+	secretKey, err := crypto.GenSecretKey()
+	if err != nil {
+		return nil, err
+	}
 	b := Box{
-		ctx:   ctx,
-		topic: tp,
-		sub:   nil,
+		ctx:       ctx,
+		topic:     tp,
+		sub:       nil,
+		secretKey: secretKey,
 
 		myID:            mi,
 		myPersona:       mp,
@@ -143,6 +149,10 @@ func (b *Box) Subscribing() bool {
 
 func (b *Box) SetMsgSubCh(msgSubCh chan *Msg) {
 	b.msgSubCh = msgSubCh
+}
+
+func (b *Box) GetSecretKey() *crypto.SecretKey {
+	return b.secretKey
 }
 
 func (b *Box) GetMsgs() []*Msg {
