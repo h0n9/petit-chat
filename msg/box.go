@@ -2,7 +2,6 @@ package msg
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -48,11 +47,8 @@ func NewBox(ctx context.Context, tp *types.Topic, mi types.ID, mp *types.Persona
 		msgs:      make([]*Msg, 0),
 		msgHashes: make(map[types.Hash]*Msg),
 	}
-	msh := MsgStructHello{
-		Persona:   b.myPersona,
-		SecretKey: nil,
-	}
-	data, err := json.Marshal(msh)
+	msh := NewMsgStructHello(b.myPersona, nil)
+	data, err := msh.Encapsulate()
 	if err != nil {
 		return nil, err
 	}
@@ -133,11 +129,12 @@ func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
 
 func (b *Box) Close() error {
 	// Announe EOS to others (application layer)
-	mpd, err := b.myPersona.Encapsulate()
+	msb := NewMsgStructBye(b.myPersona)
+	data, err := msb.Encapsulate()
 	if err != nil {
 		return err
 	}
-	return b.Publish(MsgTypeBye, types.Hash{}, mpd)
+	return b.Publish(MsgTypeBye, types.Hash{}, data)
 }
 
 func (b *Box) Subscribing() bool {

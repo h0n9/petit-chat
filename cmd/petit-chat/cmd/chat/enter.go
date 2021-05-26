@@ -125,7 +125,7 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 
 			// encapulate user input into MsgStructText
-			mst := new(msg.MsgStructText)
+			mst := msg.NewMsgStructText([]byte(input), DEFAULT_MSG_TEXT_ENCODING)
 			data, err := mst.Encapsulate()
 			if err != nil {
 				errs <- err
@@ -165,7 +165,7 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 		if err != nil {
 			return
 		}
-		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, string(m.GetData()))
+		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, mst.GetData())
 	case msg.MsgTypeImage:
 		// TODO: CLI doesn't support this type
 	case msg.MsgTypeVideo:

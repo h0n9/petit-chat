@@ -16,6 +16,10 @@ func NewMsgStructText(data []byte, encoding string) *MsgStructText {
 	return &MsgStructText{Data: data, Encoding: encoding}
 }
 
+func (mst *MsgStructText) GetData() []byte {
+	return mst.Data
+}
+
 func (mst *MsgStructText) Encapsulate() ([]byte, error) {
 	return json.Marshal(mst)
 }

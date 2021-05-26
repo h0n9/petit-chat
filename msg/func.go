@@ -59,11 +59,14 @@ func msgFuncHello(b *Box, m *Msg) error {
 		if err != nil {
 			return err
 		}
-		mpd, err := b.myPersona.Encapsulate()
+
+		msh := NewMsgStructHello(b.myPersona, nil)
+		data, err := msh.Encapsulate()
 		if err != nil {
 			return err
 		}
-		err = b.Publish(MsgTypeHello, pmhash, mpd)
+
+		err = b.Publish(MsgTypeHello, pmhash, data)
 		if err != nil {
 			return err
 		}
@@ -77,13 +80,13 @@ func msgFuncBye(b *Box, m *Msg) error {
 		return nil
 	}
 
-	p := new(types.Persona)
-	err := p.Decapsulate(m.GetData())
+	msb := NewMsgStructBye(nil)
+	err := msb.Decapsulate(m.GetData())
 	if err != nil {
 		return err
 	}
 
-	err = b.leave(p)
+	err = b.leave(msb.Persona)
 	if err != nil {
 		return err
 	}
