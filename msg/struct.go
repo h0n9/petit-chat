@@ -3,7 +3,6 @@ package msg
 import (
 	"encoding/json"
 
-	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -96,12 +95,12 @@ func (msr *MsgStructRaw) Decapsulate(data []byte) error {
 }
 
 type MsgStructHello struct {
-	Persona   *types.Persona    `json:"persona"`
-	SecretKey *crypto.SecretKey `json:"secret_key"`
+	Persona            *types.Persona `json:"persona"`
+	EncryptedSecretKey []byte         `json:"encrypted_secret_key"`
 }
 
-func NewMsgStructHello(persona *types.Persona, secretKey *crypto.SecretKey) *MsgStructHello {
-	return &MsgStructHello{Persona: persona, SecretKey: secretKey}
+func NewMsgStructHello(persona *types.Persona, encryptedSecretKey []byte) *MsgStructHello {
+	return &MsgStructHello{Persona: persona, EncryptedSecretKey: encryptedSecretKey}
 }
 
 func (msh *MsgStructHello) Encapsulate() ([]byte, error) {

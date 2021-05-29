@@ -75,7 +75,7 @@ func (c *Client) CreateMsgBox(tStr, nickname string) (*msg.Box, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c.msgCenter.CreateBox(topic, &persona)
+	return c.msgCenter.CreateBox(topic, &c.node.PrivKey, &persona)
 }
 
 func (c *Client) LeaveMsgBox(topicStr string) error {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/types"
+	"github.com/h0n9/petit-chat/crypto"
 )
 
 type Center struct {
@@ -22,14 +23,14 @@ func NewCenter(ctx context.Context, myID types.ID) (*Center, error) {
 	}, nil
 }
 
-func (mc *Center) CreateBox(topic *types.Topic, p *types.Persona) (*Box, error) {
+func (mc *Center) CreateBox(topic *types.Topic, pk *crypto.PrivKey, p *types.Persona) (*Box, error) {
 	tStr := topic.String()
 	_, exist := mc.getBox(tStr)
 	if exist {
 		return nil, code.AlreadyExistingTopic
 	}
 
-	msgBox, err := NewBox(mc.ctx, topic, mc.myID, p)
+	msgBox, err := NewBox(mc.ctx, topic, mc.myID, pk, p)
 	if err != nil {
 		return nil, err
 	}

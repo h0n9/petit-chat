@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -54,13 +55,24 @@ func msgFuncHello(b *Box, m *Msg) error {
 		return err
 	}
 
-	if types.IsEmpty(m.ParentMsgHash) && m.GetFrom().PeerID != b.myID {
+	if m.GetFrom().PeerID == b.myID {
+		return nil
+	}
+
+	if types.IsEmpty(m.ParentMsgHash) {
+		// new msg
 		pmhash, err := m.Hash()
 		if err != nil {
 			return err
 		}
 
-		msh := NewMsgStructHello(b.myPersona, nil)
+		// encrypt b.secretKey with msh.Persona.PubKey.GetKey()
+		encryptedSecretKey, err := msh.Persona.PubKey.Encrypt(b.secretKey.GetKey())
+		if err != nil {
+			return err
+		}
+
+		msh := NewMsgStructHello(b.myPersona, encryptedSecretKey)
 		data, err := msh.Encapsulate()
 		if err != nil {
 			return err
@@ -70,6 +82,18 @@ func msgFuncHello(b *Box, m *Msg) error {
 		if err != nil {
 			return err
 		}
+	} else {
+		// back msg
+		// decrypt msh.encrypted
+		secretKeyByte, err := b.myPrivKey.Decrypt(msh.EncryptedSecretKey)
+		if err != nil {
+			return err
+		}
+		secretKey, err := crypto.NewSecretKey(secretKeyByte)
+		if err != nil {
+			return err
+		}
+		b.secretKey = secretKey
 	}
 
 	return nil
