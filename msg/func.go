@@ -78,7 +78,7 @@ func msgFuncHello(b *Box, m *Msg) error {
 			return err
 		}
 
-		err = b.Publish(MsgTypeHello, pmhash, data)
+		err = b.Publish(MsgTypeHello, pmhash, false, data)
 		if err != nil {
 			return err
 		}

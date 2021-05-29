@@ -20,6 +20,7 @@ type Msg struct {
 	From          MsgFrom    `json:"from"`
 	Type          MsgType    `json:"type"`
 	ParentMsgHash types.Hash `json:"parent_msg_hash"`
+	Encrypted     bool       `json:"encrypted"`
 	Data          []byte     `json:"data"`
 }
 
@@ -29,7 +30,7 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(pID types.ID, cAddr crypto.Addr, msgType MsgType, parentMsgHash types.Hash, data []byte) *Msg {
+func NewMsg(pID types.ID, cAddr crypto.Addr, msgType MsgType, parentMsgHash types.Hash, encrypted bool, data []byte) *Msg {
 	return &Msg{
 		Timestamp: time.Now(),
 		From: MsgFrom{
@@ -38,6 +39,7 @@ func NewMsg(pID types.ID, cAddr crypto.Addr, msgType MsgType, parentMsgHash type
 		},
 		Type:          msgType,
 		ParentMsgHash: parentMsgHash,
+		Encrypted:     encrypted,
 		Data:          data,
 	}
 }
@@ -52,6 +54,10 @@ func (msg *Msg) GetType() MsgType {
 
 func (msg *Msg) GetData() []byte {
 	return msg.Data
+}
+
+func (msg *Msg) SetData(data []byte) {
+	msg.Data = data
 }
 
 func (msg *Msg) GetTime() time.Time {

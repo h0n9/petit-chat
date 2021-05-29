@@ -132,7 +132,7 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 
 			// CLI supports ONLY MsgTypeText
-			err = msgBox.Publish(msg.MsgTypeText, types.Hash{}, data)
+			err = msgBox.Publish(msg.MsgTypeText, types.Hash{}, true, data)
 			if err != nil {
 				errs <- err
 				return

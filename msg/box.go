@@ -60,19 +60,26 @@ func NewBox(ctx context.Context, tp *types.Topic, mi types.ID, mpk *crypto.PrivK
 	if err != nil {
 		return nil, err
 	}
-	err = b.Publish(MsgTypeHello, types.Hash{}, data)
+	err = b.Publish(MsgTypeHello, types.Hash{}, false, data)
 	if err != nil {
 		return nil, err
 	}
 	return &b, nil
 }
 
-func (b *Box) Publish(t MsgType, parentMsgHash types.Hash, data []byte) error {
+func (b *Box) Publish(t MsgType, parentMsgHash types.Hash, encrypt bool, data []byte) error {
 	if len(data) == 0 {
 		// this is not error
 		return nil
 	}
-	msg := NewMsg(b.myID, b.myPersona.Address, t, parentMsgHash, data)
+	if encrypt {
+		encryptedData, err := b.secretKey.Encrypt(data)
+		if err != nil {
+			return err
+		}
+		data = encryptedData
+	}
+	msg := NewMsg(b.myID, b.myPersona.Address, t, parentMsgHash, encrypt, data)
 	data, err := msg.Encapsulate()
 	if err != nil {
 		return err
@@ -142,7 +149,7 @@ func (b *Box) Close() error {
 	if err != nil {
 		return err
 	}
-	return b.Publish(MsgTypeBye, types.Hash{}, data)
+	return b.Publish(MsgTypeBye, types.Hash{}, false, data)
 }
 
 func (b *Box) Subscribing() bool {

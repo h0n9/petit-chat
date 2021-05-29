@@ -26,6 +26,15 @@ func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 		return eos, err
 	}
 
+	// decrypt if encrypted
+	if msg.Encrypted {
+		decryptedData, err := b.secretKey.Decrypt(msg.GetData())
+		if err != nil {
+			return eos, err
+		}
+		msg.SetData(decryptedData)
+	}
+
 	// execute msg with msgFunc
 	err = msg.execute(b)
 	if err != nil {
