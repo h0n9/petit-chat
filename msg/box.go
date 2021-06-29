@@ -15,6 +15,7 @@ type Box struct {
 	ctx       context.Context
 	topic     *types.Topic
 	sub       *types.Sub
+	auth      *types.Auth
 	secretKey *crypto.SecretKey
 
 	myID            types.ID
@@ -29,7 +30,7 @@ type Box struct {
 	msgHashes map[types.Hash]*Msg // TODO: limit the size of msgHashes map
 }
 
-func NewBox(ctx context.Context, tp *types.Topic, mi types.ID, mpk *crypto.PrivKey, mp *types.Persona) (*Box, error) {
+func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *crypto.PrivKey, mp *types.Persona) (*Box, error) {
 	err := mp.Check()
 	if err != nil {
 		return nil, err
@@ -42,6 +43,7 @@ func NewBox(ctx context.Context, tp *types.Topic, mi types.ID, mpk *crypto.PrivK
 		ctx:       ctx,
 		topic:     tp,
 		sub:       nil,
+		auth:      types.NewAuth(pub, make(map[types.ID]*types.Perm)),
 		secretKey: secretKey,
 
 		myID:            mi,
