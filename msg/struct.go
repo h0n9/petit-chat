@@ -96,11 +96,16 @@ func (msr *MsgStructRaw) Decapsulate(data []byte) error {
 
 type MsgStructHello struct {
 	Persona            *types.Persona `json:"persona"`
+	Auth               *types.Auth    `json:"auth"`
 	EncryptedSecretKey []byte         `json:"encrypted_secret_key"`
 }
 
-func NewMsgStructHello(persona *types.Persona, encryptedSecretKey []byte) *MsgStructHello {
-	return &MsgStructHello{Persona: persona, EncryptedSecretKey: encryptedSecretKey}
+func NewMsgStructHello(persona *types.Persona, auth *types.Auth, encryptedSecretKey []byte) *MsgStructHello {
+	return &MsgStructHello{
+		Persona: persona, 
+		Auth: auth,
+		EncryptedSecretKey: encryptedSecretKey,
+	}
 }
 
 func (msh *MsgStructHello) Encapsulate() ([]byte, error) {

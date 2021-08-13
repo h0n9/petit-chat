@@ -57,7 +57,7 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 		msgs:      make([]*Msg, 0),
 		msgHashes: make(map[types.Hash]*Msg),
 	}
-	msh := NewMsgStructHello(b.myPersona, nil)
+	msh := NewMsgStructHello(b.myPersona, b.auth, nil)
 	data, err := msh.Encapsulate()
 	if err != nil {
 		return nil, err

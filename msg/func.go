@@ -45,7 +45,7 @@ func (msg *Msg) execute(b *Box) error {
 }
 
 func msgFuncHello(b *Box, m *Msg) error {
-	msh := NewMsgStructHello(nil, nil)
+	msh := NewMsgStructHello(nil, nil, nil)
 	err := msh.Decapsulate(m.GetData())
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func msgFuncHello(b *Box, m *Msg) error {
 			return err
 		}
 
-		msh := NewMsgStructHello(b.myPersona, encryptedSecretKey)
+		msh := NewMsgStructHello(b.myPersona, b.auth, encryptedSecretKey)
 		data, err := msh.Encapsulate()
 		if err != nil {
 			return err
@@ -82,19 +82,21 @@ func msgFuncHello(b *Box, m *Msg) error {
 		if err != nil {
 			return err
 		}
-	} else {
-		// back msg
-		// decrypt msh.encrypted
-		secretKeyByte, err := b.myPrivKey.Decrypt(msh.EncryptedSecretKey)
-		if err != nil {
-			return err
-		}
-		secretKey, err := crypto.NewSecretKey(secretKeyByte)
-		if err != nil {
-			return err
-		}
-		b.secretKey = secretKey
+
+		return nil
 	}
+
+	// back msg
+	// decrypt msh.encrypted
+	secretKeyByte, err := b.myPrivKey.Decrypt(msh.EncryptedSecretKey)
+	if err != nil {
+		return err
+	}
+	secretKey, err := crypto.NewSecretKey(secretKeyByte)
+	if err != nil {
+		return err
+	}
+	b.secretKey = secretKey
 
 	return nil
 }
