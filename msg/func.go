@@ -4,6 +4,7 @@ import (
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
+	"github.com/h0n9/petit-chat/util"
 )
 
 type msgFunc func(b *Box, m *Msg) error
@@ -97,8 +98,13 @@ func msgFuncHello(b *Box, m *Msg) error {
 		return err
 	}
 
-	b.secretKey = secretKey
-	b.auth = msh.Auth
+	// apply to msgBox struct values
+	if util.HasField("secretKey", b) {
+		b.secretKey = secretKey
+	}
+	if util.HasField("auth", b) {
+		b.auth = msh.Auth
+	}
 
 	return nil
 }
