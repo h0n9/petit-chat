@@ -96,7 +96,9 @@ func msgFuncHello(b *Box, m *Msg) error {
 	if err != nil {
 		return err
 	}
+
 	b.secretKey = secretKey
+	b.auth = msh.Auth
 
 	return nil
 }

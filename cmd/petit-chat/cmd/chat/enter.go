@@ -35,7 +35,16 @@ func enterFunc(reader *bufio.Reader) error {
 		if err != nil {
 			return err
 		}
-		mb, err := cli.CreateMsgBox(topic, nickname)
+		fmt.Printf("Type public('true' or 'false'): ")
+		pubStr, err := util.GetInput(reader, false)
+		if err != nil {
+			return err
+		}
+		pub, err := util.ToBool(pubStr)
+		if err != nil {
+			return err
+		}
+		mb, err := cli.CreateMsgBox(topic, nickname, pub)
 		if err != nil {
 			return err
 		}
