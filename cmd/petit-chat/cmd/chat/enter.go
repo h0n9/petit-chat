@@ -35,7 +35,7 @@ func enterFunc(reader *bufio.Reader) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Type public('true' or 'false'): ")
+		fmt.Printf("Type public('true', 't' or 'false', 'f'): ")
 		pubStr, err := util.GetInput(reader, false)
 		if err != nil {
 			return err

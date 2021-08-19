@@ -16,10 +16,14 @@ func ToBool(boolStr string) (bool, error) {
 	switch boolStr {
 	case "true":
 		return true, nil
+	case "t":
+		return true, nil
 	case "false":
 		return false, nil
+	case "f":
+		return false, nil
 	default:
-		return false, fmt.Errorf("only boolean type: 'true' or 'false'")
+		return false, fmt.Errorf("only boolean type: 'true', 't' or 'false', 'f'")
 	}
 }
 
