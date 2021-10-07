@@ -183,6 +183,10 @@ func (b *Box) GetUnreadMsgs() []*Msg {
 	return msgs
 }
 
+func (b *Box) GetAuth() *types.Auth {
+	return b.auth
+}
+
 func (b *Box) append(msg *Msg) (int, error) {
 	hash, err := msg.Hash()
 	if err != nil {

@@ -126,6 +126,10 @@ func enterFunc(reader *bufio.Reader) error {
 					printPeer(peer)
 				}
 				continue
+			case "/auth":
+				auth := msgBox.GetAuth()
+				printAuth(auth)
+				continue
 			case "":
 				continue
 			}
@@ -153,6 +157,31 @@ func enterFunc(reader *bufio.Reader) error {
 	wait.Wait()
 
 	return nil
+}
+
+func printAuth(a *types.Auth) {
+	p := "private"
+	if a.IsPublic {
+		p = "public"
+	}
+	str := fmt.Sprintf("Auth: %s\n", p)
+	if len(a.Perms) > 0 {
+		str += "Perms:\n"
+	}
+	for id, perm := range a.Perms {
+		str += fmt.Sprintf("[%s] ", id)
+		if perm.Read {
+			str += "R"
+		}
+		if perm.Write {
+			str += "W"
+		}
+		if perm.Execute {
+			str += "X"
+		}
+		str += "\n"
+	}
+	fmt.Printf("%s", str)
 }
 
 func printPeer(p *types.Persona) {
