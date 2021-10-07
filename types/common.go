@@ -23,9 +23,9 @@ type (
 	Sub       = pubsub.Subscription
 	Topic     = pubsub.Topic
 	PubSubMsg = pubsub.Message
-	Hash      = [hashSize]byte
+	Hash      [hashSize]byte
 )
 
-func IsEmpty(h Hash) bool {
+func (h Hash) IsEmpty() bool {
 	return bytes.Equal(h[:], emptyHash[:])
 }

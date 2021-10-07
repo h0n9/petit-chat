@@ -18,8 +18,9 @@ type MsgFrom struct {
 type Msg struct {
 	Timestamp     time.Time  `json:"timestamp"`
 	From          MsgFrom    `json:"from"`
-	Type          types.Msg  `json:"type"`
+	Type          MsgType    `json:"type"`
 	ParentMsgHash types.Hash `json:"parent_msg_hash"`
+	Encrypted     bool       `json:"encrypted"`
 	Data          []byte     `json:"data"`
 }
 
@@ -29,7 +30,7 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(pID types.ID, cAddr crypto.Addr, msgType types.Msg, parentMsgHash types.Hash, data []byte) *Msg {
+func NewMsg(pID types.ID, cAddr crypto.Addr, msgType MsgType, parentMsgHash types.Hash, encrypted bool, data []byte) *Msg {
 	return &Msg{
 		Timestamp: time.Now(),
 		From: MsgFrom{
@@ -38,6 +39,7 @@ func NewMsg(pID types.ID, cAddr crypto.Addr, msgType types.Msg, parentMsgHash ty
 		},
 		Type:          msgType,
 		ParentMsgHash: parentMsgHash,
+		Encrypted:     encrypted,
 		Data:          data,
 	}
 }
@@ -46,12 +48,16 @@ func (msg *Msg) GetFrom() MsgFrom {
 	return msg.From
 }
 
-func (msg *Msg) GetType() types.Msg {
+func (msg *Msg) GetType() MsgType {
 	return msg.Type
 }
 
 func (msg *Msg) GetData() []byte {
 	return msg.Data
+}
+
+func (msg *Msg) SetData(data []byte) {
+	msg.Data = data
 }
 
 func (msg *Msg) GetTime() time.Time {
@@ -67,7 +73,7 @@ func (msg *Msg) Hash() (types.Hash, error) {
 }
 
 func (msg *Msg) IsEOS() bool {
-	return msg.Type == types.MsgBye
+	return msg.Type == MsgTypeBye
 }
 
 func (msg *Msg) Encapsulate() ([]byte, error) {
@@ -91,7 +97,7 @@ func UnmarshalJSON(data []byte, msg *Msg) error {
 func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {
 	// check if parentMsgHash is empty
 	pmh := msg.ParentMsgHash
-	if types.IsEmpty(pmh) {
+	if pmh.IsEmpty() {
 		return nil, nil
 	}
 	// get msg corresponding to msgHash

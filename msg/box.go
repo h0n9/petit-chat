@@ -12,11 +12,14 @@ import (
 
 // Box refers to a chat room
 type Box struct {
-	ctx   context.Context
-	topic *types.Topic
-	sub   *types.Sub
+	ctx       context.Context
+	topic     *types.Topic
+	sub       *types.Sub
+	auth      *types.Auth
+	secretKey *crypto.SecretKey
 
 	myID            types.ID
+	myPrivKey       *crypto.PrivKey
 	myPersona       *types.Persona
 	msgSubCh        chan *Msg
 	latestTimestamp time.Time
@@ -27,17 +30,24 @@ type Box struct {
 	msgHashes map[types.Hash]*Msg // TODO: limit the size of msgHashes map
 }
 
-func NewBox(ctx context.Context, tp *types.Topic, mi types.ID, mp *types.Persona) (*Box, error) {
+func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *crypto.PrivKey, mp *types.Persona) (*Box, error) {
 	err := mp.Check()
 	if err != nil {
 		return nil, err
 	}
+	secretKey, err := crypto.GenSecretKey()
+	if err != nil {
+		return nil, err
+	}
 	b := Box{
-		ctx:   ctx,
-		topic: tp,
-		sub:   nil,
+		ctx:       ctx,
+		topic:     tp,
+		sub:       nil,
+		auth:      types.NewAuth(pub, make(map[types.ID]*types.Perm)),
+		secretKey: secretKey,
 
 		myID:            mi,
+		myPrivKey:       mpk,
 		myPersona:       mp,
 		msgSubCh:        nil,
 		latestTimestamp: time.Now(),
@@ -47,23 +57,31 @@ func NewBox(ctx context.Context, tp *types.Topic, mi types.ID, mp *types.Persona
 		msgs:      make([]*Msg, 0),
 		msgHashes: make(map[types.Hash]*Msg),
 	}
-	mpd, err := b.myPersona.Encapsulate()
+	msh := NewMsgStructHello(b.myPersona, b.auth, nil)
+	data, err := msh.Encapsulate()
 	if err != nil {
 		return nil, err
 	}
-	err = b.Publish(types.MsgHello, types.Hash{}, mpd)
+	err = b.Publish(MsgTypeHello, types.Hash{}, false, data)
 	if err != nil {
 		return nil, err
 	}
 	return &b, nil
 }
 
-func (b *Box) Publish(t types.Msg, parentMsgHash types.Hash, data []byte) error {
+func (b *Box) Publish(t MsgType, parentMsgHash types.Hash, encrypt bool, data []byte) error {
 	if len(data) == 0 {
 		// this is not error
 		return nil
 	}
-	msg := NewMsg(b.myID, b.myPersona.Address, t, parentMsgHash, data)
+	if encrypt {
+		encryptedData, err := b.secretKey.Encrypt(data)
+		if err != nil {
+			return err
+		}
+		data = encryptedData
+	}
+	msg := NewMsg(b.myID, b.myPersona.Address, t, parentMsgHash, encrypt, data)
 	data, err := msg.Encapsulate()
 	if err != nil {
 		return err
@@ -128,11 +146,12 @@ func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
 
 func (b *Box) Close() error {
 	// Announe EOS to others (application layer)
-	mpd, err := b.myPersona.Encapsulate()
+	msb := NewMsgStructBye(b.myPersona)
+	data, err := msb.Encapsulate()
 	if err != nil {
 		return err
 	}
-	return b.Publish(types.MsgBye, types.Hash{}, mpd)
+	return b.Publish(MsgTypeBye, types.Hash{}, false, data)
 }
 
 func (b *Box) Subscribing() bool {
@@ -141,6 +160,10 @@ func (b *Box) Subscribing() bool {
 
 func (b *Box) SetMsgSubCh(msgSubCh chan *Msg) {
 	b.msgSubCh = msgSubCh
+}
+
+func (b *Box) GetSecretKey() *crypto.SecretKey {
+	return b.secretKey
 }
 
 func (b *Box) GetMsgs() []*Msg {
@@ -158,6 +181,10 @@ func (b *Box) GetUnreadMsgs() []*Msg {
 	}
 	b.readUntilIndex = len(b.msgs) - 1
 	return msgs
+}
+
+func (b *Box) GetAuth() *types.Auth {
+	return b.auth
 }
 
 func (b *Box) append(msg *Msg) (int, error) {

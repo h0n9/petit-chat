@@ -2,14 +2,15 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
-	"github.com/h0n9/petit-chat/types"
+	"github.com/h0n9/petit-chat/crypto"
+	"github.com/h0n9/petit-chat/util"
 )
 
 type msgFunc func(b *Box, m *Msg) error
 
-var msgFuncMap map[types.Msg]msgFunc = map[types.Msg]msgFunc{
-	types.MsgHello: msgFuncHello,
-	types.MsgBye:   msgFuncBye,
+var msgFuncMap map[MsgType]msgFunc = map[MsgType]msgFunc{
+	MsgTypeHello: msgFuncHello,
+	MsgTypeBye:   msgFuncBye,
 }
 
 func (msg *Msg) check(b *Box) error {
@@ -25,7 +26,7 @@ func (msg *Msg) check(b *Box) error {
 	if err != nil {
 		return err
 	}
-	if pm != nil && !types.IsEmpty(pm.ParentMsgHash) {
+	if pm != nil && !pm.ParentMsgHash.IsEmpty() {
 		return code.AlreadyHavingParentMsg
 	}
 
@@ -44,29 +45,66 @@ func (msg *Msg) execute(b *Box) error {
 }
 
 func msgFuncHello(b *Box, m *Msg) error {
-	p := new(types.Persona)
-	err := p.Decapsulate(m.GetData())
+	msh := NewMsgStructHello(nil, nil, nil)
+	err := msh.Decapsulate(m.GetData())
 	if err != nil {
 		return err
 	}
-	err = b.join(p)
+	err = b.join(msh.Persona)
 	if err != nil {
 		return err
 	}
 
-	if types.IsEmpty(m.ParentMsgHash) && m.GetFrom().PeerID != b.myID {
+	if m.GetFrom().PeerID == b.myID {
+		return nil
+	}
+
+	if m.ParentMsgHash.IsEmpty() {
+		// new msg
 		pmhash, err := m.Hash()
 		if err != nil {
 			return err
 		}
-		mpd, err := b.myPersona.Encapsulate()
+
+		// encrypt b.secretKey with msh.Persona.PubKey.GetKey()
+		encryptedSecretKey, err := msh.Persona.PubKey.Encrypt(b.secretKey.GetKey())
 		if err != nil {
 			return err
 		}
-		err = b.Publish(types.MsgHello, pmhash, mpd)
+
+		msh := NewMsgStructHello(b.myPersona, b.auth, encryptedSecretKey)
+		data, err := msh.Encapsulate()
 		if err != nil {
 			return err
 		}
+
+		err = b.Publish(MsgTypeHello, pmhash, false, data)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// back msg
+	// decrypt msh.encrypted
+	secretKeyByte, err := b.myPrivKey.Decrypt(msh.EncryptedSecretKey)
+	if err != nil {
+		// TODO: handle or log error somehow
+		// this could not be a real error
+		return nil
+	}
+	secretKey, err := crypto.NewSecretKey(secretKeyByte)
+	if err != nil {
+		return err
+	}
+
+	// apply to msgBox struct values
+	if util.HasField("secretKey", b) {
+		b.secretKey = secretKey
+	}
+	if util.HasField("auth", b) {
+		b.auth = msh.Auth
 	}
 
 	return nil
@@ -77,13 +115,13 @@ func msgFuncBye(b *Box, m *Msg) error {
 		return nil
 	}
 
-	p := new(types.Persona)
-	err := p.Decapsulate(m.GetData())
+	msb := NewMsgStructBye(nil)
+	err := msb.Decapsulate(m.GetData())
 	if err != nil {
 		return err
 	}
 
-	err = b.leave(p)
+	err = b.leave(msb.Persona)
 	if err != nil {
 		return err
 	}

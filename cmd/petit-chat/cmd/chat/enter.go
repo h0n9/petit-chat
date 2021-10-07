@@ -10,6 +10,10 @@ import (
 	"github.com/h0n9/petit-chat/util"
 )
 
+const (
+	DEFAULT_MSG_TEXT_ENCODING = "UTF-8"
+)
+
 var enterCmd = util.NewCmd(
 	"enter",
 	"enter to chat",
@@ -31,7 +35,16 @@ func enterFunc(reader *bufio.Reader) error {
 		if err != nil {
 			return err
 		}
-		mb, err := cli.CreateMsgBox(topic, nickname)
+		fmt.Printf("Type public('true', 't' or 'false', 'f'): ")
+		pubStr, err := util.GetInput(reader, false)
+		if err != nil {
+			return err
+		}
+		pub, err := util.ToBool(pubStr)
+		if err != nil {
+			return err
+		}
+		mb, err := cli.CreateMsgBox(topic, nickname, pub)
 		if err != nil {
 			return err
 		}
@@ -92,12 +105,12 @@ func enterFunc(reader *bufio.Reader) error {
 	go func() {
 		for {
 			fmt.Printf("> ")
-			data, err := util.GetInput(reader, false)
+			input, err := util.GetInput(reader, false)
 			if err != nil {
 				errs <- err
 				return
 			}
-			switch data {
+			switch input {
 			case "/exit":
 				msgStopSubCh <- true
 				stop = true
@@ -113,6 +126,10 @@ func enterFunc(reader *bufio.Reader) error {
 					printPeer(peer)
 				}
 				continue
+			case "/auth":
+				auth := msgBox.GetAuth()
+				printAuth(auth)
+				continue
 			case "":
 				continue
 			}
@@ -120,8 +137,15 @@ func enterFunc(reader *bufio.Reader) error {
 				break
 			}
 
+			// encapulate user input into MsgStructText
+			mst := msg.NewMsgStructText([]byte(input), DEFAULT_MSG_TEXT_ENCODING)
+			data, err := mst.Encapsulate()
+			if err != nil {
+				errs <- err
+			}
+
 			// CLI supports ONLY MsgTypeText
-			err = msgBox.Publish(types.MsgText, types.Hash{}, []byte(data))
+			err = msgBox.Publish(msg.MsgTypeText, types.Hash{}, true, data)
 			if err != nil {
 				errs <- err
 				return
@@ -133,6 +157,31 @@ func enterFunc(reader *bufio.Reader) error {
 	wait.Wait()
 
 	return nil
+}
+
+func printAuth(a *types.Auth) {
+	p := "private"
+	if a.IsPublic {
+		p = "public"
+	}
+	str := fmt.Sprintf("Auth: %s\n", p)
+	if len(a.Perms) > 0 {
+		str += "Perms:\n"
+	}
+	for id, perm := range a.Perms {
+		str += fmt.Sprintf("[%s] ", id)
+		if perm.Read {
+			str += "R"
+		}
+		if perm.Write {
+			str += "W"
+		}
+		if perm.Execute {
+			str += "X"
+		}
+		str += "\n"
+	}
+	fmt.Printf("%s", str)
 }
 
 func printPeer(p *types.Persona) {
@@ -148,21 +197,26 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 		nickname = persona.GetNickname()
 	}
 	switch m.GetType() {
-	case types.MsgText:
-		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, string(m.GetData()))
-	case types.MsgImage:
+	case msg.MsgTypeText:
+		mst := msg.NewMsgStructText(nil, DEFAULT_MSG_TEXT_ENCODING)
+		err := mst.Decapsulate(m.GetData())
+		if err != nil {
+			return
+		}
+		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, mst.GetData())
+	case msg.MsgTypeImage:
 		// TODO: CLI doesn't support this type
-	case types.MsgVideo:
+	case msg.MsgTypeVideo:
 		// TODO: CLI doesn't support this type
-	case types.MsgAudio:
+	case msg.MsgTypeAudio:
 		// TODO: CLI doesn't support this type
-	case types.MsgRaw:
+	case msg.MsgTypeRaw:
 		// TODO: CLI doesn't support this type
-	case types.MsgHello:
-		if types.IsEmpty(m.ParentMsgHash) {
+	case msg.MsgTypeHello:
+		if m.ParentMsgHash.IsEmpty() {
 			fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
 		}
-	case types.MsgBye:
+	case msg.MsgTypeBye:
 		// do nothing
 	default:
 		fmt.Println("Unknown MsgType")
