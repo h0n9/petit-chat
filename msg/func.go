@@ -90,7 +90,9 @@ func msgFuncHello(b *Box, m *Msg) error {
 	// decrypt msh.encrypted
 	secretKeyByte, err := b.myPrivKey.Decrypt(msh.EncryptedSecretKey)
 	if err != nil {
-		return err
+		// TODO: handle or log error somehow
+		// this could not be a real error
+		return nil
 	}
 	secretKey, err := crypto.NewSecretKey(secretKeyByte)
 	if err != nil {
