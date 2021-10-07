@@ -3,7 +3,6 @@ package msg
 import (
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
-	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
 
@@ -27,7 +26,7 @@ func (msg *Msg) check(b *Box) error {
 	if err != nil {
 		return err
 	}
-	if pm != nil && !types.IsEmpty(pm.ParentMsgHash) {
+	if pm != nil && !pm.ParentMsgHash.IsEmpty() {
 		return code.AlreadyHavingParentMsg
 	}
 
@@ -60,7 +59,7 @@ func msgFuncHello(b *Box, m *Msg) error {
 		return nil
 	}
 
-	if types.IsEmpty(m.ParentMsgHash) {
+	if m.ParentMsgHash.IsEmpty() {
 		// new msg
 		pmhash, err := m.Hash()
 		if err != nil {

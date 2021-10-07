@@ -184,7 +184,7 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 	case msg.MsgTypeRaw:
 		// TODO: CLI doesn't support this type
 	case msg.MsgTypeHello:
-		if types.IsEmpty(m.ParentMsgHash) {
+		if m.ParentMsgHash.IsEmpty() {
 			fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
 		}
 	case msg.MsgTypeBye:
