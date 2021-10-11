@@ -10,14 +10,19 @@ import (
 	"github.com/h0n9/petit-chat/util"
 )
 
-type MsgFrom struct {
+type From struct {
 	PeerID     types.ID    `json:"peer_id"`
 	ClientAddr crypto.Addr `json:"client_addr"`
 }
 
+type Signature struct {
+	PubKey   crypto.PubKey `json:"pubkey"`
+	SigBytes []byte        `json:"sig_bytes"`
+}
+
 type Msg struct {
 	Timestamp  time.Time  `json:"timestamp"`
-	From       MsgFrom    `json:"from"`
+	From       From       `json:"from"`
 	Type       MsgType    `json:"type"`
 	ParentHash types.Hash `json:"parent_hash"`
 	Encrypted  bool       `json:"encrypted"`
@@ -36,7 +41,7 @@ func NewMsg(pID types.ID, cAddr crypto.Addr,
 ) (*Msg, error) {
 	msg := Msg{
 		Timestamp: time.Now(),
-		From: MsgFrom{
+		From: From{
 			PeerID:     pID,
 			ClientAddr: cAddr,
 		},
@@ -53,7 +58,7 @@ func NewMsg(pID types.ID, cAddr crypto.Addr,
 	return &msg, nil
 }
 
-func (msg *Msg) GetFrom() MsgFrom {
+func (msg *Msg) GetFrom() From {
 	return msg.From
 }
 
