@@ -17,7 +17,7 @@ func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 	eos := msg.IsEOS() && (msg.GetFrom().PeerID == b.myID)
 
 	// msg handling flow:
-	//   check -> execute -> append
+	//   check -> decrypt(optional) -> decapsulate and execute(optional) -> append
 
 	// check if msg is proper and can be supported on protocol
 	// improper msgs are dropped here
@@ -35,10 +35,28 @@ func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 		msg.SetData(decryptedData)
 	}
 
-	// execute msg with msgFunc
-	err = msg.execute(b)
-	if err != nil {
-		return eos, err
+	// decapsulate and execute
+	switch msg.Type {
+	case MsgTypeHello:
+		msh := NewMsgStructHello(nil, nil, nil)
+		err := msh.Decapsulate(msg.Data)
+		if err != nil {
+			return eos, err
+		}
+		err = msh.Execute(b, msg)
+		if err != nil {
+			return eos, err
+		}
+	case MsgTypeBye:
+		msb := NewMsgStructBye(nil)
+		err := msb.Decapsulate(msg.Data)
+		if err != nil {
+			return eos, err
+		}
+		err = msb.Execute(b, msg)
+		if err != nil {
+			return eos, err
+		}
 	}
 
 	// append msg

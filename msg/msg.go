@@ -30,7 +30,8 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(pID types.ID, cAddr crypto.Addr, msgType MsgType, parentMsgHash types.Hash, encrypted bool, data []byte) *Msg {
+func NewMsg(pID types.ID, cAddr crypto.Addr,
+	msgType MsgType, parentMsgHash types.Hash, encrypted bool, data []byte) *Msg {
 	return &Msg{
 		Timestamp: time.Now(),
 		From: MsgFrom{
@@ -103,7 +104,30 @@ func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {
 	// get msg corresponding to msgHash
 	pm := b.GetMsg(pmh)
 	if pm == nil {
+		// TODO: this error should be optional
 		return nil, code.NonExistingParentMsg
 	}
 	return pm, nil
+}
+
+func (msg *Msg) check(b *Box) error {
+	// check msgType
+	mt := msg.GetType()
+	err := mt.Check()
+	if err != nil {
+		return err
+	}
+
+	// check msg.ParentMsgHash
+	pm, err := msg.getParentMsg(b)
+	if err != nil {
+		return err
+	}
+	if pm != nil && !pm.ParentMsgHash.IsEmpty() {
+		return code.AlreadyHavingParentMsg
+	}
+
+	// TODO: add more constraints
+
+	return nil
 }

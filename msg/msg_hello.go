@@ -1,56 +1,37 @@
 package msg
 
 import (
-	"github.com/h0n9/petit-chat/code"
+	"encoding/json"
+
 	"github.com/h0n9/petit-chat/crypto"
+	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
 
-type msgFunc func(b *Box, m *Msg) error
-
-var msgFuncMap map[MsgType]msgFunc = map[MsgType]msgFunc{
-	MsgTypeHello: msgFuncHello,
-	MsgTypeBye:   msgFuncBye,
+type MsgStructHello struct {
+	Persona            *types.Persona `json:"persona"`
+	Auth               *types.Auth    `json:"auth"`
+	EncryptedSecretKey []byte         `json:"encrypted_secret_key"`
 }
 
-func (msg *Msg) check(b *Box) error {
-	// check msgType
-	mt := msg.GetType()
-	err := mt.Check()
-	if err != nil {
-		return err
+func NewMsgStructHello(persona *types.Persona, auth *types.Auth, encryptedSecretKey []byte) *MsgStructHello {
+	return &MsgStructHello{
+		Persona:            persona,
+		Auth:               auth,
+		EncryptedSecretKey: encryptedSecretKey,
 	}
-
-	// check msg.ParentMsgHash
-	pm, err := msg.getParentMsg(b)
-	if err != nil {
-		return err
-	}
-	if pm != nil && !pm.ParentMsgHash.IsEmpty() {
-		return code.AlreadyHavingParentMsg
-	}
-
-	// TODO: add more constraints
-
-	return nil
 }
 
-func (msg *Msg) execute(b *Box) error {
-	mt := msg.GetType()
-	mf, exist := msgFuncMap[mt]
-	if !exist {
-		mf = func(b *Box, m *Msg) error { return nil }
-	}
-	return mf(b, msg)
+func (msh *MsgStructHello) Encapsulate() ([]byte, error) {
+	return json.Marshal(msh)
 }
 
-func msgFuncHello(b *Box, m *Msg) error {
-	msh := NewMsgStructHello(nil, nil, nil)
-	err := msh.Decapsulate(m.GetData())
-	if err != nil {
-		return err
-	}
-	err = b.join(msh.Persona)
+func (msh *MsgStructHello) Decapsulate(data []byte) error {
+	return json.Unmarshal(data, msh)
+}
+
+func (msh *MsgStructHello) Execute(b *Box, m *Msg) error {
+	err := b.join(msh.Persona)
 	if err != nil {
 		return err
 	}
@@ -105,25 +86,6 @@ func msgFuncHello(b *Box, m *Msg) error {
 	}
 	if util.HasField("auth", b) {
 		b.auth = msh.Auth
-	}
-
-	return nil
-}
-
-func msgFuncBye(b *Box, m *Msg) error {
-	if m.GetFrom().PeerID == b.myID {
-		return nil
-	}
-
-	msb := NewMsgStructBye(nil)
-	err := msb.Decapsulate(m.GetData())
-	if err != nil {
-		return err
-	}
-
-	err = b.leave(msb.Persona)
-	if err != nil {
-		return err
 	}
 
 	return nil
