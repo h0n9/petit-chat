@@ -138,14 +138,14 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 
 			// encapulate user input into MsgStructText
-			mst := msg.NewMsgStructText([]byte(input), DefaultMsgTextEncoding)
+			mst := msg.NewMsgStructRaw([]byte(input))
 			data, err := mst.Encapsulate()
 			if err != nil {
 				errs <- err
 			}
 
 			// CLI supports ONLY MsgTypeText
-			err = msgBox.Publish(msg.MsgTypeText, types.Hash{}, true, data)
+			err = msgBox.Publish(msg.MsgTypeRaw, types.Hash{}, true, data)
 			if err != nil {
 				errs <- err
 				return
@@ -197,21 +197,13 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 		nickname = persona.GetNickname()
 	}
 	switch m.GetType() {
-	case msg.MsgTypeText:
-		mst := msg.NewMsgStructText(nil, DefaultMsgTextEncoding)
-		err := mst.Decapsulate(m.GetData())
+	case msg.MsgTypeRaw:
+		msr := msg.NewMsgStructRaw(nil)
+		err := msr.Decapsulate(m.GetData())
 		if err != nil {
 			return
 		}
-		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, mst.GetData())
-	case msg.MsgTypeImage:
-		// TODO: CLI doesn't support this type
-	case msg.MsgTypeVideo:
-		// TODO: CLI doesn't support this type
-	case msg.MsgTypeAudio:
-		// TODO: CLI doesn't support this type
-	case msg.MsgTypeRaw:
-		// TODO: CLI doesn't support this type
+		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, msr.GetData())
 	case msg.MsgTypeHelloSyn:
 		fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
 		// do nothing

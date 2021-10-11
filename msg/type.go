@@ -6,10 +6,6 @@ type MsgType uint32
 
 const (
 	MsgTypeNone MsgType = iota + 1 // Msg 0 means something wrong
-	MsgTypeText
-	MsgTypeImage
-	MsgTypeVideo
-	MsgTypeAudio
 	MsgTypeRaw
 	MsgTypeHelloSyn
 	MsgTypeHelloAck
@@ -18,10 +14,6 @@ const (
 
 var msgTypeMap = map[MsgType]string{
 	MsgTypeNone:     "MsgTypeNone",
-	MsgTypeText:     "MsgTypeText",
-	MsgTypeImage:    "MsgTypeImage",
-	MsgTypeVideo:    "MsgTypeVideo",
-	MsgTypeAudio:    "MsgTypeAudio",
 	MsgTypeRaw:      "MsgTypeRaw",
 	MsgTypeHelloSyn: "MsgTypeHelloSyn",
 	MsgTypeHelloAck: "MsgTypeHelloAck",

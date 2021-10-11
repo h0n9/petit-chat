@@ -12,6 +12,10 @@ func NewMsgStructRaw(data []byte) *MsgStructRaw {
 	return &MsgStructRaw{Data: data}
 }
 
+func (msr *MsgStructRaw) GetData() []byte {
+	return msr.Data
+}
+
 func (msr *MsgStructRaw) Encapsulate() ([]byte, error) {
 	return json.Marshal(msr)
 }
