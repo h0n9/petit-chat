@@ -138,7 +138,10 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 
 			// encapulate user input into MsgStructText
-			mst := msg.NewMsgStructRaw([]byte(input))
+			mst, err := msg.NewMsgStructRaw([]byte(input), nil)
+			if err != nil {
+				errs <- err
+			}
 			data, err := mst.Encapsulate()
 			if err != nil {
 				errs <- err
@@ -198,8 +201,11 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 	}
 	switch m.GetType() {
 	case msg.MsgTypeRaw:
-		msr := msg.NewMsgStructRaw(nil)
-		err := msr.Decapsulate(m.GetData())
+		msr, err := msg.NewMsgStructRaw(nil, nil)
+		if err != nil {
+			return
+		}
+		err = msr.Decapsulate(m.GetData())
 		if err != nil {
 			return
 		}
