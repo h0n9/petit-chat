@@ -23,13 +23,14 @@ func (mshs *MsgStructHelloSyn) Decapsulate(data []byte) error {
 }
 
 func (mshs *MsgStructHelloSyn) Execute(b *Box, fromPeerID types.ID, hash types.Hash) error {
+	// TODO: check more constraints for fromPeerID
+	if fromPeerID == b.myID {
+		return nil
+	}
+
 	err := b.join(mshs.Persona)
 	if err != nil {
 		return err
-	}
-
-	if fromPeerID == b.myID {
-		return nil
 	}
 
 	// encrypt b.secretKey with msh.Persona.PubKey.GetKey()
