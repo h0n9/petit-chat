@@ -17,7 +17,7 @@ func TestPrivKeyMarshal(t *testing.T) {
 	err = newPrivKey.UnmarshalJSON(b)
 	assert.Nil(t, err)
 
-	assert.Equal(t, privKey, newPrivKey)
+	assert.EqualValues(t, privKey, newPrivKey)
 }
 func TestPubKeyMarshal(t *testing.T) {
 	privKey, err := GenPrivKey()
@@ -32,5 +32,5 @@ func TestPubKeyMarshal(t *testing.T) {
 	err = newPubKey.UnmarshalJSON(b)
 	assert.Nil(t, err)
 
-	assert.Equal(t, pubKey, newPubKey)
+	assert.EqualValues(t, pubKey, newPubKey)
 }

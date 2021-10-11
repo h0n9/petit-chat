@@ -151,20 +151,11 @@ func (msg *Msg) Encapsulate() ([]byte, error) {
 
 func (msg *Msg) Decapsulate(data []byte) error {
 	// TODO: change to other format (later)
-	err := UnmarshalJSON(data, msg)
-	if err != nil {
-		return err
-	}
-	hash, err := msg.hash()
-	if err != nil {
-		return err
-	}
-	msg.Hash = hash
-	return nil
+	return UnmarshalJSON(data, msg)
 }
 
 func MarshalJSON(msg *Msg) ([]byte, error) {
-	return json.Marshal(*msg)
+	return json.Marshal(msg)
 }
 
 func UnmarshalJSON(data []byte, msg *Msg) error {

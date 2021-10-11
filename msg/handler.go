@@ -4,16 +4,9 @@ import (
 	"github.com/h0n9/petit-chat/types"
 )
 
-type MsgHandler func(b *Box, psmsg *types.PubSubMsg) (bool, error)
+type MsgHandler func(b *Box, msg *Msg, fromID types.ID) (bool, error)
 
-func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
-	data := psmsg.GetData()
-	msg := new(Msg)
-	err := msg.Decapsulate(data)
-	if err != nil {
-		return false, err
-	}
-
+func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 	eos := msg.IsEOS() && (msg.GetFrom().PeerID == b.myID)
 
 	// msg handling flow:
@@ -21,7 +14,7 @@ func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 
 	// check if msg is proper and can be supported on protocol
 	// improper msgs are dropped here
-	err = msg.check(b)
+	err := msg.check(b)
 	if err != nil {
 		return eos, err
 	}
@@ -77,7 +70,7 @@ func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 	if err != nil {
 		return eos, err
 	}
-	if psmsg.GetFrom() == b.myID {
+	if fromID == b.myID {
 		b.readUntilIndex = readUntilIndex
 	} else {
 		if b.msgSubCh != nil {
