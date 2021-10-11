@@ -5,6 +5,7 @@ import "fmt"
 var (
 	ImproperPubKey  = fmt.Errorf("improper pubkey")
 	ImproperAddress = fmt.Errorf("improper address")
+	FailedToVerify  = fmt.Errorf("failed to verify")
 
 	AlreadySubscribingTopic = fmt.Errorf("already subscribing topic")
 	NonSubscribingTopic     = fmt.Errorf("non subscribing topic")

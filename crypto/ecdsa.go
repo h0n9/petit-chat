@@ -20,7 +20,7 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	rb := r.Bytes()
 	sb := s.Bytes()
 
-	copy(sig[33-len(rb):], rb)
+	copy(sig[32-len(rb):], rb)
 	copy(sig[64-len(sb):], sb)
 
 	return sig, nil

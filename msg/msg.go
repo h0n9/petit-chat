@@ -10,20 +10,39 @@ import (
 	"github.com/h0n9/petit-chat/util"
 )
 
-type MsgFrom struct {
+type From struct {
 	PeerID     types.ID    `json:"peer_id"`
 	ClientAddr crypto.Addr `json:"client_addr"`
 }
 
+type Signature struct {
+	PubKey   crypto.PubKey `json:"pubkey"`
+	SigBytes []byte        `json:"sig_bytes"`
+}
+
 type Msg struct {
+	Hash       types.Hash `json:"hash"`
 	Timestamp  time.Time  `json:"timestamp"`
-	From       MsgFrom    `json:"from"`
+	From       From       `json:"from"`
 	Type       MsgType    `json:"type"`
 	ParentHash types.Hash `json:"parent_hash"`
 	Encrypted  bool       `json:"encrypted"`
 	Data       []byte     `json:"data"`
-	Hash       types.Hash
+	Signature  Signature  `json:"signature"`
 }
+
+type MsgToSign struct {
+	Hash       types.Hash `json:"-"`
+	Timestamp  time.Time  `json:"timestamp"`
+	From       From       `json:"from"`
+	Type       MsgType    `json:"type"`
+	ParentHash types.Hash `json:"parent_hash"`
+	Encrypted  bool       `json:"encrypted"`
+	Data       []byte     `json:"data"`
+	Signature  Signature  `json:"-"`
+}
+
+type MsgToVerify MsgToSign
 
 type MsgEx struct {
 	Read     bool `json:"read"`
@@ -36,7 +55,7 @@ func NewMsg(pID types.ID, cAddr crypto.Addr,
 ) (*Msg, error) {
 	msg := Msg{
 		Timestamp: time.Now(),
-		From: MsgFrom{
+		From: From{
 			PeerID:     pID,
 			ClientAddr: cAddr,
 		},
@@ -53,7 +72,7 @@ func NewMsg(pID types.ID, cAddr crypto.Addr,
 	return &msg, nil
 }
 
-func (msg *Msg) GetFrom() MsgFrom {
+func (msg *Msg) GetFrom() From {
 	return msg.From
 }
 
@@ -77,12 +96,52 @@ func (msg *Msg) GetHash() types.Hash {
 	return msg.Hash
 }
 
+func (msg *Msg) GetSignature() Signature {
+	return msg.Signature
+}
+
 func (msg *Msg) GetParentHash() types.Hash {
 	return msg.ParentHash
 }
 
 func (msg *Msg) IsEOS() bool {
 	return msg.Type == MsgTypeBye
+}
+
+func (msg *Msg) Sign(privKey *crypto.PrivKey) error {
+	pubKey := privKey.PubKey()
+	msgToSign := MsgToSign(*msg)
+	b, err := json.Marshal(msgToSign)
+	if err != nil {
+		return err
+	}
+	sigBytes, err := privKey.Sign(b)
+	if err != nil {
+		return err
+	}
+
+	msg.Hash = util.ToSHA256(b)
+	msg.Signature = Signature{
+		SigBytes: sigBytes,
+		PubKey:   pubKey,
+	}
+
+	return nil
+}
+
+func (msg *Msg) Verify() error {
+	msgToVerify := MsgToVerify(*msg)
+	b, err := json.Marshal(msgToVerify)
+	if err != nil {
+		return err
+	}
+	sigBytes := msg.GetSignature().SigBytes
+	ok := msg.Signature.PubKey.Verify(b, sigBytes)
+	if !ok {
+		return code.FailedToVerify
+	}
+
+	return nil
 }
 
 func (msg *Msg) Encapsulate() ([]byte, error) {
@@ -92,20 +151,11 @@ func (msg *Msg) Encapsulate() ([]byte, error) {
 
 func (msg *Msg) Decapsulate(data []byte) error {
 	// TODO: change to other format (later)
-	err := UnmarshalJSON(data, msg)
-	if err != nil {
-		return err
-	}
-	hash, err := msg.hash()
-	if err != nil {
-		return err
-	}
-	msg.Hash = hash
-	return nil
+	return UnmarshalJSON(data, msg)
 }
 
 func MarshalJSON(msg *Msg) ([]byte, error) {
-	return json.Marshal(*msg)
+	return json.Marshal(msg)
 }
 
 func UnmarshalJSON(data []byte, msg *Msg) error {

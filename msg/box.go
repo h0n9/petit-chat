@@ -89,6 +89,10 @@ func (b *Box) Publish(t MsgType, parentMsgHash types.Hash, encrypt bool, data []
 	if err != nil {
 		return err
 	}
+	err = msg.Sign(b.myPrivKey)
+	if err != nil {
+		return err
+	}
 	data, err = msg.Encapsulate()
 	if err != nil {
 		return err
@@ -118,7 +122,19 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 			fmt.Println(err)
 			continue
 		}
-		eos, err := handler(b, received)
+		data := received.GetData()
+		msg := new(Msg)
+		err = msg.Decapsulate(data)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		err = msg.Verify()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		eos, err := handler(b, msg, received.GetFrom())
 		if err != nil {
 			// TODO: replace fmt.Println() to logger.Println()
 			fmt.Println(err)
