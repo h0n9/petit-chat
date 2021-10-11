@@ -11,19 +11,21 @@ const (
 	MsgTypeVideo
 	MsgTypeAudio
 	MsgTypeRaw
-	MsgTypeHello
+	MsgTypeHelloSyn
+	MsgTypeHelloAck
 	MsgTypeBye // End of Subscription
 )
 
 var msgTypeMap = map[MsgType]string{
-	MsgTypeNone:  "MsgTypeNone",
-	MsgTypeText:  "MsgTypeText",
-	MsgTypeImage: "MsgTypeImage",
-	MsgTypeVideo: "MsgTypeVideo",
-	MsgTypeAudio: "MsgTypeAudio",
-	MsgTypeRaw:   "MsgTypeRaw",
-	MsgTypeHello: "MsgTypeHello",
-	MsgTypeBye:   "MsgTypeBye",
+	MsgTypeNone:     "MsgTypeNone",
+	MsgTypeText:     "MsgTypeText",
+	MsgTypeImage:    "MsgTypeImage",
+	MsgTypeVideo:    "MsgTypeVideo",
+	MsgTypeAudio:    "MsgTypeAudio",
+	MsgTypeRaw:      "MsgTypeRaw",
+	MsgTypeHelloSyn: "MsgTypeHelloSyn",
+	MsgTypeHelloAck: "MsgTypeHelloAck",
+	MsgTypeBye:      "MsgTypeBye",
 }
 
 func (mt MsgType) String() string {

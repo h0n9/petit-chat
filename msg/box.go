@@ -57,12 +57,12 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 		msgs:      make([]*Msg, 0),
 		msgHashes: make(map[types.Hash]*Msg),
 	}
-	msh := NewMsgStructHello(b.myPersona, b.auth, nil)
+	msh := NewMsgStructHelloSyn(b.myPersona)
 	data, err := msh.Encapsulate()
 	if err != nil {
 		return nil, err
 	}
-	err = b.Publish(MsgTypeHello, types.Hash{}, false, data)
+	err = b.Publish(MsgTypeHelloSyn, types.Hash{}, false, data)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +81,11 @@ func (b *Box) Publish(t MsgType, parentMsgHash types.Hash, encrypt bool, data []
 		}
 		data = encryptedData
 	}
-	msg := NewMsg(b.myID, b.myPersona.Address, t, parentMsgHash, encrypt, data)
-	data, err := msg.Encapsulate()
+	msg, err := NewMsg(b.myID, b.myPersona.Address, t, parentMsgHash, encrypt, data)
+	if err != nil {
+		return err
+	}
+	data, err = msg.Encapsulate()
 	if err != nil {
 		return err
 	}
@@ -188,17 +191,13 @@ func (b *Box) GetAuth() *types.Auth {
 }
 
 func (b *Box) append(msg *Msg) (int, error) {
-	hash, err := msg.Hash()
-	if err != nil {
-		return 0, err
-	}
-
+	hash := msg.GetHash()
 	_, exist := b.msgHashes[hash]
 	if exist {
 		return 0, code.AlreadyAppendedMsg
 	}
 
-	timestamp := msg.GetTime()
+	timestamp := msg.GetTimestamp()
 	if b.latestTimestamp.Before(timestamp) {
 		b.latestTimestamp = timestamp
 	}

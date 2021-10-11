@@ -22,8 +22,8 @@ func (msb *MsgStructBye) Decapsulate(data []byte) error {
 	return json.Unmarshal(data, msb)
 }
 
-func (msb *MsgStructBye) Execute(b *Box, m *Msg) error {
-	if m.GetFrom().PeerID == b.myID {
+func (msb *MsgStructBye) Execute(b *Box, fromPeerID types.ID) error {
+	if fromPeerID == b.myID {
 		return nil
 	}
 

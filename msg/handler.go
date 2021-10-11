@@ -35,15 +35,28 @@ func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 		msg.SetData(decryptedData)
 	}
 
+	from := msg.GetFrom()
+	hash := msg.GetHash()
+
 	// decapsulate and execute
 	switch msg.Type {
-	case MsgTypeHello:
-		msh := NewMsgStructHello(nil, nil, nil)
-		err := msh.Decapsulate(msg.Data)
+	case MsgTypeHelloSyn:
+		mshs := NewMsgStructHelloSyn(nil)
+		err := mshs.Decapsulate(msg.Data)
 		if err != nil {
 			return eos, err
 		}
-		err = msh.Execute(b, msg)
+		err = mshs.Execute(b, from.PeerID, hash)
+		if err != nil {
+			return eos, err
+		}
+	case MsgTypeHelloAck:
+		msha := NewMsgStructHelloAck(nil, nil, nil)
+		err := msha.Decapsulate(msg.Data)
+		if err != nil {
+			return eos, err
+		}
+		err = msha.Execute(b, from.PeerID)
 		if err != nil {
 			return eos, err
 		}
@@ -53,7 +66,7 @@ func DefaultMsgHandler(b *Box, psmsg *types.PubSubMsg) (bool, error) {
 		if err != nil {
 			return eos, err
 		}
-		err = msb.Execute(b, msg)
+		err = msb.Execute(b, from.PeerID)
 		if err != nil {
 			return eos, err
 		}
