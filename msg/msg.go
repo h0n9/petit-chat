@@ -129,14 +129,14 @@ func (msg *Msg) Sign(privKey *crypto.PrivKey) error {
 	return nil
 }
 
-func (msg *Msg) Verify(pubKey *crypto.PubKey) error {
+func (msg *Msg) Verify() error {
 	msgToVerify := MsgToVerify(*msg)
 	b, err := json.Marshal(msgToVerify)
 	if err != nil {
 		return err
 	}
 	sigBytes := msg.GetSignature().SigBytes
-	ok := pubKey.Verify(b, sigBytes)
+	ok := msg.Signature.PubKey.Verify(b, sigBytes)
 	if !ok {
 		return code.FailedToVerify
 	}

@@ -33,8 +33,12 @@ func TestMsgSignVerify(t *testing.T) {
 	err = msg.Sign(&privKey1)
 	assert.Nil(t, err)
 
-	err = msg.Verify(&pubKey1)
+	err = msg.Verify()
 	assert.Nil(t, err)
-	err = msg.Verify(&pubKey2)
+
+	// manipulate pubKey on purpose
+	msg.Signature.PubKey = pubKey2
+
+	err = msg.Verify()
 	assert.Equal(t, err, code.FailedToVerify)
 }
