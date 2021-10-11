@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	DEFAULT_MSG_TEXT_ENCODING = "UTF-8"
+	DefaultMsgTextEncoding = "UTF-8"
 )
 
 var enterCmd = util.NewCmd(
@@ -138,7 +138,7 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 
 			// encapulate user input into MsgStructText
-			mst := msg.NewMsgStructText([]byte(input), DEFAULT_MSG_TEXT_ENCODING)
+			mst := msg.NewMsgStructText([]byte(input), DefaultMsgTextEncoding)
 			data, err := mst.Encapsulate()
 			if err != nil {
 				errs <- err
@@ -189,7 +189,7 @@ func printPeer(p *types.Persona) {
 }
 
 func printMsg(b *msg.Box, m *msg.Msg) {
-	timestamp := m.GetTime()
+	timestamp := m.GetTimestamp()
 	from := m.GetFrom()
 	persona := b.GetPersona(from.ClientAddr)
 	nickname := "somebody"
@@ -198,7 +198,7 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 	}
 	switch m.GetType() {
 	case msg.MsgTypeText:
-		mst := msg.NewMsgStructText(nil, DEFAULT_MSG_TEXT_ENCODING)
+		mst := msg.NewMsgStructText(nil, DefaultMsgTextEncoding)
 		err := mst.Decapsulate(m.GetData())
 		if err != nil {
 			return
@@ -212,10 +212,11 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 		// TODO: CLI doesn't support this type
 	case msg.MsgTypeRaw:
 		// TODO: CLI doesn't support this type
-	case msg.MsgTypeHello:
-		if m.ParentMsgHash.IsEmpty() {
-			fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
-		}
+	case msg.MsgTypeHelloSyn:
+		fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
+		// do nothing
+	case msg.MsgTypeHelloAck:
+		// do nothing
 	case msg.MsgTypeBye:
 		// do nothing
 	default:

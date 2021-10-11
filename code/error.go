@@ -17,9 +17,9 @@ var (
 	ImproperNodeID = fmt.Errorf("improper node id")
 
 	UnknownMsgType         = fmt.Errorf("unknown MsgType")
-	ImproperParentMsgHash  = fmt.Errorf("improper ParentMsgHash")
-	NonExistingParentMsg   = fmt.Errorf("non existing ParentMsg")
-	AlreadyHavingParentMsg = fmt.Errorf("already having ParentMsg")
+	ImproperParentHash  = fmt.Errorf("improper ParentHash")
+	NonExistingParent   = fmt.Errorf("non existing Parent")
+	AlreadyHavingParent = fmt.Errorf("already having Parent")
 
 	ExistingPersonaInBox       = fmt.Errorf("exisiting persona in box")
 	NonExistingPersonaInBox    = fmt.Errorf("non exisiting persona in box")

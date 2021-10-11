@@ -16,12 +16,13 @@ type MsgFrom struct {
 }
 
 type Msg struct {
-	Timestamp     time.Time  `json:"timestamp"`
-	From          MsgFrom    `json:"from"`
-	Type          MsgType    `json:"type"`
-	ParentMsgHash types.Hash `json:"parent_msg_hash"`
-	Encrypted     bool       `json:"encrypted"`
-	Data          []byte     `json:"data"`
+	Timestamp  time.Time  `json:"timestamp"`
+	From       MsgFrom    `json:"from"`
+	Type       MsgType    `json:"type"`
+	ParentHash types.Hash `json:"parent_hash"`
+	Encrypted  bool       `json:"encrypted"`
+	Data       []byte     `json:"data"`
+	Hash       types.Hash
 }
 
 type MsgEx struct {
@@ -30,18 +31,26 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(pID types.ID, cAddr crypto.Addr, msgType MsgType, parentMsgHash types.Hash, encrypted bool, data []byte) *Msg {
-	return &Msg{
+func NewMsg(pID types.ID, cAddr crypto.Addr,
+	msgType MsgType, parentHash types.Hash, encrypted bool, data []byte,
+) (*Msg, error) {
+	msg := Msg{
 		Timestamp: time.Now(),
 		From: MsgFrom{
 			PeerID:     pID,
 			ClientAddr: cAddr,
 		},
-		Type:          msgType,
-		ParentMsgHash: parentMsgHash,
-		Encrypted:     encrypted,
-		Data:          data,
+		Type:       msgType,
+		ParentHash: parentHash,
+		Encrypted:  encrypted,
+		Data:       data,
 	}
+	hash, err := msg.hash()
+	if err != nil {
+		return nil, err
+	}
+	msg.Hash = hash
+	return &msg, nil
 }
 
 func (msg *Msg) GetFrom() MsgFrom {
@@ -60,16 +69,16 @@ func (msg *Msg) SetData(data []byte) {
 	msg.Data = data
 }
 
-func (msg *Msg) GetTime() time.Time {
+func (msg *Msg) GetTimestamp() time.Time {
 	return msg.Timestamp
 }
 
-func (msg *Msg) Hash() (types.Hash, error) {
-	b, err := MarshalJSON(msg)
-	if err != nil {
-		return types.Hash{}, err
-	}
-	return util.ToSHA256(b), nil
+func (msg *Msg) GetHash() types.Hash {
+	return msg.Hash
+}
+
+func (msg *Msg) GetParentHash() types.Hash {
+	return msg.ParentHash
 }
 
 func (msg *Msg) IsEOS() bool {
@@ -83,7 +92,16 @@ func (msg *Msg) Encapsulate() ([]byte, error) {
 
 func (msg *Msg) Decapsulate(data []byte) error {
 	// TODO: change to other format (later)
-	return UnmarshalJSON(data, msg)
+	err := UnmarshalJSON(data, msg)
+	if err != nil {
+		return err
+	}
+	hash, err := msg.hash()
+	if err != nil {
+		return err
+	}
+	msg.Hash = hash
+	return nil
 }
 
 func MarshalJSON(msg *Msg) ([]byte, error) {
@@ -94,16 +112,47 @@ func UnmarshalJSON(data []byte, msg *Msg) error {
 	return json.Unmarshal(data, msg)
 }
 
+func (msg *Msg) hash() (types.Hash, error) {
+	b, err := MarshalJSON(msg)
+	if err != nil {
+		return types.Hash{}, err
+	}
+	return util.ToSHA256(b), nil
+}
+
 func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {
 	// check if parentMsgHash is empty
-	pmh := msg.ParentMsgHash
+	pmh := msg.ParentHash
 	if pmh.IsEmpty() {
 		return nil, nil
 	}
 	// get msg corresponding to msgHash
 	pm := b.GetMsg(pmh)
 	if pm == nil {
-		return nil, code.NonExistingParentMsg
+		// TODO: this error should be optional
+		return nil, code.NonExistingParent
 	}
 	return pm, nil
+}
+
+func (msg *Msg) check(b *Box) error {
+	// check msgType
+	mt := msg.GetType()
+	err := mt.Check()
+	if err != nil {
+		return err
+	}
+
+	// check msg.ParentMsgHash
+	pm, err := msg.getParentMsg(b)
+	if err != nil {
+		return err
+	}
+	if pm != nil && !pm.ParentHash.IsEmpty() {
+		return code.AlreadyHavingParent
+	}
+
+	// TODO: add more constraints
+
+	return nil
 }
