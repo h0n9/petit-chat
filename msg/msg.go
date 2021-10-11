@@ -21,13 +21,23 @@ type Signature struct {
 }
 
 type Msg struct {
+	Hash       types.Hash `json:"hash"`
 	Timestamp  time.Time  `json:"timestamp"`
 	From       From       `json:"from"`
 	Type       MsgType    `json:"type"`
 	ParentHash types.Hash `json:"parent_hash"`
 	Encrypted  bool       `json:"encrypted"`
 	Data       []byte     `json:"data"`
-	Hash       types.Hash
+	Signature  Signature  `json:"signature"`
+}
+
+type MsgToSign struct {
+	Timestamp  time.Time  `json:"timestamp"`
+	From       From       `json:"from"`
+	Type       MsgType    `json:"type"`
+	ParentHash types.Hash `json:"parent_hash"`
+	Encrypted  bool       `json:"encrypted"`
+	Data       []byte     `json:"data"`
 }
 
 type MsgEx struct {
@@ -80,6 +90,10 @@ func (msg *Msg) GetTimestamp() time.Time {
 
 func (msg *Msg) GetHash() types.Hash {
 	return msg.Hash
+}
+
+func (msg *Msg) GetSignature() Signature {
+	return msg.Signature
 }
 
 func (msg *Msg) GetParentHash() types.Hash {
