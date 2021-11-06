@@ -30,4 +30,6 @@ var (
 	ImproperPersonaMetadata    = fmt.Errorf("improper persona metadata")
 	ExistingPersonaNickname    = fmt.Errorf("existing nickname")
 	NonExistingPersonaNickname = fmt.Errorf("non existing nickname")
+
+	NonExistingPermission = fmt.Errorf("non existing permission")
 )

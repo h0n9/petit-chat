@@ -1,67 +1,44 @@
 package types
 
-type Perm struct {
-	Read    bool `json:"read"`
-	Write   bool `json:"write"`
-	Execute bool `json:"execute"`
-}
+import "github.com/h0n9/petit-chat/code"
 
-func NewPerm(Read, Write, Execute bool) *Perm {
-	return &Perm{
-		Read:    Read,
-		Write:   Write,
-		Execute: Execute,
-	}
-}
+const (
+	PUBLIC_MIN_PERM   Perm = permNone
+	PRIAVATE_MIN_PERM Perm = permReadable
+)
 
 type Auth struct {
-	IsPublic bool         `json:"is_public"`
-	Perms    map[ID]*Perm `json:"perms"`
+	Public bool        `json:"public"`
+	Perms  map[ID]Perm `json:"perms"`
 }
 
-func NewAuth(isPublic bool, perms map[ID]*Perm) *Auth {
+func NewAuth(public bool, perms map[ID]Perm) *Auth {
 	return &Auth{
-		IsPublic: isPublic,
-		Perms:    perms,
+		Public: public,
+		Perms:  perms,
 	}
 }
 
-func (a *Auth) SetPerm(id ID, perm *Perm) error {
+func (a *Auth) IsPublic() bool {
+	return a.Public
+}
+
+func (a *Auth) GetPerm(id ID) (Perm, error) {
+	p, exist := a.Perms[id]
+	if !exist {
+		return 0, code.NonExistingPermission
+	}
+	return p, nil
+}
+
+func (a *Auth) SetPerm(id ID, Perm Perm) error {
 	// TODO: add constraints
-	a.Perms[id] = perm
+	a.Perms[id] = Perm
 	return nil
 }
 
-func (a *Auth) SetPerms(perms map[ID]*Perm) error {
+func (a *Auth) SetPerms(Perms map[ID]Perm) error {
 	// TODO: add constraints
-	a.Perms = perms
+	a.Perms = Perms
 	return nil
-}
-
-func (a *Auth) CanRead(id ID) bool {
-	canRead := false
-	if perm := a.getPerm(id); perm != nil {
-		canRead = perm.Read
-	}
-	return canRead
-}
-
-func (a *Auth) CanWrite(id ID) bool {
-	canWrite := false
-	if perm := a.getPerm(id); perm != nil {
-		canWrite = perm.Write
-	}
-	return canWrite
-}
-
-func (a *Auth) CanExecute(id ID) bool {
-	canExecute := false
-	if perm := a.getPerm(id); perm != nil {
-		canExecute = perm.Execute
-	}
-	return canExecute
-}
-
-func (a *Auth) getPerm(id ID) *Perm {
-	return a.Perms[id]
 }

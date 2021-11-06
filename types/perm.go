@@ -3,6 +3,7 @@ package types
 type Perm uint8
 
 const (
+	permNone       Perm = 0 // 0000 0000
 	permReadable   Perm = 1 // 0000 0001
 	permWritable   Perm = 2 // 0000 0010
 	permExecutable Perm = 4 // 0000 0100
