@@ -3,35 +3,39 @@ package types
 type Perm uint8
 
 const (
-	permNone       Perm = 0 // 0000 0000
-	permReadable   Perm = 1 // 0000 0001
-	permWritable   Perm = 2 // 0000 0010
-	permExecutable Perm = 4 // 0000 0100
+	permNone    Perm = 0 // 0000 0000
+	permRead    Perm = 1 // 0000 0001
+	permWrite   Perm = 2 // 0000 0010
+	permExecute Perm = 4 // 0000 0100
 )
 
 func NewPerm(read, write, execute bool) Perm {
 	var p Perm
 	if read {
-		p |= permReadable
+		p |= permRead
 	}
 	if write {
-		p |= permWritable
+		p |= permWrite
 	}
 	if execute {
-		p |= permExecutable
+		p |= permExecute
 	}
 
 	return p
 }
 
+func (p Perm) canDo(pc Perm) bool {
+	return p&pc == pc
+}
+
 func (p Perm) CanRead() bool {
-	return p&permReadable == permReadable
+	return p.canDo(permRead)
 }
 
 func (p Perm) CanWrite() bool {
-	return p&permWritable == permWritable
+	return p.canDo(permWrite)
 }
 
 func (p Perm) CanExecute() bool {
-	return p&permExecutable == permExecutable
+	return p.canDo(permExecute)
 }

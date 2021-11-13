@@ -3,8 +3,8 @@ package types
 import "github.com/h0n9/petit-chat/code"
 
 const (
-	PUBLIC_MIN_PERM   Perm = permNone
-	PRIAVATE_MIN_PERM Perm = permReadable
+	minPermPublic  Perm = permNone
+	minPermPrivate Perm = permRead
 )
 
 type Auth struct {
@@ -41,4 +41,24 @@ func (a *Auth) SetPerms(Perms map[ID]Perm) error {
 	// TODO: add constraints
 	a.Perms = Perms
 	return nil
+}
+
+func (a *Auth) CheckMinPerm(id ID) (bool, error) {
+	ok := false
+
+	// check id in perms first
+	p, err := a.GetPerm(id)
+	if err != nil {
+		return ok, err
+	}
+
+	// check id's minimum permission
+	switch a.Public {
+	case true:
+		ok = p.canDo(minPermPublic)
+	case false:
+		ok = p.canDo(minPermPrivate)
+	}
+
+	return ok, nil
 }
