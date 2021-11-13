@@ -164,7 +164,7 @@ func enterFunc(reader *bufio.Reader) error {
 
 func printAuth(a *types.Auth) {
 	p := "private"
-	if a.IsPublic {
+	if a.IsPublic() {
 		p = "public"
 	}
 	str := fmt.Sprintf("Auth: %s\n", p)
@@ -173,13 +173,13 @@ func printAuth(a *types.Auth) {
 	}
 	for id, perm := range a.Perms {
 		str += fmt.Sprintf("[%s] ", id)
-		if perm.Read {
+		if perm.CanRead() {
 			str += "R"
 		}
-		if perm.Write {
+		if perm.CanWrite() {
 			str += "W"
 		}
-		if perm.Execute {
+		if perm.CanExecute() {
 			str += "X"
 		}
 		str += "\n"
