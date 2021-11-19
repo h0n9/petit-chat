@@ -43,7 +43,7 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 		ctx:       ctx,
 		topic:     tp,
 		sub:       nil,
-		auth:      types.NewAuth(pub, make(map[types.ID]types.Perm)),
+		auth:      types.NewAuth(pub, make(map[crypto.Addr]types.Perm)),
 		secretKey: secretKey,
 
 		myID:            mi,

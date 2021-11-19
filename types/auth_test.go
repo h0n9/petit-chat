@@ -4,51 +4,36 @@ import (
 	"testing"
 
 	"github.com/h0n9/petit-chat/crypto"
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/stretchr/testify/assert"
 )
 
-func genRandomID() (ID, error) {
-	id := ID("")
-
-	pk, err := crypto.GenPrivKey()
+func genRandomAddr() (Addr, error) {
+	privKey, err := crypto.GenPrivKey()
 	if err != nil {
-		return id, err
+		return Addr(""), err
 	}
 
-	pkECDSAP2P, err := pk.ToECDSAP2P()
-	if err != nil {
-		return id, err
-	}
-
-	newId, err := peer.IDFromPrivateKey(pkECDSAP2P)
-	if err != nil {
-		return id, err
-	}
-
-	id = newId
-
-	return id, nil
+	return privKey.PubKey().Address(), nil
 
 }
 
 func TestAuth(t *testing.T) {
-	idTest0, err := genRandomID()
+	addrTest0, err := genRandomAddr()
 	assert.NoError(t, err)
-	idTest1, err := genRandomID()
+	addrTest1, err := genRandomAddr()
 	assert.NoError(t, err)
-	idTest2, err := genRandomID()
+	addrTest2, err := genRandomAddr()
 	assert.NoError(t, err)
-	idTest3, err := genRandomID()
+	addrTest3, err := genRandomAddr()
 	assert.NoError(t, err)
-	idTest4, err := genRandomID()
+	addrTest4, err := genRandomAddr()
 	assert.NoError(t, err)
 
-	perms := map[ID]Perm{
-		idTest1: permNone,
-		idTest2: permRead,
-		idTest3: permWrite,
-		idTest4: permExecute,
+	perms := map[Addr]Perm{
+		addrTest1: permNone,
+		addrTest2: permRead,
+		addrTest3: permWrite,
+		addrTest4: permExecute,
 	}
 
 	a := NewAuth(false, perms)
@@ -58,56 +43,56 @@ func TestAuth(t *testing.T) {
 	assert.False(t, public)
 
 	// CheckMinPerm()
-	_, err = a.CheckMinPerm(idTest0)
+	_, err = a.CheckMinPerm(addrTest0)
 	assert.Error(t, err)
 
-	ok, err := a.CheckMinPerm(idTest1)
+	ok, err := a.CheckMinPerm(addrTest1)
 	assert.NoError(t, err)
 	assert.False(t, ok)
 
-	ok, err = a.CheckMinPerm(idTest2)
+	ok, err = a.CheckMinPerm(addrTest2)
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-	ok, err = a.CheckMinPerm(idTest3)
+	ok, err = a.CheckMinPerm(addrTest3)
 	assert.NoError(t, err)
 	assert.False(t, ok)
 
-	ok, err = a.CheckMinPerm(idTest4)
+	ok, err = a.CheckMinPerm(addrTest4)
 	assert.NoError(t, err)
 	assert.False(t, ok)
 
-	// add idTest0
-	err = a.SetPerm(idTest0, permNone)
+	// add addrTest0
+	err = a.SetPerm(addrTest0, permNone)
 	assert.NoError(t, err)
-	permTest0, err := a.GetPerm(idTest0)
+	permTest0, err := a.GetPerm(addrTest0)
 	assert.NoError(t, err)
 	assert.NotEqual(t, permTest0, permRead)
 	assert.Equal(t, permTest0, permNone)
 
-	ok, err = a.CheckMinPerm(idTest0)
+	ok, err = a.CheckMinPerm(addrTest0)
 	assert.NoError(t, err)
 	assert.False(t, ok)
 
-	err = a.SetPerm(idTest0, permRead)
+	err = a.SetPerm(addrTest0, permRead)
 	assert.NoError(t, err)
-	permTest0, err = a.GetPerm(idTest0)
+	permTest0, err = a.GetPerm(addrTest0)
 	assert.NoError(t, err)
 	assert.NotEqual(t, permTest0, permNone)
 	assert.Equal(t, permTest0, permRead)
 
-	ok, err = a.CheckMinPerm(idTest0)
+	ok, err = a.CheckMinPerm(addrTest0)
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-	err = a.SetPerm(idTest0, permRead|permWrite)
+	err = a.SetPerm(addrTest0, permRead|permWrite)
 	assert.NoError(t, err)
-	permTest0, err = a.GetPerm(idTest0)
+	permTest0, err = a.GetPerm(addrTest0)
 	assert.NoError(t, err)
 	assert.NotEqual(t, permTest0, permRead)
 	assert.Equal(t, permTest0, permRead|permWrite)
 
-	ok, err = a.CheckMinPerm(idTest0)
+	ok, err = a.CheckMinPerm(addrTest0)
 	assert.NoError(t, err)
 	assert.True(t, ok)
 }
