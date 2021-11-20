@@ -25,7 +25,7 @@ type Box struct {
 	latestTimestamp time.Time
 	readUntilIndex  int
 
-	personae  map[crypto.Addr]*types.Persona
+	personae  types.Personae
 	msgs      []*Msg              // TODO: limit the size of msgs slice
 	msgHashes map[types.Hash]*Msg // TODO: limit the size of msgHashes map
 }

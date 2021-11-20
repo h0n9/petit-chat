@@ -21,6 +21,8 @@ type Persona struct {
 	Address  crypto.Addr   `json:"address"`
 }
 
+type Personae map[crypto.Addr]*Persona
+
 func NewPersona(nickname string, metadata []byte, pubKey crypto.PubKey) (Persona, error) {
 	p := Persona{
 		Nickname: nickname,
