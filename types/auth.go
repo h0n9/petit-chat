@@ -25,12 +25,16 @@ func (a *Auth) IsPublic() bool {
 	return a.Public
 }
 
-func (a *Auth) GetPerm(addr Addr) (Perm, error) {
-	p, exist := a.Perms[addr]
+func (a *Auth) getPerm(addr Addr) (Perm, error) {
+	perm, exist := a.Perms[addr]
 	if !exist {
 		return 0, code.NonExistingPermission
 	}
-	return p, nil
+	return perm, nil
+}
+
+func (a *Auth) GetPerm(addr Addr) (Perm, error) {
+	return a.getPerm(addr)
 }
 
 func (a *Auth) SetPerm(addr Addr, Perm Perm) error {

@@ -159,12 +159,16 @@ func (b *Box) GetPersonae() map[crypto.Addr]*types.Persona {
 	return b.personae
 }
 
-func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
-	personae, exist := b.personae[cAddr]
+func (b *Box) getPersona(cAddr crypto.Addr) *types.Persona {
+	persona, exist := b.personae[cAddr]
 	if !exist {
 		return nil
 	}
-	return personae
+	return persona
+}
+
+func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
+	return b.getPersona(cAddr)
 }
 
 func (b *Box) Close() error {
@@ -228,25 +232,25 @@ func (b *Box) append(msg *Msg) (int, error) {
 	return len(b.msgs) - 1, nil
 }
 
-func (b *Box) join(p *types.Persona) error {
-	_, exist := b.personae[p.Address]
-	if exist {
+func (b *Box) join(targetPersona *types.Persona) error {
+	oldPersona := b.getPersona(targetPersona.Address)
+	if oldPersona != nil {
 		return nil // ignore even if existing
 		// return code.ExistingPersonaInBox
 	}
-	err := p.Check()
+	err := targetPersona.Check()
 	if err != nil {
 		return err
 	}
-	b.personae[p.Address] = p
+	b.personae[targetPersona.Address] = targetPersona
 	return nil
 }
 
-func (b *Box) leave(p *types.Persona) error {
-	_, exist := b.personae[p.Address]
-	if !exist {
+func (b *Box) leave(targetPersona *types.Persona) error {
+	oldPersona := b.getPersona(targetPersona.Address)
+	if oldPersona == nil {
 		return code.NonExistingPersonaInBox
 	}
-	delete(b.personae, p.Address)
+	delete(b.personae, targetPersona.Address)
 	return nil
 }
