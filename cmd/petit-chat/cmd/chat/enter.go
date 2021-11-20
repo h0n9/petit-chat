@@ -3,8 +3,11 @@ package chat
 import (
 	"bufio"
 	"fmt"
+	"strings"
 	"sync"
 
+	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
@@ -83,11 +86,14 @@ func enterFunc(reader *bufio.Reader) error {
 	wait.Add(1)
 	go func() {
 		var (
+			err  error    = nil
 			stop bool     = false
 			msg  *msg.Msg = nil
 		)
 		for {
 			select {
+			case err = <-errs:
+				fmt.Printf("%s\n> ", err)
 			case msg = <-msgSubCh:
 				printMsg(msgBox, msg)
 			case <-msgStopSubCh:
@@ -108,7 +114,7 @@ func enterFunc(reader *bufio.Reader) error {
 			input, err := util.GetInput(reader, false)
 			if err != nil {
 				errs <- err
-				return
+				continue
 			}
 			switch input {
 			case "/exit":
@@ -129,6 +135,52 @@ func enterFunc(reader *bufio.Reader) error {
 			case "/auth":
 				auth := msgBox.GetAuth()
 				printAuth(auth)
+				continue
+			case "/grant":
+				fmt.Printf("<address> <R|W|X>: ")
+				input, err := util.GetInput(reader, false)
+				if err != nil {
+					errs <- err
+					continue
+				}
+
+				// parse strings
+				strs := strings.Split(input, " ")
+				if len(strs) != 2 {
+					continue
+				}
+				addr := crypto.Addr(strs[0])
+				if len(addr) != crypto.AddrSize {
+					errs <- code.ImproperAddress
+					continue
+				}
+				r, w, x := parsePerm(strs[1])
+
+				err = msgBox.Grant(addr, r, w, x)
+				if err != nil {
+					errs <- err
+					continue
+				}
+				continue
+			case "/revoke":
+				fmt.Printf("<address>: ")
+				input, err := util.GetInput(reader, false)
+				if err != nil {
+					errs <- err
+					continue
+				}
+
+				addr := crypto.Addr(input)
+				if len(addr) != crypto.AddrSize {
+					errs <- code.ImproperAddress
+					continue
+				}
+
+				err = msgBox.Revoke(addr)
+				if err != nil {
+					errs <- err
+					continue
+				}
 				continue
 			case "":
 				continue
@@ -217,7 +269,24 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 		// do nothing
 	case msg.MsgTypeBye:
 		// do nothing
+	case msg.MsgTypeUpdateBox:
+		// do nothing
 	default:
 		fmt.Println("Unknown MsgType")
 	}
+}
+
+func parsePerm(permStr string) (bool, bool, bool) {
+	r, w, x := false, false, false
+	permStr = strings.ToUpper(permStr)
+	if strings.Contains(permStr, "R") {
+		r = true
+	}
+	if strings.Contains(permStr, "W") {
+		w = true
+	}
+	if strings.Contains(permStr, "X") {
+		x = true
+	}
+	return r, w, x
 }

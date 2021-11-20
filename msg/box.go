@@ -171,8 +171,8 @@ func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
 	return b.getPersona(cAddr)
 }
 
-func (b *Box) Grant(addr crypto.Addr, r, w, e bool) error {
-	perm := types.NewPerm(r, w, e)
+func (b *Box) Grant(addr crypto.Addr, r, w, x bool) error {
+	perm := types.NewPerm(r, w, x)
 	err := b.auth.SetPerm(addr, perm)
 	if err != nil {
 		return err
