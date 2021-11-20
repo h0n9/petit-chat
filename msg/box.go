@@ -53,7 +53,7 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 		latestTimestamp: time.Now(),
 		readUntilIndex:  0,
 
-		personae:  make(map[crypto.Addr]*types.Persona),
+		personae:  make(types.Personae),
 		msgs:      make([]*Msg, 0),
 		msgHashes: make(map[types.Hash]*Msg),
 	}
@@ -171,6 +171,35 @@ func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
 	return b.getPersona(cAddr)
 }
 
+func (b *Box) Grant(addr crypto.Addr, r, w, e bool) error {
+	perm := types.NewPerm(r, w, e)
+	err := b.auth.SetPerm(addr, perm)
+	if err != nil {
+		return err
+	}
+
+	err = b.propagate()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *Box) Revoke(addr crypto.Addr) error {
+	err := b.auth.DeletePerm(addr)
+	if err != nil {
+		return err
+	}
+
+	err = b.propagate()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (b *Box) Close() error {
 	// Announe EOS to others (application layer)
 	msb := NewMsgStructBye(b.myPersona)
@@ -252,5 +281,18 @@ func (b *Box) leave(targetPersona *types.Persona) error {
 		return code.NonExistingPersonaInBox
 	}
 	delete(b.personae, targetPersona.Address)
+	return nil
+}
+
+func (b *Box) propagate() error {
+	msub := NewMsgStructUpdateBox(b.auth, b.personae)
+	data, err := msub.Encapsulate()
+	if err != nil {
+		return err
+	}
+	err = b.Publish(MsgTypeUpdateBox, types.Hash{}, true, data)
+	if err != nil {
+		return err
+	}
 	return nil
 }

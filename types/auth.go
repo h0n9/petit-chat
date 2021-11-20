@@ -49,6 +49,15 @@ func (a *Auth) SetPerms(Perms map[Addr]Perm) error {
 	return nil
 }
 
+func (a *Auth) DeletePerm(addr Addr) error {
+	_, err := a.getPerm(addr)
+	if err != nil {
+		return err
+	}
+	delete(a.Perms, addr)
+	return nil
+}
+
 func (a *Auth) CheckMinPerm(addr Addr) (bool, error) {
 	ok := false
 
