@@ -33,4 +33,5 @@ var (
 
 	NonExistingPermission = fmt.Errorf("non existing permission")
 	AlreadyExistingPermission = fmt.Errorf("already existing permission")
+	NonMinimumPermission = fmt.Errorf("non minimum permission")
 )

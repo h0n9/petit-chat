@@ -61,6 +61,10 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 	if err != nil {
 		return nil, err
 	}
+	err = b.grant(b.myPersona.Address, true, true, true)
+	if err != nil {
+		return nil, err
+	}
 	msh := NewMsgStructHelloSyn(b.myPersona)
 	data, err := msh.Encapsulate()
 	if err != nil {
@@ -171,9 +175,17 @@ func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
 	return b.getPersona(cAddr)
 }
 
-func (b *Box) Grant(addr crypto.Addr, r, w, x bool) error {
+func (b *Box) grant(addr crypto.Addr, r, w, x bool) error {
 	perm := types.NewPerm(r, w, x)
 	err := b.auth.SetPerm(addr, perm)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *Box) Grant(addr crypto.Addr, r, w, x bool) error {
+	err := b.grant(addr, r, w, x)
 	if err != nil {
 		return err
 	}
@@ -186,8 +198,16 @@ func (b *Box) Grant(addr crypto.Addr, r, w, x bool) error {
 	return nil
 }
 
-func (b *Box) Revoke(addr crypto.Addr) error {
+func (b *Box) revoke(addr crypto.Addr) error {
 	err := b.auth.DeletePerm(addr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *Box) Revoke(addr crypto.Addr) error {
+	err := b.revoke(addr)
 	if err != nil {
 		return err
 	}
@@ -290,7 +310,7 @@ func (b *Box) propagate() error {
 	if err != nil {
 		return err
 	}
-	err = b.Publish(MsgTypeUpdateBox, types.Hash{}, true, data)
+	err = b.Publish(MsgTypeUpdate, types.Hash{}, true, data)
 	if err != nil {
 		return err
 	}
