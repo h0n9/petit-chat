@@ -7,29 +7,29 @@ import (
 	"github.com/h0n9/petit-chat/util"
 )
 
-type MsgStructUpdateBox struct {
+type MsgStructUpdate struct {
 	Auth     *types.Auth    `json:"auth"`
 	Personae types.Personae `json:"personae"`
 }
 
-func NewMsgStructUpdateBox(auth *types.Auth, personae types.Personae) *MsgStructUpdateBox {
-	return &MsgStructUpdateBox{Auth: auth, Personae: personae}
+func NewMsgStructUpdate(auth *types.Auth, personae types.Personae) *MsgStructUpdate {
+	return &MsgStructUpdate{Auth: auth, Personae: personae}
 }
 
-func (msub *MsgStructUpdateBox) Encapsulate() ([]byte, error) {
-	return json.Marshal(msub)
+func (msu *MsgStructUpdate) Encapsulate() ([]byte, error) {
+	return json.Marshal(msu)
 }
 
-func (msub *MsgStructUpdateBox) Decapsulate(data []byte) error {
-	return json.Unmarshal(data, msub)
+func (msu *MsgStructUpdate) Decapsulate(data []byte) error {
+	return json.Unmarshal(data, msu)
 }
 
-func (msub *MsgStructUpdateBox) Execute(b *Box) error {
+func (msu *MsgStructUpdate) Execute(b *Box) error {
 	if util.HasField("auth", b) {
-		b.auth = msub.Auth
+		b.auth = msu.Auth
 	}
 	if util.HasField("personae", b) {
-		b.personae = msub.Personae
+		b.personae = msu.Personae
 	}
 
 	return nil

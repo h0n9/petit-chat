@@ -64,12 +64,12 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 			return eos, err
 		}
 	case MsgTypeUpdateBox:
-		msub := NewMsgStructUpdateBox(nil, nil)
-		err := msub.Decapsulate(msg.Data)
+		msu := NewMsgStructUpdate(nil, nil)
+		err := msu.Decapsulate(msg.Data)
 		if err != nil {
 			return eos, err
 		}
-		err = msub.Execute(b)
+		err = msu.Execute(b)
 		if err != nil {
 			return eos, err
 		}

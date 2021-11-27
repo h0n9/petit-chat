@@ -285,8 +285,8 @@ func (b *Box) leave(targetPersona *types.Persona) error {
 }
 
 func (b *Box) propagate() error {
-	msub := NewMsgStructUpdateBox(b.auth, b.personae)
-	data, err := msub.Encapsulate()
+	msu := NewMsgStructUpdate(b.auth, b.personae)
+	data, err := msu.Encapsulate()
 	if err != nil {
 		return err
 	}
