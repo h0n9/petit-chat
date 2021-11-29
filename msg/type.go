@@ -10,16 +10,16 @@ const (
 	MsgTypeHelloSyn
 	MsgTypeHelloAck
 	MsgTypeBye // End of Subscription
-	MsgTypeUpdate
+	MsgTypeUpdateSyn
 )
 
 var msgTypeMap = map[MsgType]string{
-	MsgTypeNone:     "MsgTypeNone",
-	MsgTypeRaw:      "MsgTypeRaw",
-	MsgTypeHelloSyn: "MsgTypeHelloSyn",
-	MsgTypeHelloAck: "MsgTypeHelloAck",
-	MsgTypeBye:      "MsgTypeBye",
-	MsgTypeUpdate:   "MsgTypeUpdatgeBox",
+	MsgTypeNone:      "MsgTypeNone",
+	MsgTypeRaw:       "MsgTypeRaw",
+	MsgTypeHelloSyn:  "MsgTypeHelloSyn",
+	MsgTypeHelloAck:  "MsgTypeHelloAck",
+	MsgTypeBye:       "MsgTypeBye",
+	MsgTypeUpdateSyn: "MsgTypeUpdatgeSyn",
 }
 
 func (mt MsgType) String() string {

@@ -305,12 +305,12 @@ func (b *Box) leave(targetPersona *types.Persona) error {
 }
 
 func (b *Box) propagate() error {
-	msu := NewMsgStructUpdate(b.auth, b.personae)
+	msu := NewMsgStructUpdateSyn(b.auth, b.personae)
 	data, err := msu.Encapsulate()
 	if err != nil {
 		return err
 	}
-	err = b.Publish(MsgTypeUpdate, types.Hash{}, true, data)
+	err = b.Publish(MsgTypeUpdateSyn, types.Hash{}, true, data)
 	if err != nil {
 		return err
 	}

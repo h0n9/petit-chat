@@ -269,7 +269,7 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 		// do nothing
 	case msg.MsgTypeBye:
 		// do nothing
-	case msg.MsgTypeUpdate:
+	case msg.MsgTypeUpdateSyn:
 		// do nothing
 	default:
 		fmt.Println("Unknown MsgType")

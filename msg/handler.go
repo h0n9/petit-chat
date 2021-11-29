@@ -98,8 +98,8 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 		if err != nil {
 			return eos, err
 		}
-	case MsgTypeUpdate:
-		msu := &MsgStructUpdate{}
+	case MsgTypeUpdateSyn:
+		msu := &MsgStructUpdateSyn{}
 		err := msu.Decapsulate(msg.Data)
 		if err != nil {
 			return eos, err
