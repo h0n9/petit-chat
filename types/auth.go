@@ -58,7 +58,7 @@ func (a *Auth) DeletePerm(addr Addr) error {
 	return nil
 }
 
-func (a *Auth) CheckMinPerm(addr Addr) (bool, error) {
+func (a *Auth) checkPerm(addr Addr, perm Perm) (bool, error) {
 	ok := false
 
 	// check id in perms first
@@ -67,13 +67,28 @@ func (a *Auth) CheckMinPerm(addr Addr) (bool, error) {
 		return ok, err
 	}
 
-	// check id's minimum permission
-	switch a.Public {
-	case true:
-		ok = p.canDo(minPermPublic)
-	case false:
-		ok = p.canDo(minPermPrivate)
-	}
+	ok = p.canDo(perm)
 
 	return ok, nil
+}
+
+func (a *Auth) CanRead(addr Addr) (bool, error) {
+	return a.checkPerm(addr, permRead)
+}
+
+func (a *Auth) CanWrite(addr Addr) (bool, error) {
+	return a.checkPerm(addr, permWrite)
+}
+
+func (a *Auth) CanExecute(addr Addr) (bool, error) {
+	return a.checkPerm(addr, permExecute)
+}
+
+func (a *Auth) CheckMinPerm(addr Addr) (bool, error) {
+	// check id's minimum permission
+	if a.Public {
+		return a.checkPerm(addr, minPermPublic)
+	} else {
+		return a.checkPerm(addr, minPermPrivate)
+	}
 }

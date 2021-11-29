@@ -31,7 +31,10 @@ var (
 	ExistingPersonaNickname    = fmt.Errorf("existing nickname")
 	NonExistingPersonaNickname = fmt.Errorf("non existing nickname")
 
-	NonExistingPermission = fmt.Errorf("non existing permission")
+	NonExistingPermission     = fmt.Errorf("non existing permission")
 	AlreadyExistingPermission = fmt.Errorf("already existing permission")
-	NonMinimumPermission = fmt.Errorf("non minimum permission")
+	NonMinimumPermission      = fmt.Errorf("non minimum permission")
+	NonReadPermission         = fmt.Errorf("non read permission")
+	NonWritePermission        = fmt.Errorf("non write permission")
+	NonExecutePermission      = fmt.Errorf("non execute permission")
 )

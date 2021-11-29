@@ -27,15 +27,3 @@ func NewPerm(read, write, execute bool) Perm {
 func (p Perm) canDo(pc Perm) bool {
 	return p&pc == pc
 }
-
-func (p Perm) CanRead() bool {
-	return p.canDo(permRead)
-}
-
-func (p Perm) CanWrite() bool {
-	return p.canDo(permWrite)
-}
-
-func (p Perm) CanExecute() bool {
-	return p.canDo(permExecute)
-}

@@ -26,7 +26,7 @@ var enterCmd = util.NewCmd(
 func enterFunc(reader *bufio.Reader) error {
 	// get user input
 	fmt.Printf("Type chat room name: ")
-	topic, err := util.GetInput(reader, false)
+	topic, err := util.GetInput(reader, false, false)
 	if err != nil {
 		return err
 	}
@@ -34,12 +34,12 @@ func enterFunc(reader *bufio.Reader) error {
 	msgBox, exist := cli.GetMsgBox(topic)
 	if !exist {
 		fmt.Printf("Type nickname: ")
-		nickname, err := util.GetInput(reader, false)
+		nickname, err := util.GetInput(reader, false, false)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("Type public('true', 't' or 'false', 'f'): ")
-		pubStr, err := util.GetInput(reader, false)
+		pubStr, err := util.GetInput(reader, false, true)
 		if err != nil {
 			return err
 		}
@@ -111,7 +111,7 @@ func enterFunc(reader *bufio.Reader) error {
 	go func() {
 		for {
 			fmt.Printf("> ")
-			input, err := util.GetInput(reader, false)
+			input, err := util.GetInput(reader, false, true)
 			if err != nil {
 				errs <- err
 				continue
@@ -138,7 +138,7 @@ func enterFunc(reader *bufio.Reader) error {
 				continue
 			case "/grant":
 				fmt.Printf("<address> <R|W|X>: ")
-				input, err := util.GetInput(reader, false)
+				input, err := util.GetInput(reader, false, false)
 				if err != nil {
 					errs <- err
 					continue
@@ -164,7 +164,7 @@ func enterFunc(reader *bufio.Reader) error {
 				continue
 			case "/revoke":
 				fmt.Printf("<address>: ")
-				input, err := util.GetInput(reader, false)
+				input, err := util.GetInput(reader, false, false)
 				if err != nil {
 					errs <- err
 					continue
@@ -223,15 +223,15 @@ func printAuth(a *types.Auth) {
 	if len(a.Perms) > 0 {
 		str += "Perms:\n"
 	}
-	for id, perm := range a.Perms {
-		str += fmt.Sprintf("[%s] ", id)
-		if perm.CanRead() {
+	for addr, _ := range a.Perms {
+		str += fmt.Sprintf("[%s] ", addr)
+		if ok, _ := a.CanRead(addr); ok {
 			str += "R"
 		}
-		if perm.CanWrite() {
+		if ok, _ := a.CanWrite(addr); ok {
 			str += "W"
 		}
-		if perm.CanExecute() {
+		if ok, _ := a.CanExecute(addr); ok {
 			str += "X"
 		}
 		str += "\n"

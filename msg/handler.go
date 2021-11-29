@@ -1,6 +1,7 @@
 package msg
 
 import (
+	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -33,41 +34,82 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 
 	// decapsulate and execute
 	switch msg.Type {
+	case MsgTypeRaw:
+		msr := &MsgStructRaw{}
+		err := msr.Decapsulate(msg.Data)
+		if err != nil {
+			return eos, err
+		}
+		ok, err := b.auth.CanWrite(from.ClientAddr)
+		if err != nil {
+			return eos, err
+		}
+		if !ok {
+			return eos, code.NonWritePermission
+		}
 	case MsgTypeHelloSyn:
-		mshs := NewMsgStructHelloSyn(nil)
+		mshs := &MsgStructHelloSyn{}
 		err := mshs.Decapsulate(msg.Data)
 		if err != nil {
 			return eos, err
+		}
+		ok, err := b.auth.CheckMinPerm(from.ClientAddr)
+		if err != nil {
+			return eos, err
+		}
+		if !ok {
+			return eos, code.NonMinimumPermission
 		}
 		err = mshs.Execute(b, from.PeerID, hash)
 		if err != nil {
 			return eos, err
 		}
 	case MsgTypeHelloAck:
-		msha := NewMsgStructHelloAck(nil, nil, nil)
+		msha := &MsgStructHelloAck{}
 		err := msha.Decapsulate(msg.Data)
 		if err != nil {
 			return eos, err
 		}
+		// ok, err := b.auth.CheckMinPerm(from.ClientAddr)
+		// if err != nil {
+		// 	return eos, err
+		// }
+		// if !ok {
+		// 	return eos, code.NonMinimumPermission
+		// }
 		err = msha.Execute(b, from.PeerID)
 		if err != nil {
 			return eos, err
 		}
 	case MsgTypeBye:
-		msb := NewMsgStructBye(nil)
+		msb := &MsgStructBye{}
 		err := msb.Decapsulate(msg.Data)
 		if err != nil {
 			return eos, err
+		}
+		ok, err := b.auth.CheckMinPerm(from.ClientAddr)
+		if err != nil {
+			return eos, err
+		}
+		if !ok {
+			return eos, code.NonMinimumPermission
 		}
 		err = msb.Execute(b, from.PeerID)
 		if err != nil {
 			return eos, err
 		}
 	case MsgTypeUpdate:
-		msu := NewMsgStructUpdate(nil, nil)
+		msu := &MsgStructUpdate{}
 		err := msu.Decapsulate(msg.Data)
 		if err != nil {
 			return eos, err
+		}
+		ok, err := b.auth.CanExecute(from.ClientAddr)
+		if err != nil {
+			return eos, err
+		}
+		if !ok {
+			return eos, code.NonMinimumPermission
 		}
 		err = msu.Execute(b)
 		if err != nil {
