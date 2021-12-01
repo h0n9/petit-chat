@@ -3,8 +3,11 @@ package chat
 import (
 	"bufio"
 	"fmt"
+	"strings"
 	"sync"
 
+	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
@@ -23,7 +26,7 @@ var enterCmd = util.NewCmd(
 func enterFunc(reader *bufio.Reader) error {
 	// get user input
 	fmt.Printf("Type chat room name: ")
-	topic, err := util.GetInput(reader, false)
+	topic, err := util.GetInput(reader, false, false)
 	if err != nil {
 		return err
 	}
@@ -31,12 +34,12 @@ func enterFunc(reader *bufio.Reader) error {
 	msgBox, exist := cli.GetMsgBox(topic)
 	if !exist {
 		fmt.Printf("Type nickname: ")
-		nickname, err := util.GetInput(reader, false)
+		nickname, err := util.GetInput(reader, false, false)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("Type public('true', 't' or 'false', 'f'): ")
-		pubStr, err := util.GetInput(reader, false)
+		pubStr, err := util.GetInput(reader, false, true)
 		if err != nil {
 			return err
 		}
@@ -83,11 +86,14 @@ func enterFunc(reader *bufio.Reader) error {
 	wait.Add(1)
 	go func() {
 		var (
+			err  error    = nil
 			stop bool     = false
 			msg  *msg.Msg = nil
 		)
 		for {
 			select {
+			case err = <-errs:
+				fmt.Printf("%s\n> ", err)
 			case msg = <-msgSubCh:
 				printMsg(msgBox, msg)
 			case <-msgStopSubCh:
@@ -105,10 +111,10 @@ func enterFunc(reader *bufio.Reader) error {
 	go func() {
 		for {
 			fmt.Printf("> ")
-			input, err := util.GetInput(reader, false)
+			input, err := util.GetInput(reader, false, true)
 			if err != nil {
 				errs <- err
-				return
+				continue
 			}
 			switch input {
 			case "/exit":
@@ -129,6 +135,52 @@ func enterFunc(reader *bufio.Reader) error {
 			case "/auth":
 				auth := msgBox.GetAuth()
 				printAuth(auth)
+				continue
+			case "/grant":
+				fmt.Printf("<address> <R|W|X>: ")
+				input, err := util.GetInput(reader, false, false)
+				if err != nil {
+					errs <- err
+					continue
+				}
+
+				// parse strings
+				strs := strings.Split(input, " ")
+				if len(strs) != 2 {
+					continue
+				}
+				addr := crypto.Addr(strs[0])
+				if len(addr) != crypto.AddrSize {
+					errs <- code.ImproperAddress
+					continue
+				}
+				r, w, x := parsePerm(strs[1])
+
+				err = msgBox.Grant(addr, r, w, x)
+				if err != nil {
+					errs <- err
+					continue
+				}
+				continue
+			case "/revoke":
+				fmt.Printf("<address>: ")
+				input, err := util.GetInput(reader, false, false)
+				if err != nil {
+					errs <- err
+					continue
+				}
+
+				addr := crypto.Addr(input)
+				if len(addr) != crypto.AddrSize {
+					errs <- code.ImproperAddress
+					continue
+				}
+
+				err = msgBox.Revoke(addr)
+				if err != nil {
+					errs <- err
+					continue
+				}
 				continue
 			case "":
 				continue
@@ -164,22 +216,22 @@ func enterFunc(reader *bufio.Reader) error {
 
 func printAuth(a *types.Auth) {
 	p := "private"
-	if a.IsPublic {
+	if a.IsPublic() {
 		p = "public"
 	}
 	str := fmt.Sprintf("Auth: %s\n", p)
 	if len(a.Perms) > 0 {
 		str += "Perms:\n"
 	}
-	for id, perm := range a.Perms {
-		str += fmt.Sprintf("[%s] ", id)
-		if perm.Read {
+	for addr, _ := range a.Perms {
+		str += fmt.Sprintf("[%s] ", addr)
+		if ok, _ := a.CanRead(addr); ok {
 			str += "R"
 		}
-		if perm.Write {
+		if ok, _ := a.CanWrite(addr); ok {
 			str += "W"
 		}
-		if perm.Execute {
+		if ok, _ := a.CanExecute(addr); ok {
 			str += "X"
 		}
 		str += "\n"
@@ -212,12 +264,26 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, msr.GetData())
 	case msg.MsgTypeHelloSyn:
 		fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
-		// do nothing
 	case msg.MsgTypeHelloAck:
-		// do nothing
 	case msg.MsgTypeBye:
-		// do nothing
+	case msg.MsgTypeUpdateSyn:
+	case msg.MsgTypeUpdateAck:
 	default:
 		fmt.Println("Unknown MsgType")
 	}
+}
+
+func parsePerm(permStr string) (bool, bool, bool) {
+	r, w, x := false, false, false
+	permStr = strings.ToUpper(permStr)
+	if strings.Contains(permStr, "R") {
+		r = true
+	}
+	if strings.Contains(permStr, "W") {
+		w = true
+	}
+	if strings.Contains(permStr, "X") {
+		x = true
+	}
+	return r, w, x
 }

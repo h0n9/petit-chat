@@ -25,7 +25,7 @@ type Box struct {
 	latestTimestamp time.Time
 	readUntilIndex  int
 
-	personae  map[crypto.Addr]*types.Persona
+	personae  types.Personae
 	msgs      []*Msg              // TODO: limit the size of msgs slice
 	msgHashes map[types.Hash]*Msg // TODO: limit the size of msgHashes map
 }
@@ -43,7 +43,7 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 		ctx:       ctx,
 		topic:     tp,
 		sub:       nil,
-		auth:      types.NewAuth(pub, make(map[types.ID]*types.Perm)),
+		auth:      types.NewAuth(pub, make(map[crypto.Addr]types.Perm)),
 		secretKey: secretKey,
 
 		myID:            mi,
@@ -53,11 +53,15 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 		latestTimestamp: time.Now(),
 		readUntilIndex:  0,
 
-		personae:  make(map[crypto.Addr]*types.Persona),
+		personae:  make(types.Personae),
 		msgs:      make([]*Msg, 0),
 		msgHashes: make(map[types.Hash]*Msg),
 	}
 	err = b.join(mp)
+	if err != nil {
+		return nil, err
+	}
+	err = grant(b.auth, b.myPersona.Address, true, true, true)
 	if err != nil {
 		return nil, err
 	}
@@ -159,12 +163,69 @@ func (b *Box) GetPersonae() map[crypto.Addr]*types.Persona {
 	return b.personae
 }
 
-func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
-	personae, exist := b.personae[cAddr]
+func (b *Box) getPersona(cAddr crypto.Addr) *types.Persona {
+	persona, exist := b.personae[cAddr]
 	if !exist {
 		return nil
 	}
-	return personae
+	return persona
+}
+
+func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
+	return b.getPersona(cAddr)
+}
+
+func grant(auth *types.Auth, addr crypto.Addr, r, w, x bool) error {
+	perm := types.NewPerm(r, w, x)
+	err := auth.SetPerm(addr, perm)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *Box) Grant(addr crypto.Addr, r, w, x bool) error {
+	newAuth, err := b.auth.Copy()
+	if err != nil {
+		return err
+	}
+	err = grant(newAuth, addr, r, w, x)
+	if err != nil {
+		return err
+	}
+
+	err = b.propagate(newAuth)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func revoke(auth *types.Auth, addr crypto.Addr) error {
+	err := auth.DeletePerm(addr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *Box) Revoke(addr crypto.Addr) error {
+	newAuth, err := b.auth.Copy()
+	if err != nil {
+		return err
+	}
+	err = revoke(newAuth, addr)
+	if err != nil {
+		return err
+	}
+
+	err = b.propagate(newAuth)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (b *Box) Close() error {
@@ -228,25 +289,38 @@ func (b *Box) append(msg *Msg) (int, error) {
 	return len(b.msgs) - 1, nil
 }
 
-func (b *Box) join(p *types.Persona) error {
-	_, exist := b.personae[p.Address]
-	if exist {
+func (b *Box) join(targetPersona *types.Persona) error {
+	oldPersona := b.getPersona(targetPersona.Address)
+	if oldPersona != nil {
 		return nil // ignore even if existing
 		// return code.ExistingPersonaInBox
 	}
-	err := p.Check()
+	err := targetPersona.Check()
 	if err != nil {
 		return err
 	}
-	b.personae[p.Address] = p
+	b.personae[targetPersona.Address] = targetPersona
 	return nil
 }
 
-func (b *Box) leave(p *types.Persona) error {
-	_, exist := b.personae[p.Address]
-	if !exist {
+func (b *Box) leave(targetPersona *types.Persona) error {
+	oldPersona := b.getPersona(targetPersona.Address)
+	if oldPersona == nil {
 		return code.NonExistingPersonaInBox
 	}
-	delete(b.personae, p.Address)
+	delete(b.personae, targetPersona.Address)
+	return nil
+}
+
+func (b *Box) propagate(auth *types.Auth) error {
+	msu := NewMsgStructUpdateSyn(auth, b.personae)
+	data, err := msu.Encapsulate()
+	if err != nil {
+		return err
+	}
+	err = b.Publish(MsgTypeUpdateSyn, types.Hash{}, true, data)
+	if err != nil {
+		return err
+	}
 	return nil
 }

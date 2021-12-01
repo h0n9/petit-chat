@@ -1,6 +1,7 @@
 package msg
 
 import (
+	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -33,35 +34,110 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 
 	// decapsulate and execute
 	switch msg.Type {
+	case MsgTypeRaw:
+		var msr MsgStructRaw
+		err := msr.Decapsulate(msg.Data)
+		if err != nil {
+			return eos, err
+		}
+		ok, err := b.auth.CanWrite(from.ClientAddr)
+		if err != nil {
+			return eos, err
+		}
+		if !ok {
+			return eos, code.NonWritePermission
+		}
 	case MsgTypeHelloSyn:
-		mshs := NewMsgStructHelloSyn(nil)
+		var mshs MsgStructHelloSyn
 		err := mshs.Decapsulate(msg.Data)
 		if err != nil {
 			return eos, err
+		}
+		ok, err := b.auth.CheckMinPerm(from.ClientAddr)
+		if err != nil {
+			return eos, err
+		}
+		if !ok {
+			return eos, code.NonMinimumPermission
 		}
 		err = mshs.Execute(b, from.PeerID, hash)
 		if err != nil {
 			return eos, err
 		}
 	case MsgTypeHelloAck:
-		msha := NewMsgStructHelloAck(nil, nil, nil)
+		var msha MsgStructHelloAck
 		err := msha.Decapsulate(msg.Data)
 		if err != nil {
 			return eos, err
 		}
+		// ok, err := b.auth.CheckMinPerm(from.ClientAddr)
+		// if err != nil {
+		// 	return eos, err
+		// }
+		// if !ok {
+		// 	return eos, code.NonMinimumPermission
+		// }
 		err = msha.Execute(b, from.PeerID)
 		if err != nil {
 			return eos, err
 		}
 	case MsgTypeBye:
-		msb := NewMsgStructBye(nil)
+		var msb MsgStructBye
 		err := msb.Decapsulate(msg.Data)
 		if err != nil {
 			return eos, err
 		}
+		ok, err := b.auth.CheckMinPerm(from.ClientAddr)
+		if err != nil {
+			return eos, err
+		}
+		if !ok {
+			return eos, code.NonMinimumPermission
+		}
 		err = msb.Execute(b, from.PeerID)
 		if err != nil {
 			return eos, err
+		}
+	case MsgTypeUpdateSyn:
+		var msus MsgStructUpdateSyn
+		err := msus.Decapsulate(msg.Data)
+		if err != nil {
+			return eos, err
+		}
+		ok, err := b.auth.CanExecute(from.ClientAddr)
+		if err != nil {
+			return eos, err
+		}
+		if ok {
+			err = msus.Execute(b)
+			if err != nil {
+				return eos, err
+			}
+		}
+		msua := NewMsgStructUpdateAck(b.auth, b.personae)
+		data, err := msua.Encapsulate()
+		if err != nil {
+			return eos, err
+		}
+		err = b.Publish(MsgTypeUpdateAck, types.Hash{}, true, data)
+		if err != nil {
+			return eos, err
+		}
+	case MsgTypeUpdateAck:
+		var msua MsgStructUpdateAck
+		err := msua.Decapsulate(msg.Data)
+		if err != nil {
+			return eos, err
+		}
+		ok, err := b.auth.CanExecute(from.ClientAddr)
+		if err != nil {
+			return eos, err
+		}
+		if ok {
+			err = msua.Execute(b)
+			if err != nil {
+				return eos, err
+			}
 		}
 	}
 

@@ -58,7 +58,7 @@ func (cmd *Cmd) Run() error {
 		fmt.Printf("%d. %s\n", 0, "exit")
 
 		// user input
-		data, err := GetInput(reader, true)
+		data, err := GetInput(reader, true, true)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -106,7 +106,7 @@ func (cmd *Cmd) getCmds() map[string]*Cmd {
 	return result
 }
 
-func GetInput(reader *bufio.Reader, guide bool) (string, error) {
+func GetInput(reader *bufio.Reader, guide, toLower bool) (string, error) {
 	if guide {
 		fmt.Printf("\n> ")
 	}
@@ -116,7 +116,9 @@ func GetInput(reader *bufio.Reader, guide bool) (string, error) {
 		return "", err
 	}
 
-	data = strings.ToLower(data)
+	if toLower {
+		data = strings.ToLower(data)
+	}
 	data = strings.TrimRight(data, "\r\n")
 
 	return data, nil

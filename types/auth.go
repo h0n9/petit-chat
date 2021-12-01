@@ -1,67 +1,104 @@
 package types
 
-type Perm struct {
-	Read    bool `json:"read"`
-	Write   bool `json:"write"`
-	Execute bool `json:"execute"`
-}
+import (
+	"encoding/json"
 
-func NewPerm(Read, Write, Execute bool) *Perm {
-	return &Perm{
-		Read:    Read,
-		Write:   Write,
-		Execute: Execute,
-	}
-}
+	"github.com/h0n9/petit-chat/code"
+)
+
+const (
+	minPermPublic  Perm = permNone
+	minPermPrivate Perm = permRead
+)
 
 type Auth struct {
-	IsPublic bool         `json:"is_public"`
-	Perms    map[ID]*Perm `json:"perms"`
+	Public bool          `json:"public"`
+	Perms  map[Addr]Perm `json:"perms"`
 }
 
-func NewAuth(isPublic bool, perms map[ID]*Perm) *Auth {
+func NewAuth(public bool, perms map[Addr]Perm) *Auth {
 	return &Auth{
-		IsPublic: isPublic,
-		Perms:    perms,
+		Public: public,
+		Perms:  perms,
 	}
 }
 
-func (a *Auth) SetPerm(id ID, perm *Perm) error {
+func (a *Auth) IsPublic() bool {
+	return a.Public
+}
+
+func (a *Auth) getPerm(addr Addr) (Perm, error) {
+	perm, exist := a.Perms[addr]
+	if !exist {
+		return 0, code.NonExistingPermission
+	}
+	return perm, nil
+}
+
+func (a *Auth) GetPerm(addr Addr) (Perm, error) {
+	return a.getPerm(addr)
+}
+
+func (a *Auth) SetPerm(addr Addr, Perm Perm) error {
 	// TODO: add constraints
-	a.Perms[id] = perm
+	a.Perms[addr] = Perm
 	return nil
 }
 
-func (a *Auth) SetPerms(perms map[ID]*Perm) error {
+func (a *Auth) SetPerms(Perms map[Addr]Perm) error {
 	// TODO: add constraints
-	a.Perms = perms
+	a.Perms = Perms
 	return nil
 }
 
-func (a *Auth) CanRead(id ID) bool {
-	canRead := false
-	if perm := a.getPerm(id); perm != nil {
-		canRead = perm.Read
+func (a *Auth) DeletePerm(addr Addr) error {
+	_, err := a.getPerm(addr)
+	if err != nil {
+		return err
 	}
-	return canRead
+	delete(a.Perms, addr)
+	return nil
 }
 
-func (a *Auth) CanWrite(id ID) bool {
-	canWrite := false
-	if perm := a.getPerm(id); perm != nil {
-		canWrite = perm.Write
+func (a *Auth) checkPerm(addr Addr, perm Perm) (bool, error) {
+	// check id in perms first
+	p, err := a.GetPerm(addr)
+	if err != nil {
+		return false, err
 	}
-	return canWrite
+	return p.canDo(perm), nil
 }
 
-func (a *Auth) CanExecute(id ID) bool {
-	canExecute := false
-	if perm := a.getPerm(id); perm != nil {
-		canExecute = perm.Execute
-	}
-	return canExecute
+func (a *Auth) CanRead(addr Addr) (bool, error) {
+	return a.checkPerm(addr, permRead)
 }
 
-func (a *Auth) getPerm(id ID) *Perm {
-	return a.Perms[id]
+func (a *Auth) CanWrite(addr Addr) (bool, error) {
+	return a.checkPerm(addr, permWrite)
+}
+
+func (a *Auth) CanExecute(addr Addr) (bool, error) {
+	return a.checkPerm(addr, permExecute)
+}
+
+func (a *Auth) CheckMinPerm(addr Addr) (bool, error) {
+	// check id's minimum permission
+	if a.Public {
+		return a.checkPerm(addr, minPermPublic)
+	} else {
+		return a.checkPerm(addr, minPermPrivate)
+	}
+}
+
+func (oldAuth *Auth) Copy() (*Auth, error) {
+	var newAuth Auth
+	data, err := json.Marshal(oldAuth)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, &newAuth)
+	if err != nil {
+		return nil, err
+	}
+	return &newAuth, nil
 }
