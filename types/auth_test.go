@@ -42,26 +42,6 @@ func TestAuth(t *testing.T) {
 	public := a.IsPublic()
 	assert.False(t, public)
 
-	// CheckMinPerm()
-	_, err = a.CheckMinPerm(addrTest0)
-	assert.Error(t, err)
-
-	ok, err := a.CheckMinPerm(addrTest1)
-	assert.NoError(t, err)
-	assert.False(t, ok)
-
-	ok, err = a.CheckMinPerm(addrTest2)
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	ok, err = a.CheckMinPerm(addrTest3)
-	assert.NoError(t, err)
-	assert.False(t, ok)
-
-	ok, err = a.CheckMinPerm(addrTest4)
-	assert.NoError(t, err)
-	assert.False(t, ok)
-
 	// add addrTest0
 	err = a.SetPerm(addrTest0, permNone)
 	assert.NoError(t, err)
@@ -70,10 +50,6 @@ func TestAuth(t *testing.T) {
 	assert.NotEqual(t, permTest0, permRead)
 	assert.Equal(t, permTest0, permNone)
 
-	ok, err = a.CheckMinPerm(addrTest0)
-	assert.NoError(t, err)
-	assert.False(t, ok)
-
 	err = a.SetPerm(addrTest0, permRead)
 	assert.NoError(t, err)
 	permTest0, err = a.getPerm(addrTest0)
@@ -81,18 +57,10 @@ func TestAuth(t *testing.T) {
 	assert.NotEqual(t, permTest0, permNone)
 	assert.Equal(t, permTest0, permRead)
 
-	ok, err = a.CheckMinPerm(addrTest0)
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
 	err = a.SetPerm(addrTest0, permRead|permWrite)
 	assert.NoError(t, err)
 	permTest0, err = a.getPerm(addrTest0)
 	assert.NoError(t, err)
 	assert.NotEqual(t, permTest0, permRead)
 	assert.Equal(t, permTest0, permRead|permWrite)
-
-	ok, err = a.CheckMinPerm(addrTest0)
-	assert.NoError(t, err)
-	assert.True(t, ok)
 }

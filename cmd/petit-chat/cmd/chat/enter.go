@@ -225,13 +225,13 @@ func printAuth(a *types.Auth) {
 	}
 	for addr, _ := range a.Perms {
 		str += fmt.Sprintf("[%s] ", addr)
-		if ok, _ := a.CanRead(addr); ok {
+		if a.CanRead(addr) {
 			str += "R"
 		}
-		if ok, _ := a.CanWrite(addr); ok {
+		if a.CanWrite(addr) {
 			str += "W"
 		}
-		if ok, _ := a.CanExecute(addr); ok {
+		if a.CanExecute(addr) {
 			str += "X"
 		}
 		str += "\n"

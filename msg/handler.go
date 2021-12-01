@@ -40,11 +40,7 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 		if err != nil {
 			return eos, err
 		}
-		ok, err := b.auth.CanWrite(from.ClientAddr)
-		if err != nil {
-			return eos, err
-		}
-		if !ok {
+		if !b.auth.CanWrite(from.ClientAddr) {
 			return eos, code.NonWritePermission
 		}
 	case MsgTypeHelloSyn:
@@ -53,12 +49,9 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 		if err != nil {
 			return eos, err
 		}
-		ok, err := b.auth.CheckMinPerm(from.ClientAddr)
-		if err != nil {
-			return eos, err
-		}
-		if !ok {
-			return eos, code.NonMinimumPermission
+		// private and cannot read
+		if !b.auth.IsPublic() && !b.auth.CanRead(from.ClientAddr) {
+			return eos, code.NonReadPermission
 		}
 		err = mshs.Execute(b, from.PeerID, hash)
 		if err != nil {
@@ -87,12 +80,9 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 		if err != nil {
 			return eos, err
 		}
-		ok, err := b.auth.CheckMinPerm(from.ClientAddr)
-		if err != nil {
-			return eos, err
-		}
-		if !ok {
-			return eos, code.NonMinimumPermission
+		// private and cannot read
+		if !b.auth.IsPublic() && !b.auth.CanRead(from.ClientAddr) {
+			return eos, code.NonReadPermission
 		}
 		err = msb.Execute(b, from.PeerID)
 		if err != nil {
@@ -104,11 +94,7 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 		if err != nil {
 			return eos, err
 		}
-		ok, err := b.auth.CanExecute(from.ClientAddr)
-		if err != nil {
-			return eos, err
-		}
-		if ok {
+		if b.auth.CanExecute(from.ClientAddr) {
 			err = msus.Execute(b)
 			if err != nil {
 				return eos, err
@@ -129,11 +115,7 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 		if err != nil {
 			return eos, err
 		}
-		ok, err := b.auth.CanExecute(from.ClientAddr)
-		if err != nil {
-			return eos, err
-		}
-		if ok {
+		if b.auth.CanExecute(from.ClientAddr) {
 			err = msua.Execute(b)
 			if err != nil {
 				return eos, err

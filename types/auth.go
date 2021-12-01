@@ -73,25 +73,28 @@ func (a *Auth) checkPerm(addr Addr, perm Perm) (bool, error) {
 	return p.canDo(perm), nil
 }
 
-func (a *Auth) CanRead(addr Addr) (bool, error) {
-	return a.checkPerm(addr, permRead)
-}
-
-func (a *Auth) CanWrite(addr Addr) (bool, error) {
-	return a.checkPerm(addr, permWrite)
-}
-
-func (a *Auth) CanExecute(addr Addr) (bool, error) {
-	return a.checkPerm(addr, permExecute)
-}
-
-func (a *Auth) CheckMinPerm(addr Addr) (bool, error) {
-	// check id's minimum permission
-	if a.Public {
-		return a.checkPerm(addr, minPermPublic)
-	} else {
-		return a.checkPerm(addr, minPermPrivate)
+func (a *Auth) CanRead(addr Addr) bool {
+	ok, err := a.checkPerm(addr, permRead)
+	if err != nil {
+		return false
 	}
+	return ok
+}
+
+func (a *Auth) CanWrite(addr Addr) bool {
+	ok, err := a.checkPerm(addr, permWrite)
+	if err != nil {
+		return false
+	}
+	return ok
+}
+
+func (a *Auth) CanExecute(addr Addr) bool {
+	ok, err := a.checkPerm(addr, permExecute)
+	if err != nil {
+		return false
+	}
+	return ok
 }
 
 func (oldAuth *Auth) Copy() (*Auth, error) {
