@@ -65,7 +65,7 @@ func TestAuth(t *testing.T) {
 	// add addrTest0
 	err = a.SetPerm(addrTest0, permNone)
 	assert.NoError(t, err)
-	permTest0, err := a.GetPerm(addrTest0)
+	permTest0, err := a.getPerm(addrTest0)
 	assert.NoError(t, err)
 	assert.NotEqual(t, permTest0, permRead)
 	assert.Equal(t, permTest0, permNone)
@@ -76,7 +76,7 @@ func TestAuth(t *testing.T) {
 
 	err = a.SetPerm(addrTest0, permRead)
 	assert.NoError(t, err)
-	permTest0, err = a.GetPerm(addrTest0)
+	permTest0, err = a.getPerm(addrTest0)
 	assert.NoError(t, err)
 	assert.NotEqual(t, permTest0, permNone)
 	assert.Equal(t, permTest0, permRead)
@@ -87,7 +87,7 @@ func TestAuth(t *testing.T) {
 
 	err = a.SetPerm(addrTest0, permRead|permWrite)
 	assert.NoError(t, err)
-	permTest0, err = a.GetPerm(addrTest0)
+	permTest0, err = a.getPerm(addrTest0)
 	assert.NoError(t, err)
 	assert.NotEqual(t, permTest0, permRead)
 	assert.Equal(t, permTest0, permRead|permWrite)

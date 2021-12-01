@@ -35,8 +35,12 @@ func (a *Auth) getPerm(addr Addr) (Perm, error) {
 	return perm, nil
 }
 
-func (a *Auth) GetPerm(addr Addr) (Perm, error) {
-	return a.getPerm(addr)
+func (a *Auth) GetPerm(addr Addr) Perm {
+	perm, err := a.getPerm(addr)
+	if err != nil {
+		return permNone
+	}
+	return perm
 }
 
 func (a *Auth) SetPerm(addr Addr, Perm Perm) error {
@@ -62,7 +66,7 @@ func (a *Auth) DeletePerm(addr Addr) error {
 
 func (a *Auth) checkPerm(addr Addr, perm Perm) (bool, error) {
 	// check id in perms first
-	p, err := a.GetPerm(addr)
+	p, err := a.getPerm(addr)
 	if err != nil {
 		return false, err
 	}
