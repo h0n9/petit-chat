@@ -81,9 +81,9 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 			return eos, err
 		}
 		// private and cannot read
-		if !b.auth.IsPublic() && !b.auth.CanRead(from.ClientAddr) {
-			return eos, code.NonReadPermission
-		}
+		// if !b.auth.IsPublic() && !b.auth.CanRead(from.ClientAddr) {
+		// 	return eos, code.NonReadPermission
+		// }
 		err = msb.Execute(b, from.PeerID)
 		if err != nil {
 			return eos, err
