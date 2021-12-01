@@ -1,6 +1,8 @@
 package types
 
 import (
+	"encoding/json"
+
 	"github.com/h0n9/petit-chat/code"
 )
 
@@ -59,17 +61,12 @@ func (a *Auth) DeletePerm(addr Addr) error {
 }
 
 func (a *Auth) checkPerm(addr Addr, perm Perm) (bool, error) {
-	ok := false
-
 	// check id in perms first
 	p, err := a.GetPerm(addr)
 	if err != nil {
-		return ok, err
+		return false, err
 	}
-
-	ok = p.canDo(perm)
-
-	return ok, nil
+	return p.canDo(perm), nil
 }
 
 func (a *Auth) CanRead(addr Addr) (bool, error) {
@@ -91,4 +88,17 @@ func (a *Auth) CheckMinPerm(addr Addr) (bool, error) {
 	} else {
 		return a.checkPerm(addr, minPermPrivate)
 	}
+}
+
+func (oldAuth *Auth) Copy() (*Auth, error) {
+	var newAuth Auth
+	data, err := json.Marshal(oldAuth)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, &newAuth)
+	if err != nil {
+		return nil, err
+	}
+	return &newAuth, nil
 }

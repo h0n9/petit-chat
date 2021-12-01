@@ -61,7 +61,7 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 	if err != nil {
 		return nil, err
 	}
-	err = b.grant(b.myPersona.Address, true, true, true)
+	err = grant(b.auth, b.myPersona.Address, true, true, true)
 	if err != nil {
 		return nil, err
 	}
@@ -175,9 +175,9 @@ func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
 	return b.getPersona(cAddr)
 }
 
-func (b *Box) grant(addr crypto.Addr, r, w, x bool) error {
+func grant(auth *types.Auth, addr crypto.Addr, r, w, x bool) error {
 	perm := types.NewPerm(r, w, x)
-	err := b.auth.SetPerm(addr, perm)
+	err := auth.SetPerm(addr, perm)
 	if err != nil {
 		return err
 	}
@@ -185,12 +185,16 @@ func (b *Box) grant(addr crypto.Addr, r, w, x bool) error {
 }
 
 func (b *Box) Grant(addr crypto.Addr, r, w, x bool) error {
-	err := b.grant(addr, r, w, x)
+	newAuth, err := b.auth.Copy()
+	if err != nil {
+		return err
+	}
+	err = grant(newAuth, addr, r, w, x)
 	if err != nil {
 		return err
 	}
 
-	err = b.propagate()
+	err = b.propagate(newAuth)
 	if err != nil {
 		return err
 	}
@@ -198,8 +202,8 @@ func (b *Box) Grant(addr crypto.Addr, r, w, x bool) error {
 	return nil
 }
 
-func (b *Box) revoke(addr crypto.Addr) error {
-	err := b.auth.DeletePerm(addr)
+func revoke(auth *types.Auth, addr crypto.Addr) error {
+	err := auth.DeletePerm(addr)
 	if err != nil {
 		return err
 	}
@@ -207,12 +211,16 @@ func (b *Box) revoke(addr crypto.Addr) error {
 }
 
 func (b *Box) Revoke(addr crypto.Addr) error {
-	err := b.revoke(addr)
+	newAuth, err := b.auth.Copy()
+	if err != nil {
+		return err
+	}
+	err = revoke(newAuth, addr)
 	if err != nil {
 		return err
 	}
 
-	err = b.propagate()
+	err = b.propagate(newAuth)
 	if err != nil {
 		return err
 	}
@@ -304,8 +312,8 @@ func (b *Box) leave(targetPersona *types.Persona) error {
 	return nil
 }
 
-func (b *Box) propagate() error {
-	msu := NewMsgStructUpdateSyn(b.auth, b.personae)
+func (b *Box) propagate(auth *types.Auth) error {
+	msu := NewMsgStructUpdateSyn(auth, b.personae)
 	data, err := msu.Encapsulate()
 	if err != nil {
 		return err

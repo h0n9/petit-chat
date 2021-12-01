@@ -16,21 +16,20 @@ func NewMsgStructUpdateSyn(auth *types.Auth, personae types.Personae) *MsgStruct
 	return &MsgStructUpdateSyn{Auth: auth, Personae: personae}
 }
 
-func (msu *MsgStructUpdateSyn) Encapsulate() ([]byte, error) {
-	return json.Marshal(msu)
+func (msus *MsgStructUpdateSyn) Encapsulate() ([]byte, error) {
+	return json.Marshal(msus)
 }
 
-func (msu *MsgStructUpdateSyn) Decapsulate(data []byte) error {
-	return json.Unmarshal(data, msu)
+func (msus *MsgStructUpdateSyn) Decapsulate(data []byte) error {
+	return json.Unmarshal(data, msus)
 }
 
-func (msu *MsgStructUpdateSyn) Execute(b *Box) error {
+func (msus *MsgStructUpdateSyn) Execute(b *Box) error {
 	if util.HasField("auth", b) {
-		b.auth = msu.Auth
+		b.auth = msus.Auth
 	}
 	if util.HasField("personae", b) {
-		b.personae = msu.Personae
+		b.personae = msus.Personae
 	}
-
 	return nil
 }

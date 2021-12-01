@@ -264,13 +264,10 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, msr.GetData())
 	case msg.MsgTypeHelloSyn:
 		fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
-		// do nothing
 	case msg.MsgTypeHelloAck:
-		// do nothing
 	case msg.MsgTypeBye:
-		// do nothing
 	case msg.MsgTypeUpdateSyn:
-		// do nothing
+	case msg.MsgTypeUpdateAck:
 	default:
 		fmt.Println("Unknown MsgType")
 	}
