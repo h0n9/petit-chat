@@ -25,7 +25,7 @@ func TestMsgSignVerify(t *testing.T) {
 	msg := Msg{
 		Timestamp:  time.Now(),
 		From:       From{},
-		Type:       MsgTypeRaw,
+		Type:       TypeRaw,
 		ParentHash: types.Hash{},
 		Encrypted:  false,
 		Data:       []byte("hello world"),

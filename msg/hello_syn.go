@@ -45,7 +45,7 @@ func (mshs *MsgStructHelloSyn) Execute(b *Box, fromPeerID types.ID, hash types.H
 		return err
 	}
 
-	err = b.Publish(MsgTypeHelloAck, hash, false, data)
+	err = b.Publish(TypeHelloAck, hash, false, data)
 	if err != nil {
 		return err
 	}

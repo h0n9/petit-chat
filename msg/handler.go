@@ -34,7 +34,7 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 
 	// decapsulate and execute
 	switch msg.Type {
-	case MsgTypeRaw:
+	case TypeRaw:
 		var msr MsgStructRaw
 		err := msr.Decapsulate(msg.Data)
 		if err != nil {
@@ -43,7 +43,7 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 		if !b.auth.CanWrite(from.ClientAddr) {
 			return eos, code.NonWritePermission
 		}
-	case MsgTypeHelloSyn:
+	case TypeHelloSyn:
 		var mshs MsgStructHelloSyn
 		err := mshs.Decapsulate(msg.Data)
 		if err != nil {
@@ -57,7 +57,7 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 		if err != nil {
 			return eos, err
 		}
-	case MsgTypeHelloAck:
+	case TypeHelloAck:
 		var msha MsgStructHelloAck
 		err := msha.Decapsulate(msg.Data)
 		if err != nil {
@@ -74,7 +74,7 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 		if err != nil {
 			return eos, err
 		}
-	case MsgTypeBye:
+	case TypeBye:
 		var msb MsgStructBye
 		err := msb.Decapsulate(msg.Data)
 		if err != nil {
@@ -88,7 +88,7 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 		if err != nil {
 			return eos, err
 		}
-	case MsgTypeUpdateSyn:
+	case TypeUpdateSyn:
 		var msus MsgStructUpdateSyn
 		err := msus.Decapsulate(msg.Data)
 		if err != nil {
@@ -105,11 +105,11 @@ func DefaultMsgHandler(b *Box, msg *Msg, fromID types.ID) (bool, error) {
 		if err != nil {
 			return eos, err
 		}
-		err = b.Publish(MsgTypeUpdateAck, types.Hash{}, true, data)
+		err = b.Publish(TypeUpdateAck, types.Hash{}, true, data)
 		if err != nil {
 			return eos, err
 		}
-	case MsgTypeUpdateAck:
+	case TypeUpdateAck:
 		var msua MsgStructUpdateAck
 		err := msua.Decapsulate(msg.Data)
 		if err != nil {

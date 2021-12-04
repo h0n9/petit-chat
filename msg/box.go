@@ -70,14 +70,14 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 	if err != nil {
 		return nil, err
 	}
-	err = b.Publish(MsgTypeHelloSyn, types.Hash{}, false, data)
+	err = b.Publish(TypeHelloSyn, types.Hash{}, false, data)
 	if err != nil {
 		return nil, err
 	}
 	return &b, nil
 }
 
-func (b *Box) Publish(t MsgType, parentMsgHash types.Hash, encrypt bool, data []byte) error {
+func (b *Box) Publish(t Type, parentMsgHash types.Hash, encrypt bool, data []byte) error {
 	if len(data) == 0 {
 		// this is not error
 		return nil
@@ -235,7 +235,7 @@ func (b *Box) Close() error {
 	if err != nil {
 		return err
 	}
-	return b.Publish(MsgTypeBye, types.Hash{}, false, data)
+	return b.Publish(TypeBye, types.Hash{}, false, data)
 }
 
 func (b *Box) Subscribing() bool {
@@ -318,7 +318,7 @@ func (b *Box) propagate(auth *types.Auth) error {
 	if err != nil {
 		return err
 	}
-	err = b.Publish(MsgTypeUpdateSyn, types.Hash{}, true, data)
+	err = b.Publish(TypeUpdateSyn, types.Hash{}, true, data)
 	if err != nil {
 		return err
 	}

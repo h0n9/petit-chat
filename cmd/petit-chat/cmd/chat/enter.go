@@ -199,8 +199,8 @@ func enterFunc(reader *bufio.Reader) error {
 				errs <- err
 			}
 
-			// CLI supports ONLY MsgTypeText
-			err = msgBox.Publish(msg.MsgTypeRaw, types.Hash{}, true, data)
+			// CLI supports ONLY TypeText
+			err = msgBox.Publish(msg.TypeRaw, types.Hash{}, true, data)
 			if err != nil {
 				errs <- err
 				return
@@ -252,7 +252,7 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 		nickname = persona.GetNickname()
 	}
 	switch m.GetType() {
-	case msg.MsgTypeRaw:
+	case msg.TypeRaw:
 		msr, err := msg.NewMsgStructRaw(nil, nil)
 		if err != nil {
 			return
@@ -262,14 +262,14 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 			return
 		}
 		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, msr.GetData())
-	case msg.MsgTypeHelloSyn:
+	case msg.TypeHelloSyn:
 		fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
-	case msg.MsgTypeHelloAck:
-	case msg.MsgTypeBye:
-	case msg.MsgTypeUpdateSyn:
-	case msg.MsgTypeUpdateAck:
+	case msg.TypeHelloAck:
+	case msg.TypeBye:
+	case msg.TypeUpdateSyn:
+	case msg.TypeUpdateAck:
 	default:
-		fmt.Println("Unknown MsgType")
+		fmt.Println("Unknown Type")
 	}
 }
 

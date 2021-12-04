@@ -24,7 +24,7 @@ type Msg struct {
 	Hash       types.Hash `json:"hash"`
 	Timestamp  time.Time  `json:"timestamp"`
 	From       From       `json:"from"`
-	Type       MsgType    `json:"type"`
+	Type       Type       `json:"type"`
 	ParentHash types.Hash `json:"parent_hash"`
 	Encrypted  bool       `json:"encrypted"`
 	Data       []byte     `json:"data"`
@@ -35,7 +35,7 @@ type MsgToSign struct {
 	Hash       types.Hash `json:"-"`
 	Timestamp  time.Time  `json:"timestamp"`
 	From       From       `json:"from"`
-	Type       MsgType    `json:"type"`
+	Type       Type       `json:"type"`
 	ParentHash types.Hash `json:"parent_hash"`
 	Encrypted  bool       `json:"encrypted"`
 	Data       []byte     `json:"data"`
@@ -51,7 +51,7 @@ type MsgEx struct {
 }
 
 func NewMsg(pID types.ID, cAddr crypto.Addr,
-	msgType MsgType, parentHash types.Hash, encrypted bool, data []byte,
+	t Type, parentHash types.Hash, encrypted bool, data []byte,
 ) (*Msg, error) {
 	msg := Msg{
 		Timestamp: time.Now(),
@@ -59,7 +59,7 @@ func NewMsg(pID types.ID, cAddr crypto.Addr,
 			PeerID:     pID,
 			ClientAddr: cAddr,
 		},
-		Type:       msgType,
+		Type:       t,
 		ParentHash: parentHash,
 		Encrypted:  encrypted,
 		Data:       data,
@@ -76,7 +76,7 @@ func (msg *Msg) GetFrom() From {
 	return msg.From
 }
 
-func (msg *Msg) GetType() MsgType {
+func (msg *Msg) GetType() Type {
 	return msg.Type
 }
 
@@ -105,7 +105,7 @@ func (msg *Msg) GetParentHash() types.Hash {
 }
 
 func (msg *Msg) IsEOS() bool {
-	return msg.Type == MsgTypeBye
+	return msg.Type == TypeBye
 }
 
 func (msg *Msg) Sign(privKey *crypto.PrivKey) error {
