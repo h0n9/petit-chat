@@ -24,3 +24,4 @@ Brother'.
   - [ ] Enhance msgBox internal metadata
   - [ ] Advance msgBox store
 - [ ] Conduct sub-tasks
+- [ ] Release `v0.0.1`
