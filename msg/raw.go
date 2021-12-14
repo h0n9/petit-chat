@@ -1,9 +1,8 @@
 package msg
 
 import (
-	"encoding/json"
-
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/types"
 )
 
 // TODO: fix size constraint
@@ -12,50 +11,24 @@ const (
 	MaxMetadataSize = 1000
 )
 
-type MsgStructRaw struct {
+type BodyRaw struct {
 	Data     []byte `json:"data"`
 	Metadata []byte `json:"metadata"`
 }
 
-func NewMsgStructRaw(data, metadata []byte) (*MsgStructRaw, error) {
-	msr := MsgStructRaw{Data: data, Metadata: metadata}
-	err := msr.check()
-	if err != nil {
-		return nil, err
+func (body *BodyRaw) Check(box *Box, from *From) error {
+	if len(body.Data) > MaxDataSize {
+		return code.TooBigMsgData
 	}
-	return &msr, nil
-}
-
-func (msr *MsgStructRaw) GetData() []byte {
-	return msr.Data
-}
-
-func (msr *MsgStructRaw) GetMetadata() []byte {
-	return msr.Metadata
-}
-
-func (msr *MsgStructRaw) Encapsulate() ([]byte, error) {
-	return json.Marshal(msr)
-}
-
-func (msr *MsgStructRaw) Decapsulate(data []byte) error {
-	err := json.Unmarshal(data, msr)
-	if err != nil {
-		return err
+	if len(body.Metadata) > MaxMetadataSize {
+		return code.TooBigMsgMetadata
 	}
-	err = msr.check()
-	if err != nil {
-		return err
+	if !box.auth.CanWrite(from.ClientAddr) {
+		return code.NonWritePermission
 	}
 	return nil
 }
 
-func (msr *MsgStructRaw) check() error {
-	if len(msr.Data) > MaxDataSize {
-		return code.TooBigMsgData
-	}
-	if len(msr.Metadata) > MaxMetadataSize {
-		return code.TooBigMsgMetadata
-	}
+func (body *BodyRaw) Execute(box *Box, hash types.Hash) error {
 	return nil
 }

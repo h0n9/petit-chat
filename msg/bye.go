@@ -1,36 +1,28 @@
 package msg
 
 import (
-	"encoding/json"
-
+	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/types"
 )
 
-type MsgStructBye struct {
+type BodyBye struct {
 	Persona *types.Persona `json:"persona"`
 }
 
-func NewMsgStructBye(persona *types.Persona) *MsgStructBye {
-	return &MsgStructBye{Persona: persona}
-}
-
-func (msb *MsgStructBye) Encapsulate() ([]byte, error) {
-	return json.Marshal(msb)
-}
-
-func (msb *MsgStructBye) Decapsulate(data []byte) error {
-	return json.Unmarshal(data, msb)
-}
-
-func (msb *MsgStructBye) Execute(b *Box, fromPeerID types.ID) error {
-	if fromPeerID == b.myID {
-		return nil
+func (body *BodyBye) Check(box *Box, from *From) error {
+	// if from.PeerID == box.myID {
+	// 	return code.SelfMsg
+	// }
+	if persona := box.getPersona(from.ClientAddr); persona == nil {
+		return code.NonExistingPersonaInBox
 	}
+	return nil
+}
 
-	err := b.leave(msb.Persona)
+func (body *BodyBye) Execute(box *Box, hash types.Hash) error {
+	err := box.leave(body.Persona)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }

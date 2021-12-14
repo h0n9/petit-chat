@@ -2,6 +2,7 @@ package msg
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -39,7 +40,7 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 	if err != nil {
 		return nil, err
 	}
-	b := Box{
+	box := Box{
 		ctx:       ctx,
 		topic:     tp,
 		sub:       nil,
@@ -57,51 +58,88 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 		msgs:      make([]*Msg, 0),
 		msgHashes: make(map[types.Hash]*Msg),
 	}
-	err = b.join(mp)
+	err = box.join(mp)
 	if err != nil {
 		return nil, err
 	}
-	err = grant(b.auth, b.myPersona.Address, true, true, true)
+	err = grant(box.auth, box.myPersona.Address, true, true, true)
 	if err != nil {
 		return nil, err
 	}
-	msh := NewMsgStructHelloSyn(b.myPersona)
-	data, err := msh.Encapsulate()
+	msg, err := NewMsg(mi, mp.Address, types.EmptyHash, &BodyHelloSyn{
+		Persona: mp,
+	})
 	if err != nil {
 		return nil, err
 	}
-	err = b.Publish(TypeHelloSyn, types.Hash{}, false, data)
+	err = box.Publish(msg, TypeHelloSyn, false)
 	if err != nil {
 		return nil, err
 	}
-	return &b, nil
+	return &box, nil
 }
 
-func (b *Box) Publish(t Type, parentMsgHash types.Hash, encrypt bool, data []byte) error {
-	if len(data) == 0 {
-		// this is not error
-		return nil
+func (b *Box) Encapsulate(msg *Msg, msgType Type, encrypt bool) ([]byte, error) {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return nil, err
 	}
+
 	if encrypt {
-		encryptedData, err := b.secretKey.Encrypt(data)
+		data, err = b.secretKey.Encrypt(data)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		data = encryptedData
 	}
-	msg, err := NewMsg(b.myID, b.myPersona.Address, t, parentMsgHash, encrypt, data)
+
+	data, err = json.Marshal(&MsgCapsule{
+		Encrypted: encrypt,
+		Type:      msgType,
+		Data:      data,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (b *Box) Decapsulate(data []byte) (*Msg, error) {
+	msgCapsule := MsgCapsule{}
+	msg := Msg{}
+
+	err := json.Unmarshal(data, &msgCapsule)
+	if err != nil {
+		return nil, err
+	}
+
+	if msgCapsule.Encrypted {
+		msgCapsule.Data, err = b.secretKey.Decrypt(msgCapsule.Data)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	msg.Body = msgCapsule.Type.Body()
+
+	err = json.Unmarshal(msgCapsule.Data, &msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &msg, nil
+}
+
+func (box *Box) Publish(msg *Msg, msgType Type, encrypt bool) error {
+	err := msg.Sign(box.myPrivKey)
 	if err != nil {
 		return err
 	}
-	err = msg.Sign(b.myPrivKey)
+	data, err := box.Encapsulate(msg, msgType, encrypt)
 	if err != nil {
 		return err
 	}
-	data, err = msg.Encapsulate()
-	if err != nil {
-		return err
-	}
-	err = b.topic.Publish(b.ctx, data)
+	err = box.topic.Publish(box.ctx, data)
 	if err != nil {
 		return err
 	}
@@ -127,8 +165,7 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 			continue
 		}
 		data := received.GetData()
-		msg := new(Msg)
-		err = msg.Decapsulate(data)
+		msg, err := b.Decapsulate(data)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -138,7 +175,7 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 			fmt.Println(err)
 			continue
 		}
-		eos, err := handler(b, msg, received.GetFrom())
+		eos, err := handler(b, msg)
 		if err != nil {
 			// TODO: replace fmt.Println() to logger.Println()
 			fmt.Println(err)
@@ -175,6 +212,14 @@ func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
 	return b.getPersona(cAddr)
 }
 
+func (b *Box) GetMyID() types.ID {
+	return b.myID
+}
+
+func (b *Box) GetMyPersona() *types.Persona {
+	return b.myPersona
+}
+
 func grant(auth *types.Auth, addr crypto.Addr, r, w, x bool) error {
 	perm := types.NewPerm(r, w, x)
 	err := auth.SetPerm(addr, perm)
@@ -194,7 +239,7 @@ func (b *Box) Grant(addr crypto.Addr, r, w, x bool) error {
 		return err
 	}
 
-	err = b.propagate(newAuth)
+	err = b.propagate(newAuth, b.personae)
 	if err != nil {
 		return err
 	}
@@ -220,7 +265,7 @@ func (b *Box) Revoke(addr crypto.Addr) error {
 		return err
 	}
 
-	err = b.propagate(newAuth)
+	err = b.propagate(newAuth, b.personae)
 	if err != nil {
 		return err
 	}
@@ -230,12 +275,13 @@ func (b *Box) Revoke(addr crypto.Addr) error {
 
 func (b *Box) Close() error {
 	// Announe EOS to others (application layer)
-	msb := NewMsgStructBye(b.myPersona)
-	data, err := msb.Encapsulate()
+	msg, err := NewMsg(b.myID, b.myPersona.Address, types.EmptyHash, &BodyBye{
+		Persona: b.myPersona,
+	})
 	if err != nil {
 		return err
 	}
-	return b.Publish(TypeBye, types.Hash{}, false, data)
+	return b.Publish(msg, TypeBye, true)
 }
 
 func (b *Box) Subscribing() bool {
@@ -312,13 +358,15 @@ func (b *Box) leave(targetPersona *types.Persona) error {
 	return nil
 }
 
-func (b *Box) propagate(auth *types.Auth) error {
-	msu := NewMsgStructUpdateSyn(auth, b.personae)
-	data, err := msu.Encapsulate()
+func (b *Box) propagate(auth *types.Auth, personae types.Personae) error {
+	msg, err := NewMsg(b.myID, b.myPersona.Address, types.EmptyHash, &BodyUpdate{
+		Auth:     auth,
+		Personae: personae,
+	})
 	if err != nil {
 		return err
 	}
-	err = b.Publish(TypeUpdateSyn, types.Hash{}, true, data)
+	err = b.Publish(msg, TypeUpdate, true)
 	if err != nil {
 		return err
 	}

@@ -1,51 +1,46 @@
 package msg
 
 import (
-	"encoding/json"
-
+	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/types"
 )
 
-type MsgStructHelloSyn struct {
+type BodyHelloSyn struct {
 	Persona *types.Persona `json:"persona"`
 }
 
-func NewMsgStructHelloSyn(persona *types.Persona) *MsgStructHelloSyn {
-	return &MsgStructHelloSyn{Persona: persona}
-}
-
-func (mshs *MsgStructHelloSyn) Encapsulate() ([]byte, error) {
-	return json.Marshal(mshs)
-}
-
-func (mshs *MsgStructHelloSyn) Decapsulate(data []byte) error {
-	return json.Unmarshal(data, mshs)
-}
-
-func (mshs *MsgStructHelloSyn) Execute(b *Box, fromPeerID types.ID, hash types.Hash) error {
-	// TODO: check more constraints for fromPeerID
-	if fromPeerID == b.myID {
-		return nil
+func (body *BodyHelloSyn) Check(box *Box, from *From) error {
+	// if from.PeerID == box.myID {
+	// 	return code.SelfMsg
+	// }
+	if !box.auth.IsPublic() && !box.auth.CanRead(from.ClientAddr) {
+		return code.NonReadPermission
 	}
+	return nil
+}
 
-	err := b.join(mshs.Persona)
+func (body *BodyHelloSyn) Execute(box *Box, hash types.Hash) error {
+	err := box.join(body.Persona)
 	if err != nil {
 		return err
 	}
 
 	// encrypt b.secretKey with msh.Persona.PubKey.GetKey()
-	encryptedSecretKey, err := mshs.Persona.PubKey.Encrypt(b.secretKey.GetKey())
+	encryptedSecretKey, err := body.Persona.PubKey.Encrypt(box.secretKey.GetKey())
 	if err != nil {
 		return err
 	}
 
-	msh := NewMsgStructHelloAck(b.myPersona, b.auth, encryptedSecretKey)
-	data, err := msh.Encapsulate()
+	msg, err := NewMsg(box.myID, box.myPersona.Address, hash, &BodyHelloAck{
+		Personae:           box.personae,
+		Auth:               box.auth,
+		EncryptedSecretKey: encryptedSecretKey,
+	})
 	if err != nil {
 		return err
 	}
 
-	err = b.Publish(TypeHelloAck, hash, false, data)
+	err = box.Publish(msg, TypeHelloAck, false)
 	if err != nil {
 		return err
 	}

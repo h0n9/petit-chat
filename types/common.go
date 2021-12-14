@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	emptyHash = Hash{}
+	EmptyHash = Hash{}
 )
 
 type (
@@ -29,5 +29,5 @@ type (
 )
 
 func (h Hash) IsEmpty() bool {
-	return bytes.Equal(h[:], emptyHash[:])
+	return bytes.Equal(h[:], EmptyHash[:])
 }

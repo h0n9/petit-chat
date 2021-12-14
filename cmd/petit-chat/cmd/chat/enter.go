@@ -189,18 +189,16 @@ func enterFunc(reader *bufio.Reader) error {
 				break
 			}
 
-			// encapulate user input into MsgStructText
-			mst, err := msg.NewMsgStructRaw([]byte(input), nil)
-			if err != nil {
-				errs <- err
-			}
-			data, err := mst.Encapsulate()
-			if err != nil {
-				errs <- err
-			}
-
 			// CLI supports ONLY TypeText
-			err = msgBox.Publish(msg.TypeRaw, types.Hash{}, true, data)
+			myID := msgBox.GetMyID()
+			myPersona := msgBox.GetMyPersona()
+			m, err := msg.NewMsg(myID, myPersona.Address, types.EmptyHash, &msg.BodyRaw{
+				Data: []byte(input),
+			})
+			if err != nil {
+				errs <- err
+			}
+			err = msgBox.Publish(m, msg.TypeRaw, true)
 			if err != nil {
 				errs <- err
 				return
@@ -251,23 +249,15 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 	if persona != nil {
 		nickname = persona.GetNickname()
 	}
-	switch m.GetType() {
-	case msg.TypeRaw:
-		msr, err := msg.NewMsgStructRaw(nil, nil)
-		if err != nil {
-			return
-		}
-		err = msr.Decapsulate(m.GetData())
-		if err != nil {
-			return
-		}
-		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, msr.GetData())
-	case msg.TypeHelloSyn:
+	switch m.Body.(type) {
+	case *msg.BodyRaw:
+		msgBodyRaw := m.Body.(*msg.BodyRaw)
+		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, msgBodyRaw.Data)
+	case *msg.BodyHelloSyn:
 		fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
-	case msg.TypeHelloAck:
-	case msg.TypeBye:
-	case msg.TypeUpdateSyn:
-	case msg.TypeUpdateAck:
+	case *msg.BodyHelloAck:
+	case *msg.BodyBye:
+	case *msg.BodyUpdate:
 	default:
 		fmt.Println("Unknown Type")
 	}

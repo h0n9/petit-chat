@@ -10,18 +10,41 @@ const (
 	TypeHelloSyn
 	TypeHelloAck
 	TypeBye // End of Subscription
-	TypeUpdateSyn
-	TypeUpdateAck
+	TypeUpdate
 )
 
-var TypeMap = map[Type]string{
-	TypeNone:      "TypeNone",
-	TypeRaw:       "TypeRaw",
-	TypeHelloSyn:  "TypeHelloSyn",
-	TypeHelloAck:  "TypeHelloAck",
-	TypeBye:       "TypeBye",
-	TypeUpdateSyn: "TypeUpdateSyn",
-	TypeUpdateAck: "TypeUpdateAck",
+var TypeStrMap = map[Type]string{
+	TypeNone:     "TypeNone",
+	TypeRaw:      "TypeRaw",
+	TypeHelloSyn: "TypeHelloSyn",
+	TypeHelloAck: "TypeHelloAck",
+	TypeBye:      "TypeBye",
+	TypeUpdate:   "TypeUpdate",
+}
+
+var TypeBodyMap = map[Type]Body{
+	TypeRaw:      &BodyRaw{},
+	TypeHelloSyn: &BodyHelloSyn{},
+	TypeHelloAck: &BodyHelloAck{},
+	TypeBye:      &BodyBye{},
+	TypeUpdate:   &BodyUpdate{},
+}
+
+func (t Type) Body() Body {
+	switch t {
+	case TypeRaw:
+		return &BodyRaw{}
+	case TypeHelloSyn:
+		return &BodyHelloSyn{}
+	case TypeHelloAck:
+		return &BodyHelloAck{}
+	case TypeBye:
+		return &BodyBye{}
+	case TypeUpdate:
+		return &BodyUpdate{}
+	default:
+		return nil
+	}
 }
 
 func (t Type) String() string {
@@ -29,11 +52,11 @@ func (t Type) String() string {
 	if err != nil {
 		return ""
 	}
-	return TypeMap[t]
+	return TypeStrMap[t]
 }
 
 func (t Type) Check() error {
-	_, exist := TypeMap[t]
+	_, exist := TypeStrMap[t]
 	if !exist {
 		return code.UnknownMsgType
 	}

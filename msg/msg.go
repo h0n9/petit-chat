@@ -15,6 +15,11 @@ type From struct {
 	ClientAddr crypto.Addr `json:"client_addr"`
 }
 
+type Body interface {
+	Check(*Box, *From) error
+	Execute(*Box, types.Hash) error
+}
+
 type Signature struct {
 	PubKey   crypto.PubKey `json:"pubkey"`
 	SigBytes []byte        `json:"sig_bytes"`
@@ -24,10 +29,8 @@ type Msg struct {
 	Hash       types.Hash `json:"hash"`
 	Timestamp  time.Time  `json:"timestamp"`
 	From       From       `json:"from"`
-	Type       Type       `json:"type"`
 	ParentHash types.Hash `json:"parent_hash"`
-	Encrypted  bool       `json:"encrypted"`
-	Data       []byte     `json:"data"`
+	Body       Body       `json:"body"`
 	Signature  Signature  `json:"signature"`
 }
 
@@ -35,14 +38,18 @@ type MsgToSign struct {
 	Hash       types.Hash `json:"-"`
 	Timestamp  time.Time  `json:"timestamp"`
 	From       From       `json:"from"`
-	Type       Type       `json:"type"`
 	ParentHash types.Hash `json:"parent_hash"`
-	Encrypted  bool       `json:"encrypted"`
-	Data       []byte     `json:"data"`
+	Body       Body       `json:"body"`
 	Signature  Signature  `json:"-"`
 }
 
 type MsgToVerify MsgToSign
+
+type MsgCapsule struct {
+	Encrypted bool   `json:"encrpyted"`
+	Type      Type   `json:"type"`
+	Data      []byte `json:"data"`
+}
 
 type MsgEx struct {
 	Read     bool `json:"read"`
@@ -50,19 +57,15 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(pID types.ID, cAddr crypto.Addr,
-	t Type, parentHash types.Hash, encrypted bool, data []byte,
-) (*Msg, error) {
+func NewMsg(pID types.ID, cAddr crypto.Addr, parentHash types.Hash, body Body) (*Msg, error) {
 	msg := Msg{
 		Timestamp: time.Now(),
 		From: From{
 			PeerID:     pID,
 			ClientAddr: cAddr,
 		},
-		Type:       t,
 		ParentHash: parentHash,
-		Encrypted:  encrypted,
-		Data:       data,
+		Body:       body,
 	}
 	hash, err := msg.hash()
 	if err != nil {
@@ -72,20 +75,16 @@ func NewMsg(pID types.ID, cAddr crypto.Addr,
 	return &msg, nil
 }
 
-func (msg *Msg) GetFrom() From {
-	return msg.From
+func (msg *Msg) GetFrom() *From {
+	return &msg.From
 }
 
-func (msg *Msg) GetType() Type {
-	return msg.Type
+func (msg *Msg) GetBody() Body {
+	return msg.Body
 }
 
-func (msg *Msg) GetData() []byte {
-	return msg.Data
-}
-
-func (msg *Msg) SetData(data []byte) {
-	msg.Data = data
+func (msg *Msg) SetBody(body Body) {
+	msg.Body = body
 }
 
 func (msg *Msg) GetTimestamp() time.Time {
@@ -105,7 +104,11 @@ func (msg *Msg) GetParentHash() types.Hash {
 }
 
 func (msg *Msg) IsEOS() bool {
-	return msg.Type == TypeBye
+	switch msg.Body.(type) {
+	case *BodyBye:
+		return true
+	}
+	return false
 }
 
 func (msg *Msg) Sign(privKey *crypto.PrivKey) error {
@@ -144,16 +147,6 @@ func (msg *Msg) Verify() error {
 	return nil
 }
 
-func (msg *Msg) Encapsulate() ([]byte, error) {
-	// TODO: change to other format (later)
-	return MarshalJSON(msg)
-}
-
-func (msg *Msg) Decapsulate(data []byte) error {
-	// TODO: change to other format (later)
-	return UnmarshalJSON(data, msg)
-}
-
 func MarshalJSON(msg *Msg) ([]byte, error) {
 	return json.Marshal(msg)
 }
@@ -186,13 +179,6 @@ func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {
 }
 
 func (msg *Msg) check(b *Box) error {
-	// check msgType
-	mt := msg.GetType()
-	err := mt.Check()
-	if err != nil {
-		return err
-	}
-
 	// check msg.ParentMsgHash
 	pm, err := msg.getParentMsg(b)
 	if err != nil {

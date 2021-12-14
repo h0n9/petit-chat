@@ -11,6 +11,19 @@ import (
 	"github.com/h0n9/petit-chat/types"
 )
 
+type BodyTest struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
+}
+
+func (body *BodyTest) Check(box *Box, from *From) error {
+	return nil
+}
+
+func (body *BodyTest) Execute(box *Box, hash types.Hash) error {
+	return nil
+}
+
 func TestMsgSignVerify(t *testing.T) {
 	privKey1, err := crypto.GenPrivKey()
 	assert.Nil(t, err)
@@ -25,10 +38,11 @@ func TestMsgSignVerify(t *testing.T) {
 	msg := Msg{
 		Timestamp:  time.Now(),
 		From:       From{},
-		Type:       TypeRaw,
 		ParentHash: types.Hash{},
-		Encrypted:  false,
-		Data:       []byte("hello world"),
+		Body: &BodyTest{
+			Name:    "nothing",
+			Content: "this is nothing.",
+		},
 	}
 	err = msg.Sign(&privKey1)
 	assert.Nil(t, err)
