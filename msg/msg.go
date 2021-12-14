@@ -57,8 +57,8 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(pID types.ID, cAddr crypto.Addr, parentHash types.Hash, body Body) (*Msg, error) {
-	msg := Msg{
+func NewMsg(pID types.ID, cAddr crypto.Addr, parentHash types.Hash, body Body) *Msg {
+	return &Msg{
 		Timestamp: time.Now(),
 		From: From{
 			PeerID:     pID,
@@ -67,12 +67,6 @@ func NewMsg(pID types.ID, cAddr crypto.Addr, parentHash types.Hash, body Body) (
 		ParentHash: parentHash,
 		Body:       body,
 	}
-	hash, err := msg.hash()
-	if err != nil {
-		return nil, err
-	}
-	msg.Hash = hash
-	return &msg, nil
 }
 
 func (msg *Msg) GetFrom() *From {
@@ -153,14 +147,6 @@ func MarshalJSON(msg *Msg) ([]byte, error) {
 
 func UnmarshalJSON(data []byte, msg *Msg) error {
 	return json.Unmarshal(data, msg)
-}
-
-func (msg *Msg) hash() (types.Hash, error) {
-	b, err := MarshalJSON(msg)
-	if err != nil {
-		return types.Hash{}, err
-	}
-	return util.ToSHA256(b), nil
 }
 
 func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {

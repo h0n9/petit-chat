@@ -192,12 +192,9 @@ func enterFunc(reader *bufio.Reader) error {
 			// CLI supports ONLY TypeText
 			myID := msgBox.GetMyID()
 			myPersona := msgBox.GetMyPersona()
-			m, err := msg.NewMsg(myID, myPersona.Address, types.EmptyHash, &msg.BodyRaw{
+			m := msg.NewMsg(myID, myPersona.Address, types.EmptyHash, &msg.BodyRaw{
 				Data: []byte(input),
 			})
-			if err != nil {
-				errs <- err
-			}
 			err = msgBox.Publish(m, msg.TypeRaw, true)
 			if err != nil {
 				errs <- err

@@ -31,14 +31,11 @@ func (body *BodyHelloSyn) Execute(box *Box, hash types.Hash) error {
 		return err
 	}
 
-	msg, err := NewMsg(box.myID, box.myPersona.Address, hash, &BodyHelloAck{
+	msg:= NewMsg(box.myID, box.myPersona.Address, hash, &BodyHelloAck{
 		Personae:           box.personae,
 		Auth:               box.auth,
 		EncryptedSecretKey: encryptedSecretKey,
 	})
-	if err != nil {
-		return err
-	}
 
 	err = box.Publish(msg, TypeHelloAck, false)
 	if err != nil {
