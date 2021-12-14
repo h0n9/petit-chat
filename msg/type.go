@@ -22,14 +22,6 @@ var TypeStrMap = map[Type]string{
 	TypeUpdate:   "TypeUpdate",
 }
 
-var TypeBodyMap = map[Type]Body{
-	TypeRaw:      &BodyRaw{},
-	TypeHelloSyn: &BodyHelloSyn{},
-	TypeHelloAck: &BodyHelloAck{},
-	TypeBye:      &BodyBye{},
-	TypeUpdate:   &BodyUpdate{},
-}
-
 func (t Type) Body() Body {
 	switch t {
 	case TypeRaw:

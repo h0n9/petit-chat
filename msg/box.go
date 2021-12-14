@@ -120,7 +120,11 @@ func (b *Box) Decapsulate(data []byte) (*Msg, error) {
 		}
 	}
 
-	msg.Body = msgCapsule.Type.Body()
+	body := msgCapsule.Type.Body()
+	if body == nil {
+		return nil, code.UnknownMsgType
+	}
+	msg.Body = body
 
 	err = json.Unmarshal(msgCapsule.Data, &msg)
 	if err != nil {
