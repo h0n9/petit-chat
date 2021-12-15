@@ -31,8 +31,9 @@ type Box struct {
 	msgHashes map[types.Hash]*Msg // TODO: limit the size of msgHashes map
 }
 
-func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *crypto.PrivKey, mp *types.Persona) (*Box, error) {
-	err := mp.Check()
+func NewBox(ctx context.Context, topic *types.Topic, public bool,
+	myID types.ID, myPrivKey *crypto.PrivKey, myPersona *types.Persona) (*Box, error) {
+	err := myPersona.Check()
 	if err != nil {
 		return nil, err
 	}
@@ -42,14 +43,14 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 	}
 	box := Box{
 		ctx:       ctx,
-		topic:     tp,
+		topic:     topic,
 		sub:       nil,
-		auth:      types.NewAuth(pub, make(map[crypto.Addr]types.Perm)),
+		auth:      types.NewAuth(public, make(map[crypto.Addr]types.Perm)),
 		secretKey: secretKey,
 
-		myID:            mi,
-		myPrivKey:       mpk,
-		myPersona:       mp,
+		myID:            myID,
+		myPrivKey:       myPrivKey,
+		myPersona:       myPersona,
 		msgSubCh:        nil,
 		latestTimestamp: time.Now(),
 		readUntilIndex:  0,
@@ -58,7 +59,7 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 		msgs:      make([]*Msg, 0),
 		msgHashes: make(map[types.Hash]*Msg),
 	}
-	err = box.join(mp)
+	err = box.join(myPersona)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +68,7 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 		return nil, err
 	}
 	msg := NewMsg(box.myID, types.EmptyHash, &BodyHelloSyn{
-		Persona: mp,
+		Persona: myPersona,
 	})
 	err = box.Publish(msg, TypeHelloSyn, false)
 	if err != nil {
@@ -76,14 +77,14 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 	return &box, nil
 }
 
-func (b *Box) Encapsulate(msg *Msg, msgType Type, encrypt bool) ([]byte, error) {
+func (box *Box) Encapsulate(msg *Msg, msgType Type, encrypt bool) ([]byte, error) {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
 	}
 
 	if encrypt {
-		data, err = b.secretKey.Encrypt(data)
+		data, err = box.secretKey.Encrypt(data)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +102,7 @@ func (b *Box) Encapsulate(msg *Msg, msgType Type, encrypt bool) ([]byte, error) 
 	return data, nil
 }
 
-func (b *Box) Decapsulate(data []byte) (*Msg, error) {
+func (box *Box) Decapsulate(data []byte) (*Msg, error) {
 	msgCapsule := MsgCapsule{}
 	msg := Msg{}
 
@@ -111,7 +112,7 @@ func (b *Box) Decapsulate(data []byte) (*Msg, error) {
 	}
 
 	if msgCapsule.Encrypted {
-		msgCapsule.Data, err = b.secretKey.Decrypt(msgCapsule.Data)
+		msgCapsule.Data, err = box.secretKey.Decrypt(msgCapsule.Data)
 		if err != nil {
 			return nil, err
 		}
@@ -147,26 +148,26 @@ func (box *Box) Publish(msg *Msg, msgType Type, encrypt bool) error {
 	return nil
 }
 
-func (b *Box) Subscribe(handler MsgHandler) error {
-	if b.sub != nil {
+func (box *Box) Subscribe(handler MsgHandler) error {
+	if box.sub != nil {
 		return code.AlreadySubscribingTopic
 	}
 
-	sub, err := b.topic.Subscribe()
+	sub, err := box.topic.Subscribe()
 	if err != nil {
 		return err
 	}
-	b.sub = sub
+	box.sub = sub
 
 	for {
-		received, err := sub.Next(b.ctx)
+		received, err := sub.Next(box.ctx)
 		if err != nil {
 			// TODO: replace fmt.Println() to logger.Println()
 			fmt.Println(err)
 			continue
 		}
 		data := received.GetData()
-		msg, err := b.Decapsulate(data)
+		msg, err := box.Decapsulate(data)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -176,7 +177,7 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 			fmt.Println(err)
 			continue
 		}
-		eos, err := handler(b, msg)
+		eos, err := handler(box, msg)
 		if err != nil {
 			// TODO: replace fmt.Println() to logger.Println()
 			fmt.Println(err)
@@ -185,8 +186,8 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 
 		// eos shoud be the only way to break for loop
 		if eos {
-			b.sub.Cancel()
-			err = b.topic.Close()
+			box.sub.Cancel()
+			err = box.topic.Close()
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -197,28 +198,28 @@ func (b *Box) Subscribe(handler MsgHandler) error {
 	return nil
 }
 
-func (b *Box) GetPersonae() map[crypto.Addr]*types.Persona {
-	return b.personae
+func (box *Box) GetPersonae() map[crypto.Addr]*types.Persona {
+	return box.personae
 }
 
-func (b *Box) getPersona(cAddr crypto.Addr) *types.Persona {
-	persona, exist := b.personae[cAddr]
+func (box *Box) getPersona(cAddr crypto.Addr) *types.Persona {
+	persona, exist := box.personae[cAddr]
 	if !exist {
 		return nil
 	}
 	return persona
 }
 
-func (b *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
-	return b.getPersona(cAddr)
+func (box *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
+	return box.getPersona(cAddr)
 }
 
-func (b *Box) GetMyID() types.ID {
-	return b.myID
+func (box *Box) GetMyID() types.ID {
+	return box.myID
 }
 
-func (b *Box) GetMyPersona() *types.Persona {
-	return b.myPersona
+func (box *Box) GetMyPersona() *types.Persona {
+	return box.myPersona
 }
 
 func grant(auth *types.Auth, addr crypto.Addr, r, w, x bool) error {
@@ -230,8 +231,8 @@ func grant(auth *types.Auth, addr crypto.Addr, r, w, x bool) error {
 	return nil
 }
 
-func (b *Box) Grant(addr crypto.Addr, r, w, x bool) error {
-	newAuth, err := b.auth.Copy()
+func (box *Box) Grant(addr crypto.Addr, r, w, x bool) error {
+	newAuth, err := box.auth.Copy()
 	if err != nil {
 		return err
 	}
@@ -240,7 +241,7 @@ func (b *Box) Grant(addr crypto.Addr, r, w, x bool) error {
 		return err
 	}
 
-	err = b.propagate(newAuth, b.personae)
+	err = box.propagate(newAuth, box.personae)
 	if err != nil {
 		return err
 	}
@@ -256,8 +257,8 @@ func revoke(auth *types.Auth, addr crypto.Addr) error {
 	return nil
 }
 
-func (b *Box) Revoke(addr crypto.Addr) error {
-	newAuth, err := b.auth.Copy()
+func (box *Box) Revoke(addr crypto.Addr) error {
+	newAuth, err := box.auth.Copy()
 	if err != nil {
 		return err
 	}
@@ -266,7 +267,7 @@ func (b *Box) Revoke(addr crypto.Addr) error {
 		return err
 	}
 
-	err = b.propagate(newAuth, b.personae)
+	err = box.propagate(newAuth, box.personae)
 	if err != nil {
 		return err
 	}
@@ -274,67 +275,67 @@ func (b *Box) Revoke(addr crypto.Addr) error {
 	return nil
 }
 
-func (b *Box) Close() error {
+func (box *Box) Close() error {
 	// Announe EOS to others (application layer)
-	msg := NewMsg(b.myID, types.EmptyHash, &BodyBye{
-		Persona: b.myPersona,
+	msg := NewMsg(box.myID, types.EmptyHash, &BodyBye{
+		Persona: box.myPersona,
 	})
-	return b.Publish(msg, TypeBye, true)
+	return box.Publish(msg, TypeBye, true)
 }
 
-func (b *Box) Subscribing() bool {
-	return b.sub != nil
+func (box *Box) Subscribing() bool {
+	return box.sub != nil
 }
 
-func (b *Box) SetMsgSubCh(msgSubCh chan *Msg) {
-	b.msgSubCh = msgSubCh
+func (box *Box) SetMsgSubCh(msgSubCh chan *Msg) {
+	box.msgSubCh = msgSubCh
 }
 
-func (b *Box) GetSecretKey() *crypto.SecretKey {
-	return b.secretKey
+func (box *Box) GetSecretKey() *crypto.SecretKey {
+	return box.secretKey
 }
 
-func (b *Box) GetMsgs() []*Msg {
-	return b.msgs
+func (box *Box) GetMsgs() []*Msg {
+	return box.msgs
 }
 
-func (b *Box) GetMsg(mh types.Hash) *Msg {
-	return b.msgHashes[mh]
+func (box *Box) GetMsg(mh types.Hash) *Msg {
+	return box.msgHashes[mh]
 }
 
-func (b *Box) GetUnreadMsgs() []*Msg {
+func (box *Box) GetUnreadMsgs() []*Msg {
 	msgs := []*Msg{}
-	if b.readUntilIndex+1 < len(b.msgs) {
-		msgs = append(msgs, b.msgs[b.readUntilIndex+1:]...)
+	if box.readUntilIndex+1 < len(box.msgs) {
+		msgs = append(msgs, box.msgs[box.readUntilIndex+1:]...)
 	}
-	b.readUntilIndex = len(b.msgs) - 1
+	box.readUntilIndex = len(box.msgs) - 1
 	return msgs
 }
 
-func (b *Box) GetAuth() *types.Auth {
-	return b.auth
+func (box *Box) GetAuth() *types.Auth {
+	return box.auth
 }
 
-func (b *Box) append(msg *Msg) (int, error) {
+func (box *Box) append(msg *Msg) (int, error) {
 	hash := msg.GetHash()
-	_, exist := b.msgHashes[hash]
+	_, exist := box.msgHashes[hash]
 	if exist {
 		return 0, code.AlreadyAppendedMsg
 	}
 
 	timestamp := msg.GetTimestamp()
-	if b.latestTimestamp.Before(timestamp) {
-		b.latestTimestamp = timestamp
+	if box.latestTimestamp.Before(timestamp) {
+		box.latestTimestamp = timestamp
 	}
 
-	b.msgs = append(b.msgs, msg)
-	b.msgHashes[hash] = msg
+	box.msgs = append(box.msgs, msg)
+	box.msgHashes[hash] = msg
 
-	return len(b.msgs) - 1, nil
+	return len(box.msgs) - 1, nil
 }
 
-func (b *Box) join(targetPersona *types.Persona) error {
-	oldPersona := b.getPersona(targetPersona.Address)
+func (box *Box) join(targetPersona *types.Persona) error {
+	oldPersona := box.getPersona(targetPersona.Address)
 	if oldPersona != nil {
 		return nil // ignore even if existing
 		// return code.ExistingPersonaInBox
@@ -343,25 +344,25 @@ func (b *Box) join(targetPersona *types.Persona) error {
 	if err != nil {
 		return err
 	}
-	b.personae[targetPersona.Address] = targetPersona
+	box.personae[targetPersona.Address] = targetPersona
 	return nil
 }
 
-func (b *Box) leave(targetPersona *types.Persona) error {
-	oldPersona := b.getPersona(targetPersona.Address)
+func (box *Box) leave(targetPersona *types.Persona) error {
+	oldPersona := box.getPersona(targetPersona.Address)
 	if oldPersona == nil {
 		return code.NonExistingPersonaInBox
 	}
-	delete(b.personae, targetPersona.Address)
+	delete(box.personae, targetPersona.Address)
 	return nil
 }
 
-func (b *Box) propagate(auth *types.Auth, personae types.Personae) error {
-	msg := NewMsg(b.myID, types.EmptyHash, &BodyUpdate{
+func (box *Box) propagate(auth *types.Auth, personae types.Personae) error {
+	msg := NewMsg(box.myID, types.EmptyHash, &BodyUpdate{
 		Auth:     auth,
 		Personae: personae,
 	})
-	err := b.Publish(msg, TypeUpdate, true)
+	err := box.Publish(msg, TypeUpdate, true)
 	if err != nil {
 		return err
 	}
