@@ -20,7 +20,7 @@ Brother'.
   - [x] Sign & Verify msg
   - [x] Enhance msgTypeHello
   - [x] Add msgBox authentication
-  - [ ] Refactor msg type, struct, interface, etc.
+  - [x] Refactor msg type, struct, interface, etc.
   - [ ] Enhance msgBox internal metadata
   - [ ] Advance msgBox store
 - [ ] Conduct sub-tasks
