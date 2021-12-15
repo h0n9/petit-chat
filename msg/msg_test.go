@@ -16,7 +16,7 @@ type BodyTest struct {
 	Content string `json:"content"`
 }
 
-func (body *BodyTest) Check(box *Box, from *From) error {
+func (body *BodyTest) Check(box *Box, addr crypto.Addr) error {
 	return nil
 }
 
@@ -37,7 +37,7 @@ func TestMsgSignVerify(t *testing.T) {
 
 	msg := Msg{
 		Timestamp:  time.Now(),
-		From:       From{},
+		PeerID:     types.ID(""),
 		ParentHash: types.Hash{},
 		Body: &BodyTest{
 			Name:    "nothing",

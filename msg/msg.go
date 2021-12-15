@@ -10,13 +10,8 @@ import (
 	"github.com/h0n9/petit-chat/util"
 )
 
-type From struct {
-	PeerID     types.ID    `json:"peer_id"`
-	ClientAddr crypto.Addr `json:"client_addr"`
-}
-
 type Body interface {
-	Check(*Box, *From) error
+	Check(*Box, crypto.Addr) error
 	Execute(*Box, types.Hash) error
 }
 
@@ -28,7 +23,7 @@ type Signature struct {
 type Msg struct {
 	Hash       types.Hash `json:"hash"`
 	Timestamp  time.Time  `json:"timestamp"`
-	From       From       `json:"from"`
+	PeerID     types.ID   `json:"peer_id"`
 	ParentHash types.Hash `json:"parent_hash"`
 	Body       Body       `json:"body"`
 	Signature  Signature  `json:"signature"`
@@ -37,7 +32,7 @@ type Msg struct {
 type MsgToSign struct {
 	Hash       types.Hash `json:"-"`
 	Timestamp  time.Time  `json:"timestamp"`
-	From       From       `json:"from"`
+	PeerID     types.ID   `json:"peer_id"`
 	ParentHash types.Hash `json:"parent_hash"`
 	Body       Body       `json:"body"`
 	Signature  Signature  `json:"-"`
@@ -57,20 +52,17 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(pID types.ID, cAddr crypto.Addr, parentHash types.Hash, body Body) *Msg {
+func NewMsg(peerID types.ID, parentHash types.Hash, body Body) *Msg {
 	return &Msg{
-		Timestamp: time.Now(),
-		From: From{
-			PeerID:     pID,
-			ClientAddr: cAddr,
-		},
+		Timestamp:  time.Now(),
+		PeerID:     peerID,
 		ParentHash: parentHash,
 		Body:       body,
 	}
 }
 
-func (msg *Msg) GetFrom() *From {
-	return &msg.From
+func (msg *Msg) GetPeerID() types.ID {
+	return msg.PeerID
 }
 
 func (msg *Msg) GetBody() Body {

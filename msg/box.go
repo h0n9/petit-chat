@@ -66,7 +66,7 @@ func NewBox(ctx context.Context, tp *types.Topic, pub bool, mi types.ID, mpk *cr
 	if err != nil {
 		return nil, err
 	}
-	msg := NewMsg(mi, mp.Address, types.EmptyHash, &BodyHelloSyn{
+	msg := NewMsg(box.myID, types.EmptyHash, &BodyHelloSyn{
 		Persona: mp,
 	})
 	err = box.Publish(msg, TypeHelloSyn, false)
@@ -276,7 +276,7 @@ func (b *Box) Revoke(addr crypto.Addr) error {
 
 func (b *Box) Close() error {
 	// Announe EOS to others (application layer)
-	msg := NewMsg(b.myID, b.myPersona.Address, types.EmptyHash, &BodyBye{
+	msg := NewMsg(b.myID, types.EmptyHash, &BodyBye{
 		Persona: b.myPersona,
 	})
 	return b.Publish(msg, TypeBye, true)
@@ -357,7 +357,7 @@ func (b *Box) leave(targetPersona *types.Persona) error {
 }
 
 func (b *Box) propagate(auth *types.Auth, personae types.Personae) error {
-	msg := NewMsg(b.myID, b.myPersona.Address, types.EmptyHash, &BodyUpdate{
+	msg := NewMsg(b.myID, types.EmptyHash, &BodyUpdate{
 		Auth:     auth,
 		Personae: personae,
 	})

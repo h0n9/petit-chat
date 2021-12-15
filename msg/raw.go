@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -16,14 +17,14 @@ type BodyRaw struct {
 	Metadata []byte `json:"metadata"`
 }
 
-func (body *BodyRaw) Check(box *Box, from *From) error {
+func (body *BodyRaw) Check(box *Box, addr crypto.Addr) error {
 	if len(body.Data) > MaxDataSize {
 		return code.TooBigMsgData
 	}
 	if len(body.Metadata) > MaxMetadataSize {
 		return code.TooBigMsgMetadata
 	}
-	if !box.auth.CanWrite(from.ClientAddr) {
+	if !box.auth.CanWrite(addr) {
 		return code.NonWritePermission
 	}
 	return nil

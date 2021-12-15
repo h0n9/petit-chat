@@ -5,7 +5,7 @@ import "github.com/h0n9/petit-chat/code"
 type MsgHandler func(b *Box, msg *Msg) (bool, error)
 
 func DefaultMsgHandler(b *Box, msg *Msg) (bool, error) {
-	eos := msg.IsEOS() && (msg.GetFrom().PeerID == b.myID)
+	eos := msg.IsEOS() && (msg.GetPeerID() == b.myID)
 
 	// msg handling flow:
 	//   check -> execute -> append
@@ -17,11 +17,11 @@ func DefaultMsgHandler(b *Box, msg *Msg) (bool, error) {
 		return eos, err
 	}
 
-	from := msg.GetFrom()
+	addr := msg.Signature.PubKey.Address()
 	hash := msg.GetHash()
 
 	// check msg.Body
-	err = msg.Body.Check(b, from)
+	err = msg.Body.Check(b, addr)
 	if err != nil && err != code.SelfMsg {
 		return eos, err
 	}
@@ -38,7 +38,7 @@ func DefaultMsgHandler(b *Box, msg *Msg) (bool, error) {
 		return eos, err
 	}
 
-	if from.PeerID == b.myID {
+	if msg.GetPeerID() == b.myID {
 		b.readUntilIndex = readUntilIndex
 	} else {
 		if b.msgSubCh != nil {

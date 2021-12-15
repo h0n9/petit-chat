@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -9,11 +10,8 @@ type BodyHelloSyn struct {
 	Persona *types.Persona `json:"persona"`
 }
 
-func (body *BodyHelloSyn) Check(box *Box, from *From) error {
-	// if from.PeerID == box.myID {
-	// 	return code.SelfMsg
-	// }
-	if !box.auth.IsPublic() && !box.auth.CanRead(from.ClientAddr) {
+func (body *BodyHelloSyn) Check(box *Box, addr crypto.Addr) error {
+	if !box.auth.IsPublic() && !box.auth.CanRead(addr) {
 		return code.NonReadPermission
 	}
 	return nil
@@ -31,7 +29,7 @@ func (body *BodyHelloSyn) Execute(box *Box, hash types.Hash) error {
 		return err
 	}
 
-	msg:= NewMsg(box.myID, box.myPersona.Address, hash, &BodyHelloAck{
+	msg := NewMsg(box.myID, hash, &BodyHelloAck{
 		Personae:           box.personae,
 		Auth:               box.auth,
 		EncryptedSecretKey: encryptedSecretKey,

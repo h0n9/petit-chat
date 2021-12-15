@@ -12,10 +12,7 @@ type BodyHelloAck struct {
 	EncryptedSecretKey []byte         `json:"encrypted_secret_key"`
 }
 
-func (body *BodyHelloAck) Check(box *Box, from *From) error {
-	// if from.PeerID == box.myID {
-	// 	return code.SelfMsg
-	// }
+func (body *BodyHelloAck) Check(box *Box, addr crypto.Addr) error {
 	return nil
 }
 

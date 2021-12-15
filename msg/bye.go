@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -9,11 +10,8 @@ type BodyBye struct {
 	Persona *types.Persona `json:"persona"`
 }
 
-func (body *BodyBye) Check(box *Box, from *From) error {
-	// if from.PeerID == box.myID {
-	// 	return code.SelfMsg
-	// }
-	if persona := box.getPersona(from.ClientAddr); persona == nil {
+func (body *BodyBye) Check(box *Box, addr crypto.Addr) error {
+	if persona := box.getPersona(addr); persona == nil {
 		return code.NonExistingPersonaInBox
 	}
 	return nil

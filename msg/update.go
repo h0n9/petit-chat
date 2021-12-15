@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
@@ -11,8 +12,8 @@ type BodyUpdate struct {
 	Personae types.Personae `json:"personae"`
 }
 
-func (body *BodyUpdate) Check(box *Box, from *From) error {
-	if !box.auth.CanExecute(from.ClientAddr) {
+func (body *BodyUpdate) Check(box *Box, addr crypto.Addr) error {
+	if !box.auth.CanExecute(addr) {
 		return code.NonExecutePermission
 	}
 	return nil

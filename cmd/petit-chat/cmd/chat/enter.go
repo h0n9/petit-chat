@@ -191,8 +191,7 @@ func enterFunc(reader *bufio.Reader) error {
 
 			// CLI supports ONLY TypeText
 			myID := msgBox.GetMyID()
-			myPersona := msgBox.GetMyPersona()
-			m := msg.NewMsg(myID, myPersona.Address, types.EmptyHash, &msg.BodyRaw{
+			m := msg.NewMsg(myID, types.EmptyHash, &msg.BodyRaw{
 				Data: []byte(input),
 			})
 			err = msgBox.Publish(m, msg.TypeRaw, true)
@@ -240,8 +239,8 @@ func printPeer(p *types.Persona) {
 
 func printMsg(b *msg.Box, m *msg.Msg) {
 	timestamp := m.GetTimestamp()
-	from := m.GetFrom()
-	persona := b.GetPersona(from.ClientAddr)
+	addr := m.GetSignature().PubKey.Address()
+	persona := b.GetPersona(addr)
 	nickname := "somebody"
 	if persona != nil {
 		nickname = persona.GetNickname()
