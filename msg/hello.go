@@ -67,7 +67,7 @@ func (body *BodyHelloAck) Execute(box *Box, hash types.Hash) error {
 	secretKey, err := crypto.NewSecretKey(secretKeyByte)
 	if err != nil {
 		return err
-	}
+}
 
 	// apply to msgBox struct values
 	if util.HasField("personae", box) {

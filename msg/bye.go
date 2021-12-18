@@ -11,6 +11,9 @@ type BodyBye struct {
 }
 
 func (body *BodyBye) Check(box *Box, addr crypto.Addr) error {
+	if !box.auth.IsPublic() && !box.auth.CanRead(addr) {
+		return code.NonReadPermission
+	}
 	if persona := box.getPersona(addr); persona == nil {
 		return code.NonExistingPersonaInBox
 	}

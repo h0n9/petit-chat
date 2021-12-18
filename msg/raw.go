@@ -18,6 +18,9 @@ type BodyRaw struct {
 }
 
 func (body *BodyRaw) Check(box *Box, addr crypto.Addr) error {
+	if !box.auth.CanWrite(addr) {
+		return code.NonWritePermission
+	}
 	if len(body.Data) > MaxDataSize {
 		return code.TooBigMsgData
 	}
