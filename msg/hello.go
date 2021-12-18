@@ -51,6 +51,9 @@ type BodyHelloAck struct {
 }
 
 func (body *BodyHelloAck) Check(box *Box, addr crypto.Addr) error {
+	if !box.auth.IsPublic() && !box.auth.CanRead(addr) {
+		return code.NonReadPermission
+	}
 	return nil
 }
 
