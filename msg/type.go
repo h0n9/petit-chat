@@ -11,6 +11,7 @@ const (
 	TypeHelloAck
 	TypeBye // End of Subscription
 	TypeUpdate
+	TypeMeta
 )
 
 var TypeStrMap = map[Type]string{
@@ -20,6 +21,7 @@ var TypeStrMap = map[Type]string{
 	TypeHelloAck: "TypeHelloAck",
 	TypeBye:      "TypeBye",
 	TypeUpdate:   "TypeUpdate",
+	TypeMeta:     "TypeMeta",
 }
 
 func (t Type) Body() Body {
@@ -34,6 +36,8 @@ func (t Type) Body() Body {
 		return &BodyBye{}
 	case TypeUpdate:
 		return &BodyUpdate{}
+	case TypeMeta:
+		return &BodyMeta{}
 	default:
 		return nil
 	}
