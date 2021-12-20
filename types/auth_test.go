@@ -7,10 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func genRandomAddr() (Addr, error) {
+func genRandomAddr() (crypto.Addr, error) {
 	privKey, err := crypto.GenPrivKey()
 	if err != nil {
-		return Addr(""), err
+		return crypto.Addr(""), err
 	}
 
 	return privKey.PubKey().Address(), nil
@@ -29,7 +29,7 @@ func TestAuth(t *testing.T) {
 	addrTest4, err := genRandomAddr()
 	assert.NoError(t, err)
 
-	perms := map[Addr]Perm{
+	perms := map[crypto.Addr]Perm{
 		addrTest1: permNone,
 		addrTest2: permRead,
 		addrTest3: permWrite,
