@@ -157,16 +157,6 @@ func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {
 }
 
 func (msg *Msg) check(b *Box) error {
-	// check msg.ParentMsgHash
-	pm, err := msg.getParentMsg(b)
-	if err != nil {
-		return err
-	}
-	if pm != nil && !pm.ParentHash.IsEmpty() {
-		return code.AlreadyHavingParent
-	}
-
 	// TODO: add more constraints
-
 	return nil
 }
