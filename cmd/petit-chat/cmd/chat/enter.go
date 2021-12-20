@@ -254,6 +254,13 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 	case *msg.BodyHelloAck:
 	case *msg.BodyBye:
 	case *msg.BodyUpdate:
+	case *msg.BodyMeta:
+		msgBodyMeta := m.Body.(*msg.BodyMeta)
+		done := ""
+		if msgBodyMeta.Meta.Received() {
+			done += "received"
+		}
+		fmt.Printf("[%s, %s] %s %x\n", timestamp, nickname, done, m.ParentHash)
 	default:
 		fmt.Println("Unknown Type")
 	}

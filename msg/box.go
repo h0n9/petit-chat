@@ -102,34 +102,34 @@ func (box *Box) Encapsulate(msg *Msg, msgType Type, encrypt bool) ([]byte, error
 	return data, nil
 }
 
-func (box *Box) Decapsulate(data []byte) (*Msg, error) {
+func (box *Box) Decapsulate(data []byte) (*Msg, Type, error) {
 	msgCapsule := MsgCapsule{}
 	msg := Msg{}
 
 	err := json.Unmarshal(data, &msgCapsule)
 	if err != nil {
-		return nil, err
+		return nil, TypeNone, err
 	}
 
 	if msgCapsule.Encrypted {
 		msgCapsule.Data, err = box.secretKey.Decrypt(msgCapsule.Data)
 		if err != nil {
-			return nil, err
+			return nil, TypeNone, err
 		}
 	}
 
 	body := msgCapsule.Type.Body()
 	if body == nil {
-		return nil, code.UnknownMsgType
+		return nil, TypeNone, code.UnknownMsgType
 	}
 	msg.Body = body
 
 	err = json.Unmarshal(msgCapsule.Data, &msg)
 	if err != nil {
-		return nil, err
+		return nil, TypeNone, err
 	}
 
-	return &msg, nil
+	return &msg, msgCapsule.Type, nil
 }
 
 func (box *Box) Publish(msg *Msg, msgType Type, encrypt bool) error {
@@ -167,7 +167,7 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 			continue
 		}
 		data := received.GetData()
-		msg, err := box.Decapsulate(data)
+		msg, msgType, err := box.Decapsulate(data)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -177,7 +177,7 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 			fmt.Println(err)
 			continue
 		}
-		eos, err := handler(box, msg)
+		eos, err := handler(box, msg, msgType)
 		if err != nil {
 			// TODO: replace fmt.Println() to logger.Println()
 			fmt.Println(err)
