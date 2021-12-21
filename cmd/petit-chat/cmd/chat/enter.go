@@ -69,7 +69,10 @@ func enterFunc(reader *bufio.Reader) error {
 	// get and print out received msgs
 	msgs := msgBox.GetUnreadMsgs()
 	for _, msg := range msgs {
-		printMsg(msgBox, msg)
+		err := readMsg(msgBox, msg)
+		if err != nil {
+			fmt.Printf("%s\n> ", err)
+		}
 	}
 
 	// get and print out new msgs
@@ -95,7 +98,10 @@ func enterFunc(reader *bufio.Reader) error {
 			case err = <-errs:
 				fmt.Printf("%s\n> ", err)
 			case m = <-msgSubCh:
-				printMsg(msgBox, m)
+				err := readMsg(msgBox, m)
+				if err != nil {
+					errs <- err
+				}
 			case <-msgStopSubCh:
 				stop = true
 			}
@@ -237,6 +243,22 @@ func printPeer(p *types.Persona) {
 	fmt.Printf("[%s] %s\n", p.Address, p.Nickname)
 }
 
+func readMsg(b *msg.Box, m *msg.Msg) error {
+	if m.Type != msg.TypeMeta {
+		id := b.GetMyID()
+		hash := m.GetHash()
+		metaMsg := msg.NewMsg(id, hash, msg.TypeMeta, &msg.BodyMeta{
+			Meta: types.NewMeta(false, true, false),
+		})
+		err := b.Publish(metaMsg, true)
+		if err != nil {
+			return err
+		}
+	}
+	printMsg(b, m)
+	return nil
+}
+
 func printMsg(b *msg.Box, m *msg.Msg) {
 	timestamp := m.GetTimestamp()
 	addr := m.GetSignature().PubKey.Address()
@@ -258,7 +280,13 @@ func printMsg(b *msg.Box, m *msg.Msg) {
 		msgBodyMeta := m.Body.(*msg.BodyMeta)
 		done := ""
 		if msgBodyMeta.Meta.Received() {
-			done += "received"
+			done += "received,"
+		}
+		if msgBodyMeta.Meta.Read() {
+			done += "read,"
+		}
+		if msgBodyMeta.Meta.Typing() {
+			done += "typing,"
 		}
 		fmt.Printf("[%s, %s] %s %x\n", timestamp, nickname, done, m.ParentHash)
 	default:
