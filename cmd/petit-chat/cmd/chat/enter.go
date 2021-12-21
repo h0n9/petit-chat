@@ -247,10 +247,10 @@ func readMsg(b *msg.Box, m *msg.Msg) error {
 	if m.Type != msg.TypeMeta {
 		id := b.GetMyID()
 		hash := m.GetHash()
-		metaMsg := msg.NewMsg(id, hash, msg.TypeMeta, &msg.BodyMeta{
+		msgMeta := msg.NewMsg(id, hash, msg.TypeMeta, &msg.BodyMeta{
 			Meta: types.NewMeta(false, true, false),
 		})
-		err := b.Publish(metaMsg, true)
+		err := b.Publish(msgMeta, true)
 		if err != nil {
 			return err
 		}

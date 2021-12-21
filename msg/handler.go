@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/types"
 )
 
 type MsgHandler func(b *Box, msg *Msg) (bool, error)
@@ -43,6 +44,15 @@ func DefaultMsgHandler(b *Box, msg *Msg) (bool, error) {
 	if msg.GetPeerID() == b.myID {
 		b.readUntilIndex = readUntilIndex
 	} else {
+		if msg.Type != TypeMeta {
+			msgMeta := NewMsg(b.myID, msg.Hash, TypeMeta, &BodyMeta{
+				Meta: types.NewMeta(true, false, false),
+			})
+			err := b.Publish(msgMeta, true)
+			if err != nil {
+				return eos, err
+			}
+		}
 		if b.msgSubCh != nil {
 			b.msgSubCh <- msg
 			b.readUntilIndex = readUntilIndex
