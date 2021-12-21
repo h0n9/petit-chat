@@ -30,13 +30,13 @@ func (body *BodyHelloSyn) Execute(box *Box, hash types.Hash) error {
 		return err
 	}
 
-	msg := NewMsg(box.myID, hash, &BodyHelloAck{
+	msg := NewMsg(box.myID, hash, TypeHelloAck, &BodyHelloAck{
 		Personae:           box.personae,
 		Auth:               box.auth,
 		EncryptedSecretKey: encryptedSecretKey,
 	})
 
-	err = box.Publish(msg, TypeHelloAck, false)
+	err = box.Publish(msg, false)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (body *BodyHelloAck) Execute(box *Box, hash types.Hash) error {
 	secretKey, err := crypto.NewSecretKey(secretKeyByte)
 	if err != nil {
 		return err
-}
+	}
 
 	// apply to msgBox struct values
 	if util.HasField("personae", box) {

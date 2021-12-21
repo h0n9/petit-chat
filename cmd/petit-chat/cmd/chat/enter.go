@@ -88,14 +88,14 @@ func enterFunc(reader *bufio.Reader) error {
 		var (
 			err  error    = nil
 			stop bool     = false
-			msg  *msg.Msg = nil
+			m    *msg.Msg = nil
 		)
 		for {
 			select {
 			case err = <-errs:
 				fmt.Printf("%s\n> ", err)
-			case msg = <-msgSubCh:
-				printMsg(msgBox, msg)
+			case m = <-msgSubCh:
+				printMsg(msgBox, m)
 			case <-msgStopSubCh:
 				stop = true
 			}
@@ -191,10 +191,10 @@ func enterFunc(reader *bufio.Reader) error {
 
 			// CLI supports ONLY TypeText
 			myID := msgBox.GetMyID()
-			m := msg.NewMsg(myID, types.EmptyHash, &msg.BodyRaw{
+			m := msg.NewMsg(myID, types.EmptyHash, msg.TypeRaw, &msg.BodyRaw{
 				Data: []byte(input),
 			})
-			err = msgBox.Publish(m, msg.TypeRaw, true)
+			err = msgBox.Publish(m, true)
 			if err != nil {
 				errs <- err
 				return

@@ -25,6 +25,7 @@ type Msg struct {
 	Timestamp  time.Time  `json:"timestamp"`
 	PeerID     types.ID   `json:"peer_id"`
 	ParentHash types.Hash `json:"parent_hash"`
+	Type       Type       `json:"type"`
 	Body       Body       `json:"body"`
 	Signature  Signature  `json:"signature"`
 }
@@ -34,6 +35,7 @@ type MsgToSign struct {
 	Timestamp  time.Time  `json:"timestamp"`
 	PeerID     types.ID   `json:"peer_id"`
 	ParentHash types.Hash `json:"parent_hash"`
+	Type       Type       `json:"type"`
 	Body       Body       `json:"body"`
 	Signature  Signature  `json:"-"`
 }
@@ -52,11 +54,12 @@ type MsgEx struct {
 	*Msg
 }
 
-func NewMsg(peerID types.ID, parentHash types.Hash, body Body) *Msg {
+func NewMsg(peerID types.ID, parentHash types.Hash, t Type, body Body) *Msg {
 	return &Msg{
 		Timestamp:  time.Now(),
 		PeerID:     peerID,
 		ParentHash: parentHash,
+		Type:       t,
 		Body:       body,
 	}
 }

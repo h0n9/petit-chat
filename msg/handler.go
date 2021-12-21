@@ -2,12 +2,11 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
-	"github.com/h0n9/petit-chat/types"
 )
 
-type MsgHandler func(b *Box, msg *Msg, msgType Type) (bool, error)
+type MsgHandler func(b *Box, msg *Msg) (bool, error)
 
-func DefaultMsgHandler(b *Box, msg *Msg, msgType Type) (bool, error) {
+func DefaultMsgHandler(b *Box, msg *Msg) (bool, error) {
 	eos := msg.IsEOS() && (msg.GetPeerID() == b.myID)
 
 	// msg handling flow:
@@ -44,15 +43,6 @@ func DefaultMsgHandler(b *Box, msg *Msg, msgType Type) (bool, error) {
 	if msg.GetPeerID() == b.myID {
 		b.readUntilIndex = readUntilIndex
 	} else {
-		if msgType != TypeMeta {
-			metaMsg := NewMsg(b.myID, hash, &BodyMeta{
-				Meta: types.NewMeta(true, false, false),
-			})
-			err = b.Publish(metaMsg, TypeMeta, true)
-			if err != nil {
-				return eos, err
-			}
-		}
 		if b.msgSubCh != nil {
 			b.msgSubCh <- msg
 			b.readUntilIndex = readUntilIndex

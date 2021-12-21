@@ -67,17 +67,17 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 	if err != nil {
 		return nil, err
 	}
-	msg := NewMsg(box.myID, types.EmptyHash, &BodyHelloSyn{
+	msg := NewMsg(box.myID, types.EmptyHash, TypeHelloSyn, &BodyHelloSyn{
 		Persona: myPersona,
 	})
-	err = box.Publish(msg, TypeHelloSyn, false)
+	err = box.Publish(msg, false)
 	if err != nil {
 		return nil, err
 	}
 	return &box, nil
 }
 
-func (box *Box) Encapsulate(msg *Msg, msgType Type, encrypt bool) ([]byte, error) {
+func (box *Box) Encapsulate(msg *Msg, encrypt bool) ([]byte, error) {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (box *Box) Encapsulate(msg *Msg, msgType Type, encrypt bool) ([]byte, error
 
 	data, err = json.Marshal(&MsgCapsule{
 		Encrypted: encrypt,
-		Type:      msgType,
+		Type:      msg.Type,
 		Data:      data,
 	})
 	if err != nil {
@@ -102,42 +102,42 @@ func (box *Box) Encapsulate(msg *Msg, msgType Type, encrypt bool) ([]byte, error
 	return data, nil
 }
 
-func (box *Box) Decapsulate(data []byte) (*Msg, Type, error) {
+func (box *Box) Decapsulate(data []byte) (*Msg, error) {
 	msgCapsule := MsgCapsule{}
 	msg := Msg{}
 
 	err := json.Unmarshal(data, &msgCapsule)
 	if err != nil {
-		return nil, TypeNone, err
+		return nil, err
 	}
 
 	if msgCapsule.Encrypted {
 		msgCapsule.Data, err = box.secretKey.Decrypt(msgCapsule.Data)
 		if err != nil {
-			return nil, TypeNone, err
+			return nil, err
 		}
 	}
 
 	body := msgCapsule.Type.Body()
 	if body == nil {
-		return nil, TypeNone, code.UnknownMsgType
+		return nil, code.UnknownMsgType
 	}
 	msg.Body = body
 
 	err = json.Unmarshal(msgCapsule.Data, &msg)
 	if err != nil {
-		return nil, TypeNone, err
+		return nil, err
 	}
 
-	return &msg, msgCapsule.Type, nil
+	return &msg, nil
 }
 
-func (box *Box) Publish(msg *Msg, msgType Type, encrypt bool) error {
+func (box *Box) Publish(msg *Msg, encrypt bool) error {
 	err := msg.Sign(box.myPrivKey)
 	if err != nil {
 		return err
 	}
-	data, err := box.Encapsulate(msg, msgType, encrypt)
+	data, err := box.Encapsulate(msg, encrypt)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 			continue
 		}
 		data := received.GetData()
-		msg, msgType, err := box.Decapsulate(data)
+		msg, err := box.Decapsulate(data)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -177,7 +177,7 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 			fmt.Println(err)
 			continue
 		}
-		eos, err := handler(box, msg, msgType)
+		eos, err := handler(box, msg)
 		if err != nil {
 			// TODO: replace fmt.Println() to logger.Println()
 			fmt.Println(err)
@@ -277,10 +277,10 @@ func (box *Box) Revoke(addr crypto.Addr) error {
 
 func (box *Box) Close() error {
 	// Announe EOS to others (application layer)
-	msg := NewMsg(box.myID, types.EmptyHash, &BodyBye{
+	msg := NewMsg(box.myID, types.EmptyHash, TypeBye, &BodyBye{
 		Persona: box.myPersona,
 	})
-	return box.Publish(msg, TypeBye, true)
+	return box.Publish(msg, true)
 }
 
 func (box *Box) Subscribing() bool {
@@ -358,11 +358,11 @@ func (box *Box) leave(targetPersona *types.Persona) error {
 }
 
 func (box *Box) propagate(auth *types.Auth, personae types.Personae) error {
-	msg := NewMsg(box.myID, types.EmptyHash, &BodyUpdate{
+	msg := NewMsg(box.myID, types.EmptyHash, TypeUpdate, &BodyUpdate{
 		Auth:     auth,
 		Personae: personae,
 	})
-	err := box.Publish(msg, TypeUpdate, true)
+	err := box.Publish(msg, true)
 	if err != nil {
 		return err
 	}
