@@ -11,14 +11,14 @@ type BodyHelloSyn struct {
 	Persona *types.Persona `json:"persona"`
 }
 
-func (body *BodyHelloSyn) Check(box *Box, addr crypto.Addr) error {
+func (body *BodyHelloSyn) Check(box *Box, hash types.Hash, addr crypto.Addr) error {
 	if !box.auth.IsPublic() && !box.auth.CanRead(addr) {
 		return code.NonReadPermission
 	}
 	return nil
 }
 
-func (body *BodyHelloSyn) Execute(box *Box, hash types.Hash) error {
+func (body *BodyHelloSyn) Execute(box *Box, hash types.Hash, addr crypto.Addr) error {
 	err := box.join(body.Persona)
 	if err != nil {
 		return err
@@ -50,14 +50,14 @@ type BodyHelloAck struct {
 	EncryptedSecretKey []byte         `json:"encrypted_secret_key"`
 }
 
-func (body *BodyHelloAck) Check(box *Box, addr crypto.Addr) error {
+func (body *BodyHelloAck) Check(box *Box, hash types.Hash, addr crypto.Addr) error {
 	if !box.auth.IsPublic() && !box.auth.CanRead(addr) {
 		return code.NonReadPermission
 	}
 	return nil
 }
 
-func (body *BodyHelloAck) Execute(box *Box, hash types.Hash) error {
+func (body *BodyHelloAck) Execute(box *Box, hash types.Hash, addr crypto.Addr) error {
 	secretKeyByte, err := box.myPrivKey.Decrypt(body.EncryptedSecretKey)
 	if err != nil {
 		// TODO: handle or log error somehow

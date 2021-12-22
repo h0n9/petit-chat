@@ -11,8 +11,10 @@ var (
 	NonSubscribingTopic     = fmt.Errorf("non subscribing topic")
 	AlreadyExistingTopic    = fmt.Errorf("already existing topic")
 	NonExistingTopic        = fmt.Errorf("non existing topic")
-	AlreadyAppendedMsg      = fmt.Errorf("already appended msg")
-	SelfMsg                 = fmt.Errorf("self msg")
+
+	NonExistingMsg     = fmt.Errorf("non existing msg")
+	AlreadyAppendedMsg = fmt.Errorf("already appended msg")
+	SelfMsg            = fmt.Errorf("self msg")
 
 	ImproperPubSub = fmt.Errorf("improper pubsub")
 	ImproperSub    = fmt.Errorf("improper sub")

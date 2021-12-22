@@ -16,11 +16,11 @@ type BodyTest struct {
 	Content string `json:"content"`
 }
 
-func (body *BodyTest) Check(box *Box, addr crypto.Addr) error {
+func (body *BodyTest) Check(box *Box, hash types.Hash, addr crypto.Addr) error {
 	return nil
 }
 
-func (body *BodyTest) Execute(box *Box, hash types.Hash) error {
+func (body *BodyTest) Execute(box *Box, hash types.Hash, addr crypto.Addr) error {
 	return nil
 }
 

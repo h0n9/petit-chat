@@ -10,7 +10,7 @@ type BodyBye struct {
 	Persona *types.Persona `json:"persona"`
 }
 
-func (body *BodyBye) Check(box *Box, addr crypto.Addr) error {
+func (body *BodyBye) Check(box *Box, hash types.Hash, addr crypto.Addr) error {
 	if !box.auth.IsPublic() && !box.auth.CanRead(addr) {
 		return code.NonReadPermission
 	}
@@ -20,7 +20,7 @@ func (body *BodyBye) Check(box *Box, addr crypto.Addr) error {
 	return nil
 }
 
-func (body *BodyBye) Execute(box *Box, hash types.Hash) error {
+func (body *BodyBye) Execute(box *Box, hash types.Hash, addr crypto.Addr) error {
 	err := box.leave(body.Persona)
 	if err != nil {
 		return err

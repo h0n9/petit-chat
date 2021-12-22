@@ -10,7 +10,7 @@ type BodyMeta struct {
 	Meta types.Meta `json:"meta"`
 }
 
-func (body *BodyMeta) Check(box *Box, addr crypto.Addr) error {
+func (body *BodyMeta) Check(box *Box, hash types.Hash, addr crypto.Addr) error {
 	if body.Meta.Received() || body.Meta.Read() {
 		if !box.auth.IsPublic() && !box.auth.CanRead(addr) {
 			return code.NonReadPermission
@@ -22,6 +22,11 @@ func (body *BodyMeta) Check(box *Box, addr crypto.Addr) error {
 	return nil
 }
 
-func (body *BodyMeta) Execute(box *Box, hash types.Hash) error {
+func (body *BodyMeta) Execute(box *Box, hash types.Hash, addr crypto.Addr) error {
+	msg := box.GetMsg(hash)
+	if msg == nil {
+		return code.NonExistingMsg
+	}
+	msg.SetMeta(addr, body.Meta)
 	return nil
 }

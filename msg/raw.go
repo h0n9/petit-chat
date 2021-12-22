@@ -17,7 +17,7 @@ type BodyRaw struct {
 	Metadata []byte `json:"metadata"`
 }
 
-func (body *BodyRaw) Check(box *Box, addr crypto.Addr) error {
+func (body *BodyRaw) Check(box *Box, hash types.Hash, addr crypto.Addr) error {
 	if !box.auth.CanWrite(addr) {
 		return code.NonWritePermission
 	}
@@ -33,6 +33,6 @@ func (body *BodyRaw) Check(box *Box, addr crypto.Addr) error {
 	return nil
 }
 
-func (body *BodyRaw) Execute(box *Box, hash types.Hash) error {
+func (body *BodyRaw) Execute(box *Box, hash types.Hash, addr crypto.Addr) error {
 	return nil
 }

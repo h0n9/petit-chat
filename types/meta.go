@@ -1,6 +1,13 @@
 package types
 
-type Meta uint8
+import (
+	"github.com/h0n9/petit-chat/crypto"
+)
+
+type (
+	Meta  uint8
+	Metas map[crypto.Addr]Meta
+)
 
 const (
 	metaNone     Meta = 0 // 0000 0000

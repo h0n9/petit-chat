@@ -11,7 +11,7 @@ func DefaultMsgHandler(b *Box, msg *Msg) (bool, error) {
 	eos := msg.IsEOS() && (msg.GetPeerID() == b.myID)
 
 	// msg handling flow:
-	//   check -> execute -> append -> (received)
+	//   check -> append -> execute -> (received)
 
 	// check if msg is proper and can be supported on protocol
 	// improper msgs are dropped here
@@ -20,23 +20,23 @@ func DefaultMsgHandler(b *Box, msg *Msg) (bool, error) {
 		return eos, err
 	}
 
-	addr := msg.Signature.PubKey.Address()
 	hash := msg.GetHash()
+	addr := msg.Signature.PubKey.Address()
 
 	// check msg.Body
-	err = msg.Body.Check(b, addr)
+	err = msg.Body.Check(b, hash, addr)
 	if err != nil && err != code.SelfMsg {
-		return eos, err
-	}
-
-	// execute msg.Body
-	err = msg.Body.Execute(b, hash)
-	if err != nil {
 		return eos, err
 	}
 
 	// append msg
 	readUntilIndex, err := b.append(msg)
+	if err != nil {
+		return eos, err
+	}
+
+	// execute msg.Body
+	err = msg.Body.Execute(b, hash, addr)
 	if err != nil {
 		return eos, err
 	}

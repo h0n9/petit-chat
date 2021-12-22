@@ -11,8 +11,8 @@ import (
 )
 
 type Body interface {
-	Check(*Box, crypto.Addr) error
-	Execute(*Box, types.Hash) error
+	Check(*Box, types.Hash, crypto.Addr) error
+	Execute(*Box, types.Hash, crypto.Addr) error
 }
 
 type Signature struct {
@@ -21,23 +21,25 @@ type Signature struct {
 }
 
 type Msg struct {
-	Hash       types.Hash `json:"hash"`
-	Timestamp  time.Time  `json:"timestamp"`
-	PeerID     types.ID   `json:"peer_id"`
-	ParentHash types.Hash `json:"parent_hash"`
-	Type       Type       `json:"type"`
-	Body       Body       `json:"body"`
-	Signature  Signature  `json:"signature"`
+	Hash       types.Hash  `json:"hash"`
+	Timestamp  time.Time   `json:"timestamp"`
+	PeerID     types.ID    `json:"peer_id"`
+	ParentHash types.Hash  `json:"parent_hash"`
+	Type       Type        `json:"type"`
+	Body       Body        `json:"body"`
+	Signature  Signature   `json:"signature"`
+	Metas      types.Metas `json:"metas"`
 }
 
 type MsgToSign struct {
-	Hash       types.Hash `json:"-"`
-	Timestamp  time.Time  `json:"timestamp"`
-	PeerID     types.ID   `json:"peer_id"`
-	ParentHash types.Hash `json:"parent_hash"`
-	Type       Type       `json:"type"`
-	Body       Body       `json:"body"`
-	Signature  Signature  `json:"-"`
+	Hash       types.Hash  `json:"-"`
+	Timestamp  time.Time   `json:"timestamp"`
+	PeerID     types.ID    `json:"peer_id"`
+	ParentHash types.Hash  `json:"parent_hash"`
+	Type       Type        `json:"type"`
+	Body       Body        `json:"body"`
+	Signature  Signature   `json:"-"`
+	Metas      types.Metas `json:"-"`
 }
 
 type MsgToVerify MsgToSign
@@ -48,12 +50,6 @@ type MsgCapsule struct {
 	Data      []byte `json:"data"`
 }
 
-type MsgEx struct {
-	Read     bool `json:"read"`
-	Received bool `json:"received"`
-	*Msg
-}
-
 func NewMsg(peerID types.ID, parentHash types.Hash, t Type, body Body) *Msg {
 	return &Msg{
 		Timestamp:  time.Now(),
@@ -61,6 +57,7 @@ func NewMsg(peerID types.ID, parentHash types.Hash, t Type, body Body) *Msg {
 		ParentHash: parentHash,
 		Type:       t,
 		Body:       body,
+		Metas:      make(types.Metas),
 	}
 }
 
@@ -90,6 +87,13 @@ func (msg *Msg) GetSignature() Signature {
 
 func (msg *Msg) GetParentHash() types.Hash {
 	return msg.ParentHash
+}
+
+func (msg *Msg) SetMeta(addr crypto.Addr, newMeta types.Meta) {
+	if oldMeta, exist := msg.Metas[addr]; exist {
+		newMeta |= oldMeta // merge old, new metas
+	}
+	msg.Metas[addr] = newMeta
 }
 
 func (msg *Msg) IsEOS() bool {
