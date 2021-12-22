@@ -41,21 +41,18 @@ func DefaultMsgHandler(b *Box, msg *Msg) (bool, error) {
 		return eos, err
 	}
 
-	if msg.GetPeerID() == b.myID {
+	canRead := b.msgSubCh != nil
+	if canRead {
+		b.msgSubCh <- msg
 		b.readUntilIndex = readUntilIndex
-	} else {
-		if msg.Type != TypeMeta {
-			msgMeta := NewMsg(b.myID, msg.Hash, TypeMeta, &BodyMeta{
-				Meta: types.NewMeta(true, false, false),
-			})
-			err := b.Publish(msgMeta, true)
-			if err != nil {
-				return eos, err
-			}
-		}
-		if b.msgSubCh != nil {
-			b.msgSubCh <- msg
-			b.readUntilIndex = readUntilIndex
+	}
+	if msg.Type != TypeMeta {
+		msgMeta := NewMsg(b.myID, msg.Hash, TypeMeta, &BodyMeta{
+			Meta: types.NewMeta(true, canRead, false),
+		})
+		err := b.Publish(msgMeta, true)
+		if err != nil {
+			return eos, err
 		}
 	}
 

@@ -98,10 +98,7 @@ func enterFunc(reader *bufio.Reader) error {
 			case err = <-errs:
 				fmt.Printf("%s\n> ", err)
 			case m = <-msgSubCh:
-				err := readMsg(msgBox, m)
-				if err != nil {
-					errs <- err
-				}
+				printMsg(msgBox, m)
 			case <-msgStopSubCh:
 				stop = true
 			}
