@@ -2,7 +2,6 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
-	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -10,18 +9,27 @@ type BodyBye struct {
 	Persona *types.Persona `json:"persona"`
 }
 
-func (body *BodyBye) Check(box *Box, addr crypto.Addr) error {
-	if !box.auth.IsPublic() && !box.auth.CanRead(addr) {
+type Bye struct {
+	Head
+	Body BodyBye `json:"body"`
+}
+
+func (msg *Bye) GetBody() Body {
+	return msg.Body
+}
+
+func (msg *Bye) Check(box *Box) error {
+	if !box.auth.IsPublic() && !box.auth.CanRead(msg.ClientAddr) {
 		return code.NonReadPermission
 	}
-	if persona := box.getPersona(addr); persona == nil {
+	if persona := box.getPersona(msg.ClientAddr); persona == nil {
 		return code.NonExistingPersonaInBox
 	}
 	return nil
 }
 
-func (body *BodyBye) Execute(box *Box, hash types.Hash) error {
-	err := box.leave(body.Persona)
+func (msg *Bye) Execute(box *Box) error {
+	err := box.leave(msg.Body.Persona)
 	if err != nil {
 		return err
 	}

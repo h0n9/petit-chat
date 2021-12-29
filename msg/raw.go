@@ -2,8 +2,6 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
-	"github.com/h0n9/petit-chat/crypto"
-	"github.com/h0n9/petit-chat/types"
 )
 
 // TODO: fix size constraint
@@ -17,22 +15,32 @@ type BodyRaw struct {
 	Metadata []byte `json:"metadata"`
 }
 
-func (body *BodyRaw) Check(box *Box, addr crypto.Addr) error {
-	if !box.auth.CanWrite(addr) {
+type Raw struct {
+	Head	
+	Body BodyRaw `json:"body"`
+}
+
+func (msg *Raw) GetBody() Body {
+	return msg.Body
+}
+
+func (msg *Raw) Check(box *Box) error {
+	clientAddr := msg.GetClientAddr()
+	if !box.auth.CanWrite(clientAddr) {
 		return code.NonWritePermission
 	}
-	if len(body.Data) > MaxDataSize {
+	if len(msg.Body.Data) > MaxDataSize {
 		return code.TooBigMsgData
 	}
-	if len(body.Metadata) > MaxMetadataSize {
+	if len(msg.Body.Metadata) > MaxMetadataSize {
 		return code.TooBigMsgMetadata
 	}
-	if !box.auth.CanWrite(addr) {
+	if !box.auth.CanWrite(clientAddr) {
 		return code.NonWritePermission
 	}
 	return nil
 }
 
-func (body *BodyRaw) Execute(box *Box, hash types.Hash) error {
+func (msg *Raw) Execute(box *Box) error {
 	return nil
 }

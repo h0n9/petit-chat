@@ -1,6 +1,8 @@
 package msg
 
 import (
+	"time"
+
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
@@ -11,32 +13,49 @@ type BodyHelloSyn struct {
 	Persona *types.Persona `json:"persona"`
 }
 
-func (body *BodyHelloSyn) Check(box *Box, addr crypto.Addr) error {
-	if !box.auth.IsPublic() && !box.auth.CanRead(addr) {
+type HelloSyn struct {
+	Head
+	Body BodyHelloSyn `json:"body"`
+}
+
+func (msg *HelloSyn) GetBody() Body {
+	return msg.Body
+}
+
+func (msg *HelloSyn) Check(box *Box) error {
+	if !box.auth.IsPublic() && !box.auth.CanRead(msg.GetClientAddr()) {
 		return code.NonReadPermission
 	}
 	return nil
 }
 
-func (body *BodyHelloSyn) Execute(box *Box, hash types.Hash) error {
-	err := box.join(body.Persona)
+func (msg *HelloSyn) Execute(box *Box) error {
+	err := box.join(msg.Body.Persona)
 	if err != nil {
 		return err
 	}
 
-	// encrypt b.secretKey with msh.Persona.PubKey.GetKey()
-	encryptedSecretKey, err := body.Persona.PubKey.Encrypt(box.secretKey.GetKey())
+	encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(box.secretKey.GetKey())
 	if err != nil {
 		return err
 	}
 
-	msg := NewMsg(box.myID, hash, &BodyHelloAck{
-		Personae:           box.personae,
-		Auth:               box.auth,
-		EncryptedSecretKey: encryptedSecretKey,
+	msgAck := NewMsg(&HelloAck{
+		Head{
+			Timestamp:  time.Now(),
+			PeerID:     box.myID,
+			ClientAddr: box.myPersona.Address,
+			ParentHash: types.EmptyHash,
+			Type:       TypeHelloAck,
+		},
+		BodyHelloAck{
+			Personae:           box.personae,
+			Auth:               box.auth,
+			EncryptedSecretKey: encryptedSecretKey,
+		},
 	})
 
-	err = box.Publish(msg, TypeHelloAck, false)
+	err = box.Publish(msgAck, false)
 	if err != nil {
 		return err
 	}
@@ -50,15 +69,24 @@ type BodyHelloAck struct {
 	EncryptedSecretKey []byte         `json:"encrypted_secret_key"`
 }
 
-func (body *BodyHelloAck) Check(box *Box, addr crypto.Addr) error {
-	if !box.auth.IsPublic() && !box.auth.CanRead(addr) {
+type HelloAck struct {
+	Head
+	Body BodyHelloAck `json:"body"`
+}
+
+func (msg *HelloAck) GetBody() Body {
+	return msg.Body
+}
+
+func (msg HelloAck) Check(box *Box) error {
+	if !box.auth.IsPublic() && !box.auth.CanRead(msg.ClientAddr) {
 		return code.NonReadPermission
 	}
 	return nil
 }
 
-func (body *BodyHelloAck) Execute(box *Box, hash types.Hash) error {
-	secretKeyByte, err := box.myPrivKey.Decrypt(body.EncryptedSecretKey)
+func (msg HelloAck) Execute(box *Box) error {
+	secretKeyByte, err := box.myPrivKey.Decrypt(msg.Body.EncryptedSecretKey)
 	if err != nil {
 		// TODO: handle or log error somehow
 		// this could not be a real error
@@ -67,14 +95,14 @@ func (body *BodyHelloAck) Execute(box *Box, hash types.Hash) error {
 	secretKey, err := crypto.NewSecretKey(secretKeyByte)
 	if err != nil {
 		return err
-}
+	}
 
 	// apply to msgBox struct values
 	if util.HasField("personae", box) {
-		box.personae = body.Personae
+		box.personae = msg.Body.Personae
 	}
 	if util.HasField("auth", box) {
-		box.auth = body.Auth
+		box.auth = msg.Body.Auth
 	}
 	if util.HasField("secretKey", box) {
 		box.secretKey = secretKey

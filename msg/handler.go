@@ -1,49 +1,48 @@
 package msg
 
-import "github.com/h0n9/petit-chat/code"
+import (
+	"github.com/h0n9/petit-chat/code"
+)
 
-type MsgHandler func(b *Box, msg *Msg) (bool, error)
+type MsgHandler func(box *Box, msg *Msg) (bool, error)
 
-func DefaultMsgHandler(b *Box, msg *Msg) (bool, error) {
-	eos := msg.IsEOS() && (msg.GetPeerID() == b.myID)
+func DefaultMsgHandler(box *Box, msg *Msg) (bool, error) {
+	eos := msg.IsEOS() && (msg.GetPeerID() == box.myID)
 
 	// msg handling flow:
 	//   check -> execute -> append
 
 	// check if msg is proper and can be supported on protocol
 	// improper msgs are dropped here
-	err := msg.check(b)
+	err := msg.check(box)
 	if err != nil {
 		return eos, err
 	}
 
-	addr := msg.Signature.PubKey.Address()
-	hash := msg.GetHash()
-
 	// check msg.Body
-	err = msg.Body.Check(b, addr)
+	err = msg.Check(box)
 	if err != nil && err != code.SelfMsg {
 		return eos, err
 	}
 
 	// execute msg.Body
-	err = msg.Body.Execute(b, hash)
+	err = msg.Execute(box)
 	if err != nil {
 		return eos, err
 	}
 
 	// append msg
-	readUntilIndex, err := b.append(msg)
+	readUntilIndex, err := box.append(msg)
 	if err != nil {
 		return eos, err
 	}
 
-	if msg.GetPeerID() == b.myID {
-		b.readUntilIndex = readUntilIndex
+	if msg.GetPeerID() == box.myID {
+		box.readUntilIndex = readUntilIndex
 	} else {
-		if b.msgSubCh != nil {
-			b.msgSubCh <- msg
-			b.readUntilIndex = readUntilIndex
+		if box.msgSubCh != nil {
+			box.msgSubCh <- msg
+			box.readUntilIndex = readUntilIndex
 		}
 	}
 

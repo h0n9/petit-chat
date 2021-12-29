@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
@@ -88,14 +89,14 @@ func enterFunc(reader *bufio.Reader) error {
 		var (
 			err  error    = nil
 			stop bool     = false
-			msg  *msg.Msg = nil
+			m    *msg.Msg = nil
 		)
 		for {
 			select {
 			case err = <-errs:
 				fmt.Printf("%s\n> ", err)
-			case msg = <-msgSubCh:
-				printMsg(msgBox, msg)
+			case m = <-msgSubCh:
+				printMsg(msgBox, m)
 			case <-msgStopSubCh:
 				stop = true
 			}
@@ -190,11 +191,19 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 
 			// CLI supports ONLY TypeText
-			myID := msgBox.GetMyID()
-			m := msg.NewMsg(myID, types.EmptyHash, &msg.BodyRaw{
-				Data: []byte(input),
+			msg := msg.NewMsg(&msg.Raw{
+				Head: msg.Head{
+					Timestamp:  time.Now(),
+					PeerID:     msgBox.GetMyID(),
+					ClientAddr: msgBox.GetMyPersona().Address,
+					ParentHash: types.EmptyHash,
+					Type:       msg.TypeRaw,
+				},
+				Body: msg.BodyRaw{
+					Data: []byte(input),
+				},
 			})
-			err = msgBox.Publish(m, msg.TypeRaw, true)
+			err = msgBox.Publish(msg, true)
 			if err != nil {
 				errs <- err
 				return
@@ -237,23 +246,23 @@ func printPeer(p *types.Persona) {
 	fmt.Printf("[%s] %s\n", p.Address, p.Nickname)
 }
 
-func printMsg(b *msg.Box, m *msg.Msg) {
+func printMsg(box *msg.Box, m *msg.Msg) {
 	timestamp := m.GetTimestamp()
 	addr := m.GetSignature().PubKey.Address()
-	persona := b.GetPersona(addr)
+	persona := box.GetPersona(addr)
 	nickname := "somebody"
 	if persona != nil {
 		nickname = persona.GetNickname()
 	}
-	switch m.Body.(type) {
-	case *msg.BodyRaw:
-		msgBodyRaw := m.Body.(*msg.BodyRaw)
-		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, msgBodyRaw.Data)
-	case *msg.BodyHelloSyn:
+	switch m.GetType() {
+	case msg.TypeRaw:
+		body := m.GetBody().(msg.BodyRaw)
+		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, body.Data)
+	case msg.TypeHelloSyn:
 		fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
-	case *msg.BodyHelloAck:
-	case *msg.BodyBye:
-	case *msg.BodyUpdate:
+	case msg.TypeHelloAck:
+	case msg.TypeBye:
+	case msg.TypeUpdate:
 	default:
 		fmt.Println("Unknown Type")
 	}

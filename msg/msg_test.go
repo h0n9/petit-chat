@@ -1,6 +1,7 @@
 package msg
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -16,11 +17,20 @@ type BodyTest struct {
 	Content string `json:"content"`
 }
 
-func (body *BodyTest) Check(box *Box, addr crypto.Addr) error {
+type MsgTest struct {
+	Head
+	Body BodyTest `json:"body"`
+}
+
+func (msg *MsgTest) GetBody() Body {
+	return msg.Body
+}
+
+func (msg *MsgTest) Check(box *Box) error {
 	return nil
 }
 
-func (body *BodyTest) Execute(box *Box, hash types.Hash) error {
+func (msg *MsgTest) Execute(box *Box) error {
 	return nil
 }
 
@@ -35,24 +45,35 @@ func TestMsgSignVerify(t *testing.T) {
 	pubKey2 := privKey2.PubKey()
 	assert.NotNil(t, pubKey2)
 
-	msg := Msg{
-		Timestamp:  time.Now(),
-		PeerID:     types.ID(""),
-		ParentHash: types.Hash{},
-		Body: &BodyTest{
+	box := Box{
+		myPrivKey: &privKey1,
+	}
+
+	msg := NewMsg(&MsgTest{
+		Head{
+			Timestamp:  time.Now(),
+			PeerID:     types.ID(""),
+			ParentHash: types.Hash{},
+		},
+		BodyTest{
 			Name:    "nothing",
 			Content: "this is nothing.",
 		},
-	}
-	err = msg.Sign(&privKey1)
+	})
+
+	fmt.Println("before:", msg)
+
+	err = box.Sign(msg)
 	assert.Nil(t, err)
 
-	err = msg.Verify()
+	fmt.Println("after:", msg)
+
+	err = box.Verify(msg)
 	assert.Nil(t, err)
 
 	// manipulate pubKey on purpose
 	msg.Signature.PubKey = pubKey2
 
-	err = msg.Verify()
+	err = box.Verify(msg)
 	assert.Equal(t, err, code.FailedToVerify)
 }
