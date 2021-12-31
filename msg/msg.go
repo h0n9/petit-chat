@@ -1,19 +1,14 @@
 package msg
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
-	"github.com/h0n9/petit-chat/util"
 )
 
-type Body interface {
-	Check(*Box, types.Hash, crypto.Addr) error
-	Execute(*Box, types.Hash, crypto.Addr) error
-}
+type Body interface{}
 
 type Signature struct {
 	PubKey   crypto.PubKey `json:"pubkey"`
@@ -21,28 +16,54 @@ type Signature struct {
 }
 
 type Msg struct {
-	Hash       types.Hash  `json:"hash"`
-	Timestamp  time.Time   `json:"timestamp"`
-	PeerID     types.ID    `json:"peer_id"`
-	ParentHash types.Hash  `json:"parent_hash"`
-	Type       Type        `json:"type"`
-	Body       Body        `json:"body"`
-	Signature  Signature   `json:"signature"`
-	Metas      types.Metas `json:"metas"`
+	Hash      types.Hash `json:"hash"`
+	Signature Signature  `json:"signature"`
+	Base
 }
 
-type MsgToSign struct {
-	Hash       types.Hash  `json:"-"`
-	Timestamp  time.Time   `json:"timestamp"`
-	PeerID     types.ID    `json:"peer_id"`
-	ParentHash types.Hash  `json:"parent_hash"`
-	Type       Type        `json:"type"`
-	Body       Body        `json:"body"`
-	Signature  Signature   `json:"-"`
-	Metas      types.Metas `json:"-"`
+func NewMsg(base Base) *Msg {
+	return &Msg{Base: base}
 }
 
-type MsgToVerify MsgToSign
+func (msg *Msg) GetHash() types.Hash {
+	return msg.Hash
+}
+
+func (msg *Msg) SetHash(hash types.Hash) {
+	msg.Hash = hash
+}
+
+func (msg *Msg) GetSignature() Signature {
+	return msg.Signature
+}
+
+func (msg *Msg) SetSignature(signature Signature) {
+	msg.Signature = signature
+}
+
+type Base interface {
+	// accessors
+	GetTimestamp() time.Time
+	GetPeerID() types.ID
+	GetClientAddr() crypto.Addr
+	GetParentHash() types.Hash
+	GetType() Type
+	GetBody() Body
+	IsEOS() bool
+
+	// ops
+	check(*Box) error
+	Check(*Box) error
+	Execute(*Box) error
+}
+
+type Head struct {
+	Timestamp  time.Time   `json:"timestamp"`
+	PeerID     types.ID    `json:"peer_id"`
+	ClientAddr crypto.Addr `json:"client_addr"`
+	ParentHash types.Hash  `json:"parent_hash"`
+	Type       Type        `json:"type"`
+}
 
 type MsgCapsule struct {
 	Encrypted bool   `json:"encrpyted"`
@@ -50,105 +71,31 @@ type MsgCapsule struct {
 	Data      []byte `json:"data"`
 }
 
-func NewMsg(peerID types.ID, parentHash types.Hash, t Type, body Body) *Msg {
-	return &Msg{
-		Timestamp:  time.Now(),
-		PeerID:     peerID,
-		ParentHash: parentHash,
-		Type:       t,
-		Body:       body,
-		Metas:      make(types.Metas),
-	}
-}
-
-func (msg *Msg) GetPeerID() types.ID {
-	return msg.PeerID
-}
-
-func (msg *Msg) GetBody() Body {
-	return msg.Body
-}
-
-func (msg *Msg) SetBody(body Body) {
-	msg.Body = body
-}
-
-func (msg *Msg) GetTimestamp() time.Time {
+func (msg *Head) GetTimestamp() time.Time {
 	return msg.Timestamp
 }
 
-func (msg *Msg) GetHash() types.Hash {
-	return msg.Hash
+func (msg *Head) GetPeerID() types.ID {
+	return msg.PeerID
 }
 
-func (msg *Msg) GetSignature() Signature {
-	return msg.Signature
+func (msg *Head) GetClientAddr() crypto.Addr {
+	return msg.ClientAddr
 }
 
-func (msg *Msg) GetParentHash() types.Hash {
+func (msg *Head) GetParentHash() types.Hash {
 	return msg.ParentHash
 }
 
-func (msg *Msg) SetMeta(addr crypto.Addr, newMeta types.Meta) {
-	if oldMeta, exist := msg.Metas[addr]; exist {
-		newMeta |= oldMeta // merge old, new metas
-	}
-	msg.Metas[addr] = newMeta
+func (msg *Head) GetType() Type {
+	return msg.Type
 }
 
-func (msg *Msg) IsEOS() bool {
-	switch msg.Body.(type) {
-	case *BodyBye:
-		return true
-	}
-	return false
+func (msg *Head) IsEOS() bool {
+	return msg.Type == TypeBye
 }
 
-func (msg *Msg) Sign(privKey *crypto.PrivKey) error {
-	pubKey := privKey.PubKey()
-	msgToSign := MsgToSign(*msg)
-	b, err := json.Marshal(msgToSign)
-	if err != nil {
-		return err
-	}
-	sigBytes, err := privKey.Sign(b)
-	if err != nil {
-		return err
-	}
-
-	msg.Hash = util.ToSHA256(b)
-	msg.Signature = Signature{
-		SigBytes: sigBytes,
-		PubKey:   pubKey,
-	}
-
-	return nil
-}
-
-func (msg *Msg) Verify() error {
-	msgToVerify := MsgToVerify(*msg)
-	b, err := json.Marshal(msgToVerify)
-	if err != nil {
-		return err
-	}
-	sigBytes := msg.GetSignature().SigBytes
-	ok := msg.Signature.PubKey.Verify(b, sigBytes)
-	if !ok {
-		return code.FailedToVerify
-	}
-
-	return nil
-}
-
-func MarshalJSON(msg *Msg) ([]byte, error) {
-	return json.Marshal(msg)
-}
-
-func UnmarshalJSON(data []byte, msg *Msg) error {
-	return json.Unmarshal(data, msg)
-}
-
-func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {
+func (msg *Head) getParentMsg(b *Box) (*Msg, error) {
 	// check if parentMsgHash is empty
 	pmh := msg.ParentHash
 	if pmh.IsEmpty() {
@@ -163,7 +110,16 @@ func (msg *Msg) getParentMsg(b *Box) (*Msg, error) {
 	return pm, nil
 }
 
-func (msg *Msg) check(b *Box) error {
+func (msg *Head) check(b *Box) error {
+	// check msg.ParentMsgHash
+	// pm, err := msg.getParentMsg(b)
+	// if err != nil {
+	// 	return err
+	// }
+	// if pm != nil && !pm.GetParentHash().IsEmpty() {
+	// 	return code.AlreadyHavingParent
+	// }
+
 	// TODO: add more constraints
 	return nil
 }

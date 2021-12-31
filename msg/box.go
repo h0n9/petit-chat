@@ -9,6 +9,7 @@ import (
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
+	"github.com/h0n9/petit-chat/util"
 )
 
 // Box refers to a chat room
@@ -67,8 +68,17 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 	if err != nil {
 		return nil, err
 	}
-	msg := NewMsg(box.myID, types.EmptyHash, TypeHelloSyn, &BodyHelloSyn{
-		Persona: myPersona,
+	msg := NewMsg(&HelloSyn{
+		Head{
+			Timestamp:  time.Now(),
+			PeerID:     box.myID,
+			ClientAddr: box.myPersona.Address,
+			ParentHash: types.EmptyHash,
+			Type:       TypeHelloSyn,
+		},
+		BodyHelloSyn{
+			Persona: myPersona,
+		},
 	})
 	err = box.Publish(msg, false)
 	if err != nil {
@@ -92,7 +102,7 @@ func (box *Box) Encapsulate(msg *Msg, encrypt bool) ([]byte, error) {
 
 	data, err = json.Marshal(&MsgCapsule{
 		Encrypted: encrypt,
-		Type:      msg.Type,
+		Type:      msg.GetType(),
 		Data:      data,
 	})
 	if err != nil {
@@ -104,8 +114,6 @@ func (box *Box) Encapsulate(msg *Msg, encrypt bool) ([]byte, error) {
 
 func (box *Box) Decapsulate(data []byte) (*Msg, error) {
 	msgCapsule := MsgCapsule{}
-	msg := Msg{}
-
 	err := json.Unmarshal(data, &msgCapsule)
 	if err != nil {
 		return nil, err
@@ -118,22 +126,21 @@ func (box *Box) Decapsulate(data []byte) (*Msg, error) {
 		}
 	}
 
-	body := msgCapsule.Type.Body()
-	if body == nil {
+	msg := NewMsg(msgCapsule.Type.Base())
+	if msg == nil {
 		return nil, code.UnknownMsgType
 	}
-	msg.Body = body
 
-	err = json.Unmarshal(msgCapsule.Data, &msg)
+	err = json.Unmarshal(msgCapsule.Data, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &msg, nil
+	return msg, nil
 }
 
 func (box *Box) Publish(msg *Msg, encrypt bool) error {
-	err := msg.Sign(box.myPrivKey)
+	err := box.Sign(msg)
 	if err != nil {
 		return err
 	}
@@ -172,7 +179,7 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 			fmt.Println(err)
 			continue
 		}
-		err = msg.Verify()
+		err = box.Verify(msg)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -195,6 +202,36 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 		}
 	}
 
+	return nil
+}
+
+func (box *Box) Sign(msg *Msg) error {
+	data, err := json.Marshal(msg.Base)
+	if err != nil {
+		return err
+	}
+	sigBytes, err := box.myPrivKey.Sign(data)
+	if err != nil {
+		return err
+	}
+	msg.SetHash(util.ToSHA256(data))
+	msg.SetSignature(Signature{
+		SigBytes: sigBytes,
+		PubKey:   box.myPersona.PubKey,
+	})
+	return nil
+}
+
+func (box *Box) Verify(msg *Msg) error {
+	data, err := json.Marshal(msg.Base)
+	if err != nil {
+		return err
+	}
+	signature := msg.GetSignature()
+	ok := signature.PubKey.Verify(data, signature.SigBytes)
+	if !ok {
+		return code.FailedToVerify
+	}
 	return nil
 }
 
@@ -277,8 +314,17 @@ func (box *Box) Revoke(addr crypto.Addr) error {
 
 func (box *Box) Close() error {
 	// Announe EOS to others (application layer)
-	msg := NewMsg(box.myID, types.EmptyHash, TypeBye, &BodyBye{
-		Persona: box.myPersona,
+	msg := NewMsg(&Bye{
+		Head{
+			Timestamp:  time.Now(),
+			PeerID:     box.myID,
+			ClientAddr: box.myPersona.Address,
+			ParentHash: types.EmptyHash,
+			Type:       TypeBye,
+		},
+		BodyBye{
+			Persona: box.myPersona,
+		},
 	})
 	return box.Publish(msg, true)
 }
@@ -358,9 +404,18 @@ func (box *Box) leave(targetPersona *types.Persona) error {
 }
 
 func (box *Box) propagate(auth *types.Auth, personae types.Personae) error {
-	msg := NewMsg(box.myID, types.EmptyHash, TypeUpdate, &BodyUpdate{
-		Auth:     auth,
-		Personae: personae,
+	msg := NewMsg(&Update{
+		Head{
+			Timestamp:  time.Now(),
+			PeerID:     box.myID,
+			ClientAddr: box.myPersona.Address,
+			ParentHash: types.EmptyHash,
+			Type:       TypeUpdate,
+		},
+		BodyUpdate{
+			Auth:     auth,
+			Personae: personae,
+		},
 	})
 	err := box.Publish(msg, true)
 	if err != nil {

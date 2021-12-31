@@ -24,20 +24,20 @@ var TypeStrMap = map[Type]string{
 	TypeMeta:     "TypeMeta",
 }
 
-func (t Type) Body() Body {
+func (t Type) Base() Base {
 	switch t {
 	case TypeRaw:
-		return &BodyRaw{}
+		return &Raw{}
 	case TypeHelloSyn:
-		return &BodyHelloSyn{}
+		return &HelloSyn{}
 	case TypeHelloAck:
-		return &BodyHelloAck{}
+		return &HelloAck{}
 	case TypeBye:
-		return &BodyBye{}
+		return &Bye{}
 	case TypeUpdate:
-		return &BodyUpdate{}
+		return &Update{}
 	case TypeMeta:
-		return &BodyMeta{}
+		return &Meta{}
 	default:
 		return nil
 	}
