@@ -283,28 +283,39 @@ func printMsg(box *msg.Box, m *msg.Msg) {
 	switch m.GetType() {
 	case msg.TypeRaw:
 		body := m.GetBody().(msg.BodyRaw)
+		metas := m.GetMetas()
 		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, body.Data)
+		for addr, meta := range metas {
+			nickname = box.GetPersona(addr).Nickname
+			fmt.Printf("  - %s %s\n", nickname, printMeta(meta))
+		}
 	case msg.TypeHelloSyn:
 		fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
 	case msg.TypeHelloAck:
 	case msg.TypeBye:
+		fmt.Printf("[%s, %s] left\n", timestamp, nickname)
 	case msg.TypeUpdate:
 	case msg.TypeMeta:
-		body := m.GetBody().(msg.BodyMeta)
-		done := ""
-		if body.Meta.Received() {
-			done += "received,"
-		}
-		if body.Meta.Read() {
-			done += "read,"
-		}
-		if body.Meta.Typing() {
-			done += "typing,"
-		}
-		fmt.Printf("[%s, %s] %s %x\n", timestamp, nickname, done, m.GetParentHash())
+		// body := m.GetBody().(msg.BodyMeta)
+		// done := printMeta(body.Meta)
+		// fmt.Printf("[%s, %s] %s %x\n", timestamp, nickname, done, m.GetParentHash())
 	default:
 		fmt.Println("Unknown Type")
 	}
+}
+
+func printMeta(meta types.Meta) string {
+	str := ""
+	if meta.Received() {
+		str += "received,"
+	}
+	if meta.Read() {
+		str += "read,"
+	}
+	if meta.Typing() {
+		str += "typing,"
+	}
+	return str
 }
 
 func parsePerm(permStr string) (bool, bool, bool) {

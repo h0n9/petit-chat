@@ -32,5 +32,10 @@ func (msg *Meta) Check(box *Box) error {
 }
 
 func (msg *Meta) Execute(box *Box) error {
+	parentMsg, err := msg.getParentMsg(box)
+	if err != nil {
+		return err
+	}
+	parentMsg.MergeMeta(msg.GetClientAddr(), msg.Body.Meta)
 	return nil
 }
