@@ -51,11 +51,12 @@ func DefaultMsgHandler(box *Box, msg *Msg) (bool, error) {
 				Timestamp:  time.Now(),
 				PeerID:     box.myID,
 				ClientAddr: box.myPersona.Address,
-				ParentHash: msg.GetHash(),
+				ParentHash: types.EmptyHash,
 				Type:       TypeMeta,
 			},
 			BodyMeta{
-				Meta: types.NewMeta(true, canRead, false),
+				TargetMsgHash: msg.GetHash(),
+				Meta:          types.NewMeta(true, canRead, false),
 			},
 		})
 		err := box.Publish(msgMeta, true)

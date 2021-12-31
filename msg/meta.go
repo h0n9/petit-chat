@@ -6,7 +6,8 @@ import (
 )
 
 type BodyMeta struct {
-	Meta types.Meta `json:"meta"`
+	TargetMsgHash types.Hash `json:"target_msg_hash"`
+	Meta          types.Meta `json:"meta"`
 }
 
 type Meta struct {
@@ -24,18 +25,31 @@ func (msg *Meta) Check(box *Box) error {
 		if !box.auth.IsPublic() && !box.auth.CanRead(clientAddr) {
 			return code.NonReadPermission
 		}
+		if msg.Body.TargetMsgHash.IsEmpty() {
+			return code.UnknownMsgType
+		}
 	}
-	if msg.Body.Meta.Typing() && !box.auth.CanWrite(clientAddr) {
-		return code.NonWritePermission
+	if msg.Body.Meta.Typing() {
+		if !box.auth.CanWrite(clientAddr) {
+			return code.NonWritePermission
+		}
+		if !msg.Body.TargetMsgHash.IsEmpty() {
+			return code.UnknownMsgType
+		}
 	}
 	return nil
 }
 
 func (msg *Meta) Execute(box *Box) error {
-	parentMsg, err := msg.getParentMsg(box)
-	if err != nil {
-		return err
+	if msg.Body.Meta.Received() || msg.Body.Meta.Read() {
+		targetMsg := box.GetMsg(msg.Body.TargetMsgHash)
+		if targetMsg == nil {
+			return code.NonExistingMsg
+		}
+		targetMsg.MergeMeta(msg.GetClientAddr(), msg.Body.Meta)
 	}
-	parentMsg.MergeMeta(msg.GetClientAddr(), msg.Body.Meta)
+	// if msg.Body.Meta.Typing() {
+	// 	// TODO: do something
+	// }
 	return nil
 }

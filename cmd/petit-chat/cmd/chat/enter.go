@@ -229,7 +229,7 @@ func printAuth(a *types.Auth) {
 	if len(a.Perms) > 0 {
 		str += "Perms:\n"
 	}
-	for addr, _ := range a.Perms {
+	for addr := range a.Perms {
 		str += fmt.Sprintf("[%s] ", addr)
 		if a.CanRead(addr) {
 			str += "R"
@@ -256,11 +256,12 @@ func readMsg(b *msg.Box, m *msg.Msg) error {
 				Timestamp:  time.Now(),
 				PeerID:     b.GetMyID(),
 				ClientAddr: b.GetMyPersona().Address,
-				ParentHash: m.GetHash(),
+				ParentHash: types.EmptyHash,
 				Type:       msg.TypeMeta,
 			},
 			Body: msg.BodyMeta{
-				Meta: types.NewMeta(false, true, false),
+				TargetMsgHash: m.GetHash(),
+				Meta:          types.NewMeta(false, true, false),
 			},
 		})
 		err := b.Publish(msgMeta, true)
