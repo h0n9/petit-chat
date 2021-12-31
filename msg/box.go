@@ -205,6 +205,14 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 	return nil
 }
 
+func Hash(base Base) types.Hash {
+	data, err := json.Marshal(base)
+	if err != nil {
+		return types.EmptyHash
+	}
+	return util.ToSHA256(data)
+}
+
 func (box *Box) Sign(msg *Msg) error {
 	data, err := json.Marshal(msg.Base)
 	if err != nil {

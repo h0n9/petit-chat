@@ -45,7 +45,7 @@ func (msg *HelloSyn) Execute(box *Box) error {
 			Timestamp:  time.Now(),
 			PeerID:     box.myID,
 			ClientAddr: box.myPersona.Address,
-			ParentHash: types.EmptyHash,
+			ParentHash: Hash(msg),
 			Type:       TypeHelloAck,
 		},
 		BodyHelloAck{
@@ -79,8 +79,12 @@ func (msg *HelloAck) GetBody() Body {
 }
 
 func (msg HelloAck) Check(box *Box) error {
-	if !box.auth.IsPublic() && !box.auth.CanRead(msg.ClientAddr) {
-		return code.NonReadPermission
+	parentMsg, err := msg.getParentMsg(box)
+	if err != nil {
+		return err
+	}
+	if parentMsg == nil {
+		return code.NonExistingParent
 	}
 	return nil
 }

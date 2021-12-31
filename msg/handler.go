@@ -45,14 +45,14 @@ func DefaultMsgHandler(box *Box, msg *Msg) (bool, error) {
 		box.msgSubCh <- msg
 		box.readUntilIndex = readUntilIndex
 	}
-	if msg.GetType() != TypeMeta {
+	if msg.GetType() > TypeMeta {
 		msgMeta := NewMsg(&Meta{
 			Head{
 				Timestamp:  time.Now(),
 				PeerID:     box.myID,
 				ClientAddr: box.myPersona.Address,
-				ParentHash: types.EmptyHash,
-				Type:       TypeHelloSyn,
+				ParentHash: msg.GetHash(),
+				Type:       TypeMeta,
 			},
 			BodyMeta{
 				Meta: types.NewMeta(true, canRead, false),
