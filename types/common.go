@@ -3,7 +3,6 @@ package types
 import (
 	"bytes"
 
-	"github.com/h0n9/petit-chat/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -24,7 +23,6 @@ type (
 	Sub       = pubsub.Subscription
 	Topic     = pubsub.Topic
 	PubSubMsg = pubsub.Message
-	Addr      = crypto.Addr
 	Hash      [hashSize]byte
 )
 

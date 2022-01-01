@@ -18,11 +18,15 @@ type Signature struct {
 type Msg struct {
 	Hash      types.Hash `json:"hash"`
 	Signature Signature  `json:"signature"`
+	Metas     types.Metas
 	Base
 }
 
 func NewMsg(base Base) *Msg {
-	return &Msg{Base: base}
+	return &Msg{
+		Base:  base,
+		Metas: make(types.Metas),
+	}
 }
 
 func (msg *Msg) GetHash() types.Hash {
@@ -39,6 +43,30 @@ func (msg *Msg) GetSignature() Signature {
 
 func (msg *Msg) SetSignature(signature Signature) {
 	msg.Signature = signature
+}
+
+func (msg *Msg) GetMetas() types.Metas {
+	return msg.Metas
+}
+
+func (msg *Msg) SetMetas(metas types.Metas) {
+	msg.Metas = metas
+}
+
+func (msg *Msg) GetMeta(addr crypto.Addr) types.Meta {
+	return msg.Metas[addr]
+}
+
+func (msg *Msg) SetMeta(addr crypto.Addr, meta types.Meta) {
+	msg.Metas[addr] = meta
+}
+
+func (msg *Msg) MergeMeta(addr crypto.Addr, newMeta types.Meta) {
+	oldMeta, exist := msg.Metas[addr]
+	if exist {
+		newMeta |= oldMeta
+	}
+	msg.SetMeta(addr, newMeta)
 }
 
 type Base interface {
@@ -121,6 +149,5 @@ func (msg *Head) check(b *Box) error {
 	}
 
 	// TODO: add more constraints
-
 	return nil
 }

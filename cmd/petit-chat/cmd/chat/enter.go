@@ -70,7 +70,10 @@ func enterFunc(reader *bufio.Reader) error {
 	// get and print out received msgs
 	msgs := msgBox.GetUnreadMsgs()
 	for _, msg := range msgs {
-		printMsg(msgBox, msg)
+		err := readMsg(msgBox, msg)
+		if err != nil {
+			fmt.Printf("%s\n> ", err)
+		}
 	}
 
 	// get and print out new msgs
@@ -226,7 +229,7 @@ func printAuth(a *types.Auth) {
 	if len(a.Perms) > 0 {
 		str += "Perms:\n"
 	}
-	for addr, _ := range a.Perms {
+	for addr := range a.Perms {
 		str += fmt.Sprintf("[%s] ", addr)
 		if a.CanRead(addr) {
 			str += "R"
@@ -246,6 +249,30 @@ func printPeer(p *types.Persona) {
 	fmt.Printf("[%s] %s\n", p.Address, p.Nickname)
 }
 
+func readMsg(b *msg.Box, m *msg.Msg) error {
+	if m.GetType() > msg.TypeMeta {
+		msgMeta := msg.NewMsg(&msg.Meta{
+			Head: msg.Head{
+				Timestamp:  time.Now(),
+				PeerID:     b.GetMyID(),
+				ClientAddr: b.GetMyPersona().Address,
+				ParentHash: types.EmptyHash,
+				Type:       msg.TypeMeta,
+			},
+			Body: msg.BodyMeta{
+				TargetMsgHash: m.GetHash(),
+				Meta:          types.NewMeta(false, true, false),
+			},
+		})
+		err := b.Publish(msgMeta, true)
+		if err != nil {
+			return err
+		}
+	}
+	printMsg(b, m)
+	return nil
+}
+
 func printMsg(box *msg.Box, m *msg.Msg) {
 	timestamp := m.GetTimestamp()
 	addr := m.GetSignature().PubKey.Address()
@@ -257,15 +284,39 @@ func printMsg(box *msg.Box, m *msg.Msg) {
 	switch m.GetType() {
 	case msg.TypeRaw:
 		body := m.GetBody().(msg.BodyRaw)
+		metas := m.GetMetas()
 		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, body.Data)
+		for addr, meta := range metas {
+			nickname = box.GetPersona(addr).Nickname
+			fmt.Printf("  - %s %s\n", nickname, printMeta(meta))
+		}
 	case msg.TypeHelloSyn:
 		fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
 	case msg.TypeHelloAck:
 	case msg.TypeBye:
+		fmt.Printf("[%s, %s] left\n", timestamp, nickname)
 	case msg.TypeUpdate:
+	case msg.TypeMeta:
+		// body := m.GetBody().(msg.BodyMeta)
+		// done := printMeta(body.Meta)
+		// fmt.Printf("[%s, %s] %s %x\n", timestamp, nickname, done, m.GetParentHash())
 	default:
 		fmt.Println("Unknown Type")
 	}
+}
+
+func printMeta(meta types.Meta) string {
+	str := ""
+	if meta.Received() {
+		str += "received,"
+	}
+	if meta.Read() {
+		str += "read,"
+	}
+	if meta.Typing() {
+		str += "typing,"
+	}
+	return str
 }
 
 func parsePerm(permStr string) (bool, bool, bool) {

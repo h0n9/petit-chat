@@ -87,7 +87,7 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 	return &box, nil
 }
 
-func (box *Box) Encapsulate(msg *Msg, msgType Type, encrypt bool) ([]byte, error) {
+func (box *Box) Encapsulate(msg *Msg, encrypt bool) ([]byte, error) {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (box *Box) Encapsulate(msg *Msg, msgType Type, encrypt bool) ([]byte, error
 
 	data, err = json.Marshal(&MsgCapsule{
 		Encrypted: encrypt,
-		Type:      msgType,
+		Type:      msg.GetType(),
 		Data:      data,
 	})
 	if err != nil {
@@ -144,7 +144,7 @@ func (box *Box) Publish(msg *Msg, encrypt bool) error {
 	if err != nil {
 		return err
 	}
-	data, err := box.Encapsulate(msg, msg.GetType(), encrypt)
+	data, err := box.Encapsulate(msg, encrypt)
 	if err != nil {
 		return err
 	}
@@ -203,6 +203,14 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 	}
 
 	return nil
+}
+
+func Hash(base Base) types.Hash {
+	data, err := json.Marshal(base)
+	if err != nil {
+		return types.EmptyHash
+	}
+	return util.ToSHA256(data)
 }
 
 func (box *Box) Sign(msg *Msg) error {

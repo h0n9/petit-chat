@@ -1,7 +1,10 @@
 package msg
 
 import (
+	"time"
+
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/types"
 )
 
 type MsgHandler func(box *Box, msg *Msg) (bool, error)
@@ -10,7 +13,7 @@ func DefaultMsgHandler(box *Box, msg *Msg) (bool, error) {
 	eos := msg.IsEOS() && (msg.GetPeerID() == box.myID)
 
 	// msg handling flow:
-	//   check -> execute -> append
+	//   check -> append -> execute -> (received)
 
 	// check if msg is proper and can be supported on protocol
 	// improper msgs are dropped here
@@ -37,12 +40,28 @@ func DefaultMsgHandler(box *Box, msg *Msg) (bool, error) {
 		return eos, err
 	}
 
-	if msg.GetPeerID() == box.myID {
+	canRead := box.msgSubCh != nil
+	if canRead {
+		box.msgSubCh <- msg
 		box.readUntilIndex = readUntilIndex
-	} else {
-		if box.msgSubCh != nil {
-			box.msgSubCh <- msg
-			box.readUntilIndex = readUntilIndex
+	}
+	if msg.GetType() > TypeMeta {
+		msgMeta := NewMsg(&Meta{
+			Head{
+				Timestamp:  time.Now(),
+				PeerID:     box.myID,
+				ClientAddr: box.myPersona.Address,
+				ParentHash: types.EmptyHash,
+				Type:       TypeMeta,
+			},
+			BodyMeta{
+				TargetMsgHash: msg.GetHash(),
+				Meta:          types.NewMeta(true, canRead, false),
+			},
+		})
+		err := box.Publish(msgMeta, true)
+		if err != nil {
+			return eos, err
 		}
 	}
 
