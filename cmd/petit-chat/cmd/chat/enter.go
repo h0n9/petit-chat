@@ -250,26 +250,30 @@ func printPeer(p *types.Persona) {
 }
 
 func readMsg(b *msg.Box, m *msg.Msg) error {
-	if m.GetType() > msg.TypeMeta {
-		msgMeta := msg.NewMsg(&msg.Meta{
-			Head: msg.Head{
-				Timestamp:  time.Now(),
-				PeerID:     b.GetMyID(),
-				ClientAddr: b.GetMyPersona().Address,
-				ParentHash: types.EmptyHash,
-				Type:       msg.TypeMeta,
-			},
-			Body: msg.BodyMeta{
-				TargetMsgHash: m.GetHash(),
-				Meta:          types.NewMeta(false, true, false),
-			},
-		})
-		err := b.Publish(msgMeta, true)
-		if err != nil {
-			return err
-		}
-	}
 	printMsg(b, m)
+	if m.GetType() <= msg.TypeMeta {
+		return nil
+	}
+	if m.GetClientAddr() == b.GetMyPersona().Address {
+		return nil
+	}
+	msgMeta := msg.NewMsg(&msg.Meta{
+		Head: msg.Head{
+			Timestamp:  time.Now(),
+			PeerID:     b.GetMyID(),
+			ClientAddr: b.GetMyPersona().Address,
+			ParentHash: types.EmptyHash,
+			Type:       msg.TypeMeta,
+		},
+		Body: msg.BodyMeta{
+			TargetMsgHash: m.GetHash(),
+			Meta:          types.NewMeta(false, true, false),
+		},
+	})
+	err := b.Publish(msgMeta, true)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

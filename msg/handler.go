@@ -45,24 +45,28 @@ func DefaultMsgHandler(box *Box, msg *Msg) (bool, error) {
 		box.msgSubCh <- msg
 		box.readUntilIndex = readUntilIndex
 	}
-	if msg.GetType() > TypeMeta {
-		msgMeta := NewMsg(&Meta{
-			Head{
-				Timestamp:  time.Now(),
-				PeerID:     box.myID,
-				ClientAddr: box.myPersona.Address,
-				ParentHash: types.EmptyHash,
-				Type:       TypeMeta,
-			},
-			BodyMeta{
-				TargetMsgHash: msg.GetHash(),
-				Meta:          types.NewMeta(true, canRead, false),
-			},
-		})
-		err := box.Publish(msgMeta, true)
-		if err != nil {
-			return eos, err
-		}
+	if msg.GetType() <= TypeMeta {
+		return eos, nil
+	}
+	if msg.GetClientAddr() == box.myPersona.Address {
+		return eos, nil
+	}
+	msgMeta := NewMsg(&Meta{
+		Head{
+			Timestamp:  time.Now(),
+			PeerID:     box.myID,
+			ClientAddr: box.myPersona.Address,
+			ParentHash: types.EmptyHash,
+			Type:       TypeMeta,
+		},
+		BodyMeta{
+			TargetMsgHash: msg.GetHash(),
+			Meta:          types.NewMeta(true, canRead, false),
+		},
+	})
+	err = box.Publish(msgMeta, true)
+	if err != nil {
+		return eos, err
 	}
 
 	return eos, nil
