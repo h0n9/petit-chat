@@ -93,6 +93,16 @@ type Head struct {
 	Type       Type        `json:"type"`
 }
 
+func NewHead(box *Box, parentHash types.Hash, msgType Type) Head {
+	return Head{
+		Timestamp: time.Now(),
+		PeerID: box.GetMyID(),
+		ClientAddr: box.GetMyPersona().Address,
+		ParentHash: parentHash,
+		Type: msgType,
+	}
+}
+
 type MsgCapsule struct {
 	Encrypted bool   `json:"encrpyted"`
 	Type      Type   `json:"type"`

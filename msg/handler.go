@@ -1,8 +1,6 @@
 package msg
 
 import (
-	"time"
-
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/types"
 )
@@ -51,19 +49,8 @@ func DefaultMsgHandler(box *Box, msg *Msg) (bool, error) {
 	if msg.GetClientAddr() == box.myPersona.Address {
 		return eos, nil
 	}
-	msgMeta := NewMsg(&Meta{
-		Head{
-			Timestamp:  time.Now(),
-			PeerID:     box.myID,
-			ClientAddr: box.myPersona.Address,
-			ParentHash: types.EmptyHash,
-			Type:       TypeMeta,
-		},
-		BodyMeta{
-			TargetMsgHash: msg.GetHash(),
-			Meta:          types.NewMeta(true, canRead, false),
-		},
-	})
+	meta := types.NewMeta(true, canRead, false)
+	msgMeta := NewMsgMeta(box, types.EmptyHash, msg.GetHash(), meta)
 	err = box.Publish(msgMeta, true)
 	if err != nil {
 		return eos, err

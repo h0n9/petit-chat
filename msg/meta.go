@@ -15,6 +15,16 @@ type Meta struct {
 	Body BodyMeta `json:"body"`
 }
 
+func NewMsgMeta(box *Box, parentHash types.Hash, targetMsgHash types.Hash, meta types.Meta) *Msg {
+	return NewMsg(&Meta{
+		Head: NewHead(box, parentHash, TypeMeta),
+		Body: BodyMeta{
+			TargetMsgHash: targetMsgHash,
+			Meta:          meta,
+		},
+	})
+}
+
 func (msg *Meta) GetBody() Body {
 	return msg.Body
 }

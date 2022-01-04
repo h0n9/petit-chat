@@ -1,8 +1,6 @@
 package msg
 
 import (
-	"time"
-
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
@@ -16,6 +14,15 @@ type BodyHelloSyn struct {
 type HelloSyn struct {
 	Head
 	Body BodyHelloSyn `json:"body"`
+}
+
+func NewMsgHelloSyn(box *Box, parentHash types.Hash, persona *types.Persona) *Msg {
+	return NewMsg(&HelloSyn{
+		Head: NewHead(box, parentHash, TypeHelloSyn),
+		Body: BodyHelloSyn{
+			Persona: persona,
+		},
+	})
 }
 
 func (msg *HelloSyn) GetBody() Body {
@@ -40,21 +47,7 @@ func (msg *HelloSyn) Execute(box *Box) error {
 		return err
 	}
 
-	msgAck := NewMsg(&HelloAck{
-		Head{
-			Timestamp:  time.Now(),
-			PeerID:     box.myID,
-			ClientAddr: box.myPersona.Address,
-			ParentHash: Hash(msg),
-			Type:       TypeHelloAck,
-		},
-		BodyHelloAck{
-			Personae:           box.personae,
-			Auth:               box.auth,
-			EncryptedSecretKey: encryptedSecretKey,
-		},
-	})
-
+	msgAck := NewMsgHelloAck(box, Hash(msg), box.personae, box.auth, encryptedSecretKey)
 	err = box.Publish(msgAck, false)
 	if err != nil {
 		return err
@@ -72,6 +65,18 @@ type BodyHelloAck struct {
 type HelloAck struct {
 	Head
 	Body BodyHelloAck `json:"body"`
+}
+
+func NewMsgHelloAck(box *Box, parentHash types.Hash,
+	personae types.Personae, auth *types.Auth, encryptedSecretKey []byte) *Msg {
+	return NewMsg(&HelloAck{
+		Head: NewHead(box, parentHash, TypeHelloAck),
+		Body: BodyHelloAck{
+			Personae:           personae,
+			Auth:               auth,
+			EncryptedSecretKey: encryptedSecretKey,
+		},
+	})
 }
 
 func (msg *HelloAck) GetBody() Body {

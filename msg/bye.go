@@ -14,6 +14,15 @@ type Bye struct {
 	Body BodyBye `json:"body"`
 }
 
+func NewMsgBye(box *Box, parentHash types.Hash, persona *types.Persona) *Msg {
+	return NewMsg(&Bye{
+		Head: NewHead(box, parentHash, TypeBye),
+		Body: BodyBye{
+			Persona: persona,
+		},
+	})
+}
+
 func (msg *Bye) GetBody() Body {
 	return msg.Body
 }

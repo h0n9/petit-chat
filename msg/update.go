@@ -16,6 +16,16 @@ type Update struct {
 	Body BodyUpdate `json:"body"`
 }
 
+func NewMsgUpdate(box *Box, parentHash types.Hash, auth *types.Auth, personae types.Personae) *Msg {
+	return NewMsg(&Update{
+		Head: NewHead(box, parentHash, TypeUpdate),
+		Body: BodyUpdate{
+			Auth:     auth,
+			Personae: personae,
+		},
+	})
+}
+
 func (msg *Update) GetBody() Body {
 	return msg.Body
 }

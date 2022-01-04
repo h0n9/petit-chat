@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
@@ -194,18 +193,7 @@ func enterFunc(reader *bufio.Reader) error {
 			}
 
 			// CLI supports ONLY TypeText
-			msg := msg.NewMsg(&msg.Raw{
-				Head: msg.Head{
-					Timestamp:  time.Now(),
-					PeerID:     msgBox.GetMyID(),
-					ClientAddr: msgBox.GetMyPersona().Address,
-					ParentHash: types.EmptyHash,
-					Type:       msg.TypeRaw,
-				},
-				Body: msg.BodyRaw{
-					Data: []byte(input),
-				},
-			})
+			msg := msg.NewMsgRaw(msgBox, types.EmptyHash, []byte(input), nil)
 			err = msgBox.Publish(msg, true)
 			if err != nil {
 				errs <- err
@@ -257,19 +245,8 @@ func readMsg(b *msg.Box, m *msg.Msg) error {
 	if m.GetClientAddr() == b.GetMyPersona().Address {
 		return nil
 	}
-	msgMeta := msg.NewMsg(&msg.Meta{
-		Head: msg.Head{
-			Timestamp:  time.Now(),
-			PeerID:     b.GetMyID(),
-			ClientAddr: b.GetMyPersona().Address,
-			ParentHash: types.EmptyHash,
-			Type:       msg.TypeMeta,
-		},
-		Body: msg.BodyMeta{
-			TargetMsgHash: m.GetHash(),
-			Meta:          types.NewMeta(false, true, false),
-		},
-	})
+	meta := types.NewMeta(false, true, false)
+	msgMeta := msg.NewMsgMeta(b, types.EmptyHash, m.GetHash(), meta)
 	err := b.Publish(msgMeta, true)
 	if err != nil {
 		return err

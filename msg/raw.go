@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/types"
 )
 
 // TODO: fix size constraint
@@ -16,8 +17,18 @@ type BodyRaw struct {
 }
 
 type Raw struct {
-	Head	
+	Head
 	Body BodyRaw `json:"body"`
+}
+
+func NewMsgRaw(box *Box, parentHash types.Hash, data []byte, metadata []byte) *Msg {
+	return NewMsg(&Raw{
+		Head: NewHead(box, parentHash, TypeRaw),
+		Body: BodyRaw{
+			Data:     data,
+			Metadata: metadata,
+		},
+	})
 }
 
 func (msg *Raw) GetBody() Body {
