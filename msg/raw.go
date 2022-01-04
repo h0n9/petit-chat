@@ -23,8 +23,8 @@ type Raw struct {
 
 func NewMsgRaw(box *Box, parentHash types.Hash, data []byte, metadata []byte) *Msg {
 	return NewMsg(&Raw{
-		Head: NewHead(box, parentHash, TypeRaw),
-		Body: BodyRaw{
+		NewHead(box, parentHash, TypeRaw),
+		BodyRaw{
 			Data:     data,
 			Metadata: metadata,
 		},

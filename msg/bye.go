@@ -16,8 +16,8 @@ type Bye struct {
 
 func NewMsgBye(box *Box, parentHash types.Hash, persona *types.Persona) *Msg {
 	return NewMsg(&Bye{
-		Head: NewHead(box, parentHash, TypeBye),
-		Body: BodyBye{
+		NewHead(box, parentHash, TypeBye),
+		BodyBye{
 			Persona: persona,
 		},
 	})

@@ -18,8 +18,8 @@ type Update struct {
 
 func NewMsgUpdate(box *Box, parentHash types.Hash, auth *types.Auth, personae types.Personae) *Msg {
 	return NewMsg(&Update{
-		Head: NewHead(box, parentHash, TypeUpdate),
-		Body: BodyUpdate{
+		NewHead(box, parentHash, TypeUpdate),
+		BodyUpdate{
 			Auth:     auth,
 			Personae: personae,
 		},

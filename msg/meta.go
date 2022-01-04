@@ -17,8 +17,8 @@ type Meta struct {
 
 func NewMsgMeta(box *Box, parentHash types.Hash, targetMsgHash types.Hash, meta types.Meta) *Msg {
 	return NewMsg(&Meta{
-		Head: NewHead(box, parentHash, TypeMeta),
-		Body: BodyMeta{
+		NewHead(box, parentHash, TypeMeta),
+		BodyMeta{
 			TargetMsgHash: targetMsgHash,
 			Meta:          meta,
 		},

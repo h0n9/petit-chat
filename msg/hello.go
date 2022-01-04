@@ -18,8 +18,8 @@ type HelloSyn struct {
 
 func NewMsgHelloSyn(box *Box, parentHash types.Hash, persona *types.Persona) *Msg {
 	return NewMsg(&HelloSyn{
-		Head: NewHead(box, parentHash, TypeHelloSyn),
-		Body: BodyHelloSyn{
+		NewHead(box, parentHash, TypeHelloSyn),
+		BodyHelloSyn{
 			Persona: persona,
 		},
 	})
@@ -70,8 +70,8 @@ type HelloAck struct {
 func NewMsgHelloAck(box *Box, parentHash types.Hash,
 	personae types.Personae, auth *types.Auth, encryptedSecretKey []byte) *Msg {
 	return NewMsg(&HelloAck{
-		Head: NewHead(box, parentHash, TypeHelloAck),
-		Body: BodyHelloAck{
+		NewHead(box, parentHash, TypeHelloAck),
+		BodyHelloAck{
 			Personae:           personae,
 			Auth:               auth,
 			EncryptedSecretKey: encryptedSecretKey,
