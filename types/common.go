@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"encoding/hex"
 
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -26,6 +27,23 @@ type (
 	Hash      [hashSize]byte
 )
 
-func (h Hash) IsEmpty() bool {
-	return bytes.Equal(h[:], EmptyHash[:])
+func (hash Hash) String() string {
+	return string(hash[:])
+}
+
+func (hash *Hash) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + hex.EncodeToString(hash[:]) + `"`), nil
+}
+
+func (hash *Hash) UnmarshalJSON(data []byte) error {
+	tmp, err := hex.DecodeString(string(data[1 : len(data)-1]))
+	if err != nil {
+		return err
+	}
+	copy(hash[:], tmp)
+	return nil
+}
+
+func (hash Hash) IsEmpty() bool {
+	return bytes.Equal(hash[:], EmptyHash[:])
 }
