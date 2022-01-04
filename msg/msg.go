@@ -18,8 +18,8 @@ type Signature struct {
 type Msg struct {
 	Hash      types.Hash `json:"hash"`
 	Signature Signature  `json:"signature"`
-	Metas     types.Metas
-	Base
+	Base      `json:"base"`
+	Metas     types.Metas `json:"-"`
 }
 
 func NewMsg(base Base) *Msg {
@@ -95,11 +95,11 @@ type Head struct {
 
 func NewHead(box *Box, parentHash types.Hash, msgType Type) Head {
 	return Head{
-		Timestamp: time.Now(),
-		PeerID: box.GetMyID(),
+		Timestamp:  time.Now(),
+		PeerID:     box.GetMyID(),
 		ClientAddr: box.GetMyPersona().Address,
 		ParentHash: parentHash,
-		Type: msgType,
+		Type:       msgType,
 	}
 }
 

@@ -31,5 +31,4 @@ type (
 	PrivKey [PrivKeySize]byte
 	PubKey  [PubKeySize]byte
 	Addr    string
-	Hash    [32]byte
 )
