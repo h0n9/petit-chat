@@ -21,7 +21,7 @@ Brother'.
   - [x] Enhance msgTypeHello
   - [x] Add msgBox authentication
   - [x] Refactor msg type, struct, interface, etc.
-  - [ ] Enhance msgBox internal metadata
+  - [x] Enhance msgBox internal metadata
   - [ ] Advance msgBox store
 - [ ] Conduct sub-tasks
 - [ ] Release `v0.0.1`
