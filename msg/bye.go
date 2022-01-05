@@ -28,7 +28,7 @@ func (msg *Bye) GetBody() Body {
 }
 
 func (msg *Bye) Check(box *Box) error {
-	if !box.auth.IsPublic() && !box.auth.CanRead(msg.ClientAddr) {
+	if !box.state.auth.IsPublic() && !box.state.auth.CanRead(msg.ClientAddr) {
 		return code.NonReadPermission
 	}
 	if persona := box.getPersona(msg.ClientAddr); persona == nil {

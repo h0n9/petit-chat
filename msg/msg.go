@@ -96,8 +96,8 @@ type Head struct {
 func NewHead(box *Box, parentHash types.Hash, msgType Type) Head {
 	return Head{
 		Timestamp:  time.Now(),
-		PeerID:     box.GetMyID(),
-		ClientAddr: box.GetMyPersona().Address,
+		PeerID:     box.GetHostID(),
+		ClientAddr: box.GetHostPersona().Address,
 		ParentHash: parentHash,
 		Type:       msgType,
 	}

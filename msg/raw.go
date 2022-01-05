@@ -37,7 +37,7 @@ func (msg *Raw) GetBody() Body {
 
 func (msg *Raw) Check(box *Box) error {
 	clientAddr := msg.GetClientAddr()
-	if !box.auth.CanWrite(clientAddr) {
+	if !box.state.auth.CanWrite(clientAddr) {
 		return code.NonWritePermission
 	}
 	if len(msg.Body.Data) > MaxDataSize {
@@ -46,7 +46,7 @@ func (msg *Raw) Check(box *Box) error {
 	if len(msg.Body.Metadata) > MaxMetadataSize {
 		return code.TooBigMsgMetadata
 	}
-	if !box.auth.CanWrite(clientAddr) {
+	if !box.state.auth.CanWrite(clientAddr) {
 		return code.NonWritePermission
 	}
 	return nil
