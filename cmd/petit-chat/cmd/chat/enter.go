@@ -242,7 +242,7 @@ func readMsg(b *msg.Box, m *msg.Msg) error {
 	if m.GetType() <= msg.TypeMeta {
 		return nil
 	}
-	if m.GetClientAddr() == b.GetMyPersona().Address {
+	if m.GetClientAddr() == b.GetHostPersona().Address {
 		return nil
 	}
 	meta := types.NewMeta(false, true, false)

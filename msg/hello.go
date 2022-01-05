@@ -30,7 +30,7 @@ func (msg *HelloSyn) GetBody() Body {
 }
 
 func (msg *HelloSyn) Check(box *Box) error {
-	if !box.auth.IsPublic() && !box.auth.CanRead(msg.GetClientAddr()) {
+	if !box.state.auth.IsPublic() && !box.state.auth.CanRead(msg.GetClientAddr()) {
 		return code.NonReadPermission
 	}
 	return nil
@@ -42,12 +42,12 @@ func (msg *HelloSyn) Execute(box *Box) error {
 		return err
 	}
 
-	encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(box.secretKey.GetKey())
+	encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(box.vault.secretKey.GetKey())
 	if err != nil {
 		return err
 	}
 
-	msgAck := NewMsgHelloAck(box, Hash(msg), box.personae, box.auth, encryptedSecretKey)
+	msgAck := NewMsgHelloAck(box, Hash(msg), box.state.personae, box.state.auth, encryptedSecretKey)
 	err = box.Publish(msgAck, false)
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (msg HelloAck) Check(box *Box) error {
 }
 
 func (msg HelloAck) Execute(box *Box) error {
-	secretKeyByte, err := box.myPrivKey.Decrypt(msg.Body.EncryptedSecretKey)
+	secretKeyByte, err := box.vault.privKey.Decrypt(msg.Body.EncryptedSecretKey)
 	if err != nil {
 		// TODO: handle or log error somehow
 		// this could not be a real error
@@ -108,13 +108,13 @@ func (msg HelloAck) Execute(box *Box) error {
 
 	// apply to msgBox struct values
 	if util.HasField("personae", box) {
-		box.personae = msg.Body.Personae
+		box.state.personae = msg.Body.Personae
 	}
 	if util.HasField("auth", box) {
-		box.auth = msg.Body.Auth
+		box.state.auth = msg.Body.Auth
 	}
 	if util.HasField("secretKey", box) {
-		box.secretKey = secretKey
+		box.vault.secretKey = secretKey
 	}
 
 	return nil
