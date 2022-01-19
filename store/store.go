@@ -7,9 +7,9 @@ import (
 )
 
 var (
-	latestCountKey = []byte("latest_count")
-	prefixIndex    = []byte("index:")
-	prefixHash     = []byte("hash:")
+	nextCountKey = []byte("next_count")
+	prefixIndex  = []byte("index:")
+	prefixHash   = []byte("hash:")
 )
 
 type Store struct {
@@ -18,21 +18,25 @@ type Store struct {
 	hashDB  tmdb.DB
 }
 
-func NewStore(rootDB tmdb.DB) *Store {
+func NewStore(rootDB tmdb.DB) (*Store, error) {
 	store := Store{
 		rootDB:  rootDB,
 		indexDB: tmdb.NewPrefixDB(rootDB, prefixIndex),
 		hashDB:  tmdb.NewPrefixDB(rootDB, prefixHash),
 	}
-	return &store
+	err := store.SetNextCount(types.Count(0))
+	if err != nil {
+		return nil, err
+	}
+	return &store, nil
 }
 
-func (s *Store) SetLastestCount(count types.Count) error {
-	return s.rootDB.Set(latestCountKey, types.CountToByteSlice(count))
+func (s *Store) SetNextCount(count types.Count) error {
+	return s.rootDB.Set(nextCountKey, types.CountToByteSlice(count))
 }
 
-func (s *Store) GetLatestCount() (types.Count, error) {
-	value, err := s.rootDB.Get(latestCountKey)
+func (s *Store) GetNextCount() (types.Count, error) {
+	value, err := s.rootDB.Get(nextCountKey)
 	if err != nil {
 		return 0, err
 	}
