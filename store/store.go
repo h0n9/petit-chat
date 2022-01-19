@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	nextCountKey = []byte("next_count")
+	nextIndexKey = []byte("next_index")
 	prefixIndex  = []byte("index:")
 	prefixHash   = []byte("hash:")
 )
@@ -24,21 +24,21 @@ func NewStore(rootDB tmdb.DB) (*Store, error) {
 		indexDB: tmdb.NewPrefixDB(rootDB, prefixIndex),
 		hashDB:  tmdb.NewPrefixDB(rootDB, prefixHash),
 	}
-	err := store.SetNextCount(types.Count(0))
+	err := store.SetNextIndex(types.Index(0))
 	if err != nil {
 		return nil, err
 	}
 	return &store, nil
 }
 
-func (s *Store) SetNextCount(count types.Count) error {
-	return s.rootDB.Set(nextCountKey, types.CountToByteSlice(count))
+func (s *Store) SetNextIndex(index types.Index) error {
+	return s.rootDB.Set(nextIndexKey, types.IndexToByteSlice(index))
 }
 
-func (s *Store) GetNextCount() (types.Count, error) {
-	value, err := s.rootDB.Get(nextCountKey)
+func (s *Store) GetNextIndex() (types.Index, error) {
+	value, err := s.rootDB.Get(nextIndexKey)
 	if err != nil {
 		return 0, err
 	}
-	return types.CountFromByteSlice(value)
+	return types.IndexFromByteSlice(value)
 }
