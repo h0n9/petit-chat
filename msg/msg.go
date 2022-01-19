@@ -1,6 +1,7 @@
 package msg
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/h0n9/petit-chat/code"
@@ -67,6 +68,10 @@ func (msg *Msg) MergeMeta(addr crypto.Addr, newMeta types.Meta) {
 		newMeta |= oldMeta
 	}
 	msg.SetMeta(addr, newMeta)
+}
+
+func (msg *Msg) ToByteSlice() ([]byte, error) {
+	return json.Marshal(msg)
 }
 
 type Base interface {
