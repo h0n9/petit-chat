@@ -54,28 +54,28 @@ func (s *Store) GetNextIndex() (types.Index, error) {
 
 }
 
-func (s *Store) Append(msg msg.Msg) error {
+func (s *Store) Append(msg msg.Msg) (types.Index, error) {
 	hash := msg.GetHash()
 	hashByteSlice := hash[:]
 	msgByteSlice, err := msg.ToByteSlice()
 	if err != nil {
-		return err
+		return types.Index(0), err
 	}
-	nextIndex, nextIndexByteSlice, err := s.getNextIndex()
+	index, indexByteSlice, err := s.getNextIndex()
 	if err != nil {
-		return err
+		return types.Index(0), err
 	}
-	err = s.indexDB.Set(nextIndexByteSlice, hashByteSlice)
+	err = s.indexDB.Set(indexByteSlice, hashByteSlice)
 	if err != nil {
-		return err
+		return types.Index(0), err
 	}
 	err = s.hashDB.Set(hashByteSlice, msgByteSlice)
 	if err != nil {
-		return err
+		return types.Index(0), err
 	}
-	err = s.SetNextIndex(nextIndex + types.Index(1))
+	err = s.SetNextIndex(index + types.Index(1))
 	if err != nil {
-		return err
+		return types.Index(0), err
 	}
-	return nil
+	return index, nil
 }
