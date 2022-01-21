@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -66,13 +67,7 @@ func (msg *MsgTest) Execute(box *msg.Box) error {
 }
 
 func TestAppend(t *testing.T) {
-	s, err := NewStore(tmdb.NewMemDB())
-	assert.NoError(t, err)
-
-	nextIndex, err := s.GetNextIndex()
-	assert.NoError(t, err)
-	assert.Equal(t, types.Index(0), nextIndex)
-
+	// prepare msg to append
 	m := msg.NewMsg(&MsgTest{
 		msg.Head{
 			Timestamp:  time.Now(),
@@ -86,12 +81,29 @@ func TestAppend(t *testing.T) {
 	})
 	hash := msg.Hash(m)
 	m.SetHash(hash)
+	mData, err := json.Marshal(m)
+	assert.NoError(t, err)
 
-	index, err := s.Append(*m)
+	s, err := NewStore(tmdb.NewMemDB())
+	assert.NoError(t, err)
+
+	nextIndex, err := s.GetNextIndex()
+	assert.NoError(t, err)
+	assert.Equal(t, types.Index(0), nextIndex)
+
+	index, err := s.Append(hash, mData)
 	assert.NoError(t, err)
 	assert.Equal(t, types.Index(0), index)
 
 	nextIndex, err = s.GetNextIndex()
 	assert.NoError(t, err)
 	assert.Equal(t, types.Index(1), nextIndex)
+
+	mmData, err := s.GetDataByHash(hash)
+	assert.NoError(t, err)
+	assert.EqualValues(t, mData, mmData)
+
+	mmData, err = s.GetDataByIndex(index)
+	assert.NoError(t, err)
+	assert.EqualValues(t, mData, mmData)
 }

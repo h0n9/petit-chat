@@ -3,7 +3,6 @@ package store
 import (
 	tmdb "github.com/tendermint/tm-db"
 
-	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -54,13 +53,8 @@ func (s *Store) GetNextIndex() (types.Index, error) {
 
 }
 
-func (s *Store) Append(msg msg.Msg) (types.Index, error) {
-	hash := msg.GetHash()
+func (s *Store) Append(hash types.Hash, data []byte) (types.Index, error) {
 	hashByteSlice := hash[:]
-	msgByteSlice, err := msg.ToByteSlice()
-	if err != nil {
-		return types.Index(0), err
-	}
 	index, indexByteSlice, err := s.getNextIndex()
 	if err != nil {
 		return types.Index(0), err
@@ -69,7 +63,7 @@ func (s *Store) Append(msg msg.Msg) (types.Index, error) {
 	if err != nil {
 		return types.Index(0), err
 	}
-	err = s.hashDB.Set(hashByteSlice, msgByteSlice)
+	err = s.hashDB.Set(hashByteSlice, data)
 	if err != nil {
 		return types.Index(0), err
 	}
@@ -78,4 +72,21 @@ func (s *Store) Append(msg msg.Msg) (types.Index, error) {
 		return types.Index(0), err
 	}
 	return index, nil
+}
+
+func (s *Store) getDataByHash(hash []byte) ([]byte, error) {
+	return s.hashDB.Get(hash)
+}
+
+func (s *Store) GetDataByHash(hash types.Hash) ([]byte, error) {
+	return s.getDataByHash(hash[:])
+}
+
+func (s *Store) GetDataByIndex(index types.Index) ([]byte, error) {
+	indexByteSlice := types.IndexToByteSlice(index)
+	hashByteSlice, err := s.indexDB.Get(indexByteSlice)
+	if err != nil {
+		return nil, err
+	}
+	return s.getDataByHash(hashByteSlice)
 }
