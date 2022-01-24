@@ -10,7 +10,6 @@ import (
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
-	"github.com/libp2p/go-libp2p-core/peer"
 )
 
 // Box refers to a chat room
@@ -19,12 +18,7 @@ type Box struct {
 	sub      *types.Sub
 	msgSubCh chan *Msg
 
-	vault struct {
-		hostID      types.ID
-		hostPersona *types.Persona // TODO: move to client side permanently
-		privKey     *crypto.PrivKey
-		secretKey   *crypto.SecretKey
-	}
+	vault *types.Vault
 
 	state struct {
 		topic           *types.Topic
@@ -55,17 +49,7 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 		sub:      nil,
 		msgSubCh: nil,
 
-		vault: struct {
-			hostID      peer.ID
-			hostPersona *types.Persona
-			privKey     *crypto.PrivKey
-			secretKey   *crypto.SecretKey
-		}{
-			hostID:      hostID,
-			hostPersona: hostPersona,
-			privKey:     privKey,
-			secretKey:   secretKey,
-		},
+		vault: types.NewVault(hostID, hostPersona, privKey, secretKey),
 
 		state: struct {
 			topic           *types.Topic
@@ -112,7 +96,8 @@ func (box *Box) Encapsulate(msg *Msg, encrypt bool) ([]byte, error) {
 	}
 
 	if encrypt {
-		data, err = box.vault.secretKey.Encrypt(data)
+		secretKey := box.vault.GetSecretKey()
+		data, err = secretKey.Encrypt(data)
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +123,8 @@ func (box *Box) Decapsulate(data []byte) (*Msg, error) {
 	}
 
 	if msgCapsule.Encrypted {
-		msgCapsule.Data, err = box.vault.secretKey.Decrypt(msgCapsule.Data)
+		secretKey := box.vault.GetSecretKey()
+		msgCapsule.Data, err = secretKey.Decrypt(msgCapsule.Data)
 		if err != nil {
 			return nil, err
 		}
@@ -236,14 +222,15 @@ func (box *Box) Sign(msg *Msg) error {
 	if err != nil {
 		return err
 	}
-	sigBytes, err := box.vault.privKey.Sign(data)
+	privKey := box.vault.GetPrivKey()
+	sigBytes, err := privKey.Sign(data)
 	if err != nil {
 		return err
 	}
 	msg.SetHash(util.ToSHA256(data))
 	msg.SetSignature(Signature{
 		SigBytes: sigBytes,
-		PubKey:   box.vault.hostPersona.PubKey,
+		PubKey:   box.vault.GetPubKey(),
 	})
 	return nil
 }
@@ -278,11 +265,11 @@ func (box *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
 }
 
 func (box *Box) GetHostID() types.ID {
-	return box.vault.hostID
+	return box.vault.GetID()
 }
 
 func (box *Box) GetHostPersona() *types.Persona {
-	return box.vault.hostPersona
+	return box.vault.GetPersona()
 }
 
 func grant(auth *types.Auth, addr crypto.Addr, r, w, x bool) error {
@@ -340,7 +327,7 @@ func (box *Box) Revoke(addr crypto.Addr) error {
 
 func (box *Box) Close() error {
 	// Announe EOS to others (application layer)
-	msg := NewMsgBye(box, types.EmptyHash, box.vault.hostPersona)
+	msg := NewMsgBye(box, types.EmptyHash, box.vault.GetPersona())
 	return box.Publish(msg, true)
 }
 
@@ -353,7 +340,7 @@ func (box *Box) SetMsgSubCh(msgSubCh chan *Msg) {
 }
 
 func (box *Box) GetSecretKey() *crypto.SecretKey {
-	return box.vault.secretKey
+	return box.vault.GetSecretKey()
 }
 
 func (box *Box) GetMsgs() []*Msg {

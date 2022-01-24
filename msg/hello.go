@@ -42,7 +42,8 @@ func (msg *HelloSyn) Execute(box *Box) error {
 		return err
 	}
 
-	encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(box.vault.secretKey.GetKey())
+	secretKey := box.vault.GetSecretKey()
+	encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(secretKey.Bytes())
 	if err != nil {
 		return err
 	}
@@ -95,7 +96,8 @@ func (msg HelloAck) Check(box *Box) error {
 }
 
 func (msg HelloAck) Execute(box *Box) error {
-	secretKeyByte, err := box.vault.privKey.Decrypt(msg.Body.EncryptedSecretKey)
+	privKey := box.vault.GetPrivKey()
+	secretKeyByte, err := privKey.Decrypt(msg.Body.EncryptedSecretKey)
 	if err != nil {
 		// TODO: handle or log error somehow
 		// this could not be a real error
@@ -113,9 +115,7 @@ func (msg HelloAck) Execute(box *Box) error {
 	if util.HasField("auth", box.state) {
 		box.state.auth = msg.Body.Auth
 	}
-	if util.HasField("secretKey", box.vault) {
-		box.vault.secretKey = secretKey
-	}
+	box.vault.SetSecretKey(secretKey)
 
 	return nil
 }

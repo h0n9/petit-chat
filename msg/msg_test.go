@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/h0n9/petit-chat/code"
@@ -47,14 +46,7 @@ func TestMsgSignVerify(t *testing.T) {
 	assert.NotNil(t, pubKey2)
 
 	box := Box{
-		vault: struct {
-			hostID      peer.ID
-			hostPersona *types.Persona
-			privKey     *crypto.PrivKey
-			secretKey   *crypto.SecretKey
-		}{
-			privKey: &privKey1,
-		},
+		vault: types.NewVault(types.ID(""), nil, &privKey1, nil),
 	}
 
 	msg := NewMsg(&MsgTest{
