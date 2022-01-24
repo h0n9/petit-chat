@@ -107,13 +107,13 @@ func (msg HelloAck) Execute(box *Box) error {
 	}
 
 	// apply to msgBox struct values
-	if util.HasField("personae", box) {
+	if util.HasField("personae", box.state) {
 		box.state.personae = msg.Body.Personae
 	}
-	if util.HasField("auth", box) {
+	if util.HasField("auth", box.state) {
 		box.state.auth = msg.Body.Auth
 	}
-	if util.HasField("secretKey", box) {
+	if util.HasField("secretKey", box.vault) {
 		box.vault.secretKey = secretKey
 	}
 
