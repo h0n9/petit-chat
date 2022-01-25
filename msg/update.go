@@ -31,17 +31,18 @@ func (msg *Update) GetBody() Body {
 }
 
 func (msg *Update) Check(box *Box) error {
-	if !box.state.auth.CanExecute(msg.GetClientAddr()) {
+	auth := box.state.GetAuth()
+	if !auth.CanExecute(msg.GetClientAddr()) {
 		return code.NonExecutePermission
 	}
 	return nil
 }
 func (msg *Update) Execute(box *Box) error {
 	if util.HasField("auth", box.state) {
-		box.state.auth = msg.Body.Auth
+		box.state.SetAuth(msg.Body.Auth)
 	}
 	if util.HasField("personae", box.state) {
-		box.state.personae = msg.Body.Personae
+		box.state.SetPersonae(msg.Body.Personae)
 	}
 	return nil
 }

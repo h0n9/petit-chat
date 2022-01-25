@@ -41,7 +41,7 @@ func DefaultMsgHandler(box *Box, msg *Msg) (bool, error) {
 	canRead := box.msgSubCh != nil
 	if canRead {
 		box.msgSubCh <- msg
-		box.state.readUntilIndex = readUntilIndex
+		box.state.SetReadUntilIndex(readUntilIndex)
 	}
 	if msg.GetType() <= TypeMeta {
 		return eos, nil
