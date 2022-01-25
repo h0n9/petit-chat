@@ -4,35 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
-	"github.com/libp2p/go-libp2p-core/peer"
 )
 
 // Box refers to a chat room
 type Box struct {
 	ctx      context.Context
-	sub      *types.Sub
 	msgSubCh chan *Msg
 
-	vault struct {
-		hostID      types.ID
-		hostPersona *types.Persona // TODO: move to client side permanently
-		privKey     *crypto.PrivKey
-		secretKey   *crypto.SecretKey
-	}
+	topic *types.Topic
+	sub   *types.Sub
 
-	state struct {
-		topic           *types.Topic
-		personae        types.Personae
-		auth            *types.Auth
-		latestTimestamp time.Time
-		readUntilIndex  int
-	}
+	vault *types.Vault
+	state *types.State
 
 	store struct {
 		msgs      []*Msg              // TODO: limit the size of msgs slice
@@ -52,34 +40,13 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 	}
 	box := Box{
 		ctx:      ctx,
-		sub:      nil,
 		msgSubCh: nil,
 
-		vault: struct {
-			hostID      peer.ID
-			hostPersona *types.Persona
-			privKey     *crypto.PrivKey
-			secretKey   *crypto.SecretKey
-		}{
-			hostID:      hostID,
-			hostPersona: hostPersona,
-			privKey:     privKey,
-			secretKey:   secretKey,
-		},
+		topic: topic,
+		sub:   nil,
 
-		state: struct {
-			topic           *types.Topic
-			personae        types.Personae
-			auth            *types.Auth
-			latestTimestamp time.Time
-			readUntilIndex  int
-		}{
-			topic:           topic,
-			personae:        make(types.Personae),
-			auth:            types.NewAuth(public, make(map[crypto.Addr]types.Perm)),
-			latestTimestamp: time.Now(),
-			readUntilIndex:  0,
-		},
+		vault: types.NewVault(hostID, hostPersona, privKey, secretKey),
+		state: types.NewState(public),
 
 		store: struct {
 			msgs      []*Msg
@@ -93,7 +60,7 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 	if err != nil {
 		return nil, err
 	}
-	err = grant(box.state.auth, hostPersona.Address, true, true, true)
+	err = grant(box.state.GetAuth(), hostPersona.Address, true, true, true)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +79,8 @@ func (box *Box) Encapsulate(msg *Msg, encrypt bool) ([]byte, error) {
 	}
 
 	if encrypt {
-		data, err = box.vault.secretKey.Encrypt(data)
+		secretKey := box.vault.GetSecretKey()
+		data, err = secretKey.Encrypt(data)
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +106,8 @@ func (box *Box) Decapsulate(data []byte) (*Msg, error) {
 	}
 
 	if msgCapsule.Encrypted {
-		msgCapsule.Data, err = box.vault.secretKey.Decrypt(msgCapsule.Data)
+		secretKey := box.vault.GetSecretKey()
+		msgCapsule.Data, err = secretKey.Decrypt(msgCapsule.Data)
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +135,7 @@ func (box *Box) Publish(msg *Msg, encrypt bool) error {
 	if err != nil {
 		return err
 	}
-	err = box.state.topic.Publish(box.ctx, data)
+	err = box.topic.Publish(box.ctx, data)
 	if err != nil {
 		return err
 	}
@@ -178,7 +147,7 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 		return code.AlreadySubscribingTopic
 	}
 
-	sub, err := box.state.topic.Subscribe()
+	sub, err := box.topic.Subscribe()
 	if err != nil {
 		return err
 	}
@@ -212,7 +181,7 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 		// eos shoud be the only way to break for loop
 		if eos {
 			box.sub.Cancel()
-			err = box.state.topic.Close()
+			err = box.topic.Close()
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -236,14 +205,15 @@ func (box *Box) Sign(msg *Msg) error {
 	if err != nil {
 		return err
 	}
-	sigBytes, err := box.vault.privKey.Sign(data)
+	privKey := box.vault.GetPrivKey()
+	sigBytes, err := privKey.Sign(data)
 	if err != nil {
 		return err
 	}
 	msg.SetHash(util.ToSHA256(data))
 	msg.SetSignature(Signature{
 		SigBytes: sigBytes,
-		PubKey:   box.vault.hostPersona.PubKey,
+		PubKey:   box.vault.GetPubKey(),
 	})
 	return nil
 }
@@ -262,27 +232,23 @@ func (box *Box) Verify(msg *Msg) error {
 }
 
 func (box *Box) GetPersonae() map[crypto.Addr]*types.Persona {
-	return box.state.personae
+	return box.state.GetPersonae()
 }
 
-func (box *Box) getPersona(cAddr crypto.Addr) *types.Persona {
-	persona, exist := box.state.personae[cAddr]
-	if !exist {
-		return nil
-	}
-	return persona
+func (box *Box) getPersona(addr crypto.Addr) *types.Persona {
+	return box.state.GetPersona(addr)
 }
 
-func (box *Box) GetPersona(cAddr crypto.Addr) *types.Persona {
-	return box.getPersona(cAddr)
+func (box *Box) GetPersona(addr crypto.Addr) *types.Persona {
+	return box.getPersona(addr)
 }
 
 func (box *Box) GetHostID() types.ID {
-	return box.vault.hostID
+	return box.vault.GetID()
 }
 
 func (box *Box) GetHostPersona() *types.Persona {
-	return box.vault.hostPersona
+	return box.vault.GetPersona()
 }
 
 func grant(auth *types.Auth, addr crypto.Addr, r, w, x bool) error {
@@ -295,7 +261,8 @@ func grant(auth *types.Auth, addr crypto.Addr, r, w, x bool) error {
 }
 
 func (box *Box) Grant(addr crypto.Addr, r, w, x bool) error {
-	newAuth, err := box.state.auth.Copy()
+	auth := box.state.GetAuth()
+	newAuth, err := auth.Copy()
 	if err != nil {
 		return err
 	}
@@ -304,7 +271,8 @@ func (box *Box) Grant(addr crypto.Addr, r, w, x bool) error {
 		return err
 	}
 
-	err = box.propagate(newAuth, box.state.personae)
+	personae := box.state.GetPersonae()
+	err = box.propagate(newAuth, personae)
 	if err != nil {
 		return err
 	}
@@ -321,7 +289,8 @@ func revoke(auth *types.Auth, addr crypto.Addr) error {
 }
 
 func (box *Box) Revoke(addr crypto.Addr) error {
-	newAuth, err := box.state.auth.Copy()
+	auth := box.state.GetAuth()
+	newAuth, err := auth.Copy()
 	if err != nil {
 		return err
 	}
@@ -330,7 +299,8 @@ func (box *Box) Revoke(addr crypto.Addr) error {
 		return err
 	}
 
-	err = box.propagate(newAuth, box.state.personae)
+	personae := box.state.GetPersonae()
+	err = box.propagate(newAuth, personae)
 	if err != nil {
 		return err
 	}
@@ -340,7 +310,7 @@ func (box *Box) Revoke(addr crypto.Addr) error {
 
 func (box *Box) Close() error {
 	// Announe EOS to others (application layer)
-	msg := NewMsgBye(box, types.EmptyHash, box.vault.hostPersona)
+	msg := NewMsgBye(box, types.EmptyHash, box.vault.GetPersona())
 	return box.Publish(msg, true)
 }
 
@@ -353,7 +323,7 @@ func (box *Box) SetMsgSubCh(msgSubCh chan *Msg) {
 }
 
 func (box *Box) GetSecretKey() *crypto.SecretKey {
-	return box.vault.secretKey
+	return box.vault.GetSecretKey()
 }
 
 func (box *Box) GetMsgs() []*Msg {
@@ -366,18 +336,19 @@ func (box *Box) GetMsg(mh types.Hash) *Msg {
 
 func (box *Box) GetUnreadMsgs() []*Msg {
 	msgs := []*Msg{}
-	if box.state.readUntilIndex+1 < len(box.store.msgs) {
-		msgs = append(msgs, box.store.msgs[box.state.readUntilIndex+1:]...)
+	readUntilIndex := box.state.GetReadUntilIndex()
+	if readUntilIndex+1 < uint64(len(box.store.msgs)) {
+		msgs = append(msgs, box.store.msgs[readUntilIndex+1:]...)
 	}
-	box.state.readUntilIndex = len(box.store.msgs) - 1
+	box.state.SetReadUntilIndex(uint64(len(box.store.msgs) - 1))
 	return msgs
 }
 
 func (box *Box) GetAuth() *types.Auth {
-	return box.state.auth
+	return box.state.GetAuth()
 }
 
-func (box *Box) append(msg *Msg) (int, error) {
+func (box *Box) append(msg *Msg) (types.Index, error) {
 	hash := msg.GetHash()
 	_, exist := box.store.msgHashes[hash]
 	if exist {
@@ -385,14 +356,15 @@ func (box *Box) append(msg *Msg) (int, error) {
 	}
 
 	timestamp := msg.GetTimestamp()
-	if box.state.latestTimestamp.Before(timestamp) {
-		box.state.latestTimestamp = timestamp
+	latestTimestamp := box.state.GetLatestTimestamp()
+	if latestTimestamp.Before(timestamp) {
+		box.state.SetLatestTimestamp(timestamp)
 	}
 
 	box.store.msgs = append(box.store.msgs, msg)
 	box.store.msgHashes[hash] = msg
 
-	return len(box.store.msgs) - 1, nil
+	return types.Index(len(box.store.msgs) - 1), nil
 }
 
 func (box *Box) join(targetPersona *types.Persona) error {
@@ -405,7 +377,7 @@ func (box *Box) join(targetPersona *types.Persona) error {
 	if err != nil {
 		return err
 	}
-	box.state.personae[targetPersona.Address] = targetPersona
+	box.state.SetPersona(targetPersona.Address, targetPersona)
 	return nil
 }
 
@@ -414,7 +386,7 @@ func (box *Box) leave(targetPersona *types.Persona) error {
 	if oldPersona == nil {
 		return code.NonExistingPersonaInBox
 	}
-	delete(box.state.personae, targetPersona.Address)
+	box.state.DeletePersona(targetPersona.Address)
 	return nil
 }
 

@@ -42,7 +42,7 @@ func GenSecretKey() (*SecretKey, error) {
 	return NewSecretKey(key)
 }
 
-func (sk *SecretKey) GetKey() []byte {
+func (sk *SecretKey) Bytes() []byte {
 	return sk.key
 }
 

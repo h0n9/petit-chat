@@ -30,7 +30,8 @@ func (msg *HelloSyn) GetBody() Body {
 }
 
 func (msg *HelloSyn) Check(box *Box) error {
-	if !box.state.auth.IsPublic() && !box.state.auth.CanRead(msg.GetClientAddr()) {
+	auth := box.state.GetAuth()
+	if !auth.IsPublic() && !auth.CanRead(msg.GetClientAddr()) {
 		return code.NonReadPermission
 	}
 	return nil
@@ -42,12 +43,15 @@ func (msg *HelloSyn) Execute(box *Box) error {
 		return err
 	}
 
-	encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(box.vault.secretKey.GetKey())
+	secretKey := box.vault.GetSecretKey()
+	encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(secretKey.Bytes())
 	if err != nil {
 		return err
 	}
 
-	msgAck := NewMsgHelloAck(box, Hash(msg), box.state.personae, box.state.auth, encryptedSecretKey)
+	personae := box.state.GetPersonae()
+	auth := box.state.GetAuth()
+	msgAck := NewMsgHelloAck(box, Hash(msg), personae, auth, encryptedSecretKey)
 	err = box.Publish(msgAck, false)
 	if err != nil {
 		return err
@@ -95,7 +99,8 @@ func (msg HelloAck) Check(box *Box) error {
 }
 
 func (msg HelloAck) Execute(box *Box) error {
-	secretKeyByte, err := box.vault.privKey.Decrypt(msg.Body.EncryptedSecretKey)
+	privKey := box.vault.GetPrivKey()
+	secretKeyByte, err := privKey.Decrypt(msg.Body.EncryptedSecretKey)
 	if err != nil {
 		// TODO: handle or log error somehow
 		// this could not be a real error
@@ -108,14 +113,12 @@ func (msg HelloAck) Execute(box *Box) error {
 
 	// apply to msgBox struct values
 	if util.HasField("personae", box.state) {
-		box.state.personae = msg.Body.Personae
+		box.state.SetPersonae(msg.Body.Personae)
 	}
 	if util.HasField("auth", box.state) {
-		box.state.auth = msg.Body.Auth
+		box.state.SetAuth(msg.Body.Auth)
 	}
-	if util.HasField("secretKey", box.vault) {
-		box.vault.secretKey = secretKey
-	}
+	box.vault.SetSecretKey(secretKey)
 
 	return nil
 }

@@ -31,8 +31,9 @@ func (msg *Meta) GetBody() Body {
 
 func (msg *Meta) Check(box *Box) error {
 	clientAddr := msg.GetClientAddr()
+	auth := box.state.GetAuth()
 	if msg.Body.Meta.Received() || msg.Body.Meta.Read() {
-		if !box.state.auth.IsPublic() && !box.state.auth.CanRead(clientAddr) {
+		if !auth.IsPublic() && !auth.CanRead(clientAddr) {
 			return code.NonReadPermission
 		}
 		if msg.Body.TargetMsgHash.IsEmpty() {
@@ -40,7 +41,7 @@ func (msg *Meta) Check(box *Box) error {
 		}
 	}
 	if msg.Body.Meta.Typing() {
-		if !box.state.auth.CanWrite(clientAddr) {
+		if !auth.CanWrite(clientAddr) {
 			return code.NonWritePermission
 		}
 		if !msg.Body.TargetMsgHash.IsEmpty() {

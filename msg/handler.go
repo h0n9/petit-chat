@@ -8,7 +8,7 @@ import (
 type MsgHandler func(box *Box, msg *Msg) (bool, error)
 
 func DefaultMsgHandler(box *Box, msg *Msg) (bool, error) {
-	eos := msg.IsEOS() && (msg.GetPeerID() == box.vault.hostID)
+	eos := msg.IsEOS() && (msg.GetPeerID() == box.vault.GetID())
 
 	// msg handling flow:
 	//   check -> append -> execute -> (received)
@@ -41,12 +41,12 @@ func DefaultMsgHandler(box *Box, msg *Msg) (bool, error) {
 	canRead := box.msgSubCh != nil
 	if canRead {
 		box.msgSubCh <- msg
-		box.state.readUntilIndex = readUntilIndex
+		box.state.SetReadUntilIndex(readUntilIndex)
 	}
 	if msg.GetType() <= TypeMeta {
 		return eos, nil
 	}
-	if msg.GetClientAddr() == box.vault.hostPersona.Address {
+	if msg.GetClientAddr() == box.vault.GetAddr() {
 		return eos, nil
 	}
 	meta := types.NewMeta(true, canRead, false)
