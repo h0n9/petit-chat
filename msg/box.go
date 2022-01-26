@@ -13,8 +13,8 @@ import (
 
 // Box refers to a chat room
 type Box struct {
-	ctx      context.Context
-	msgSubCh chan *Msg
+	ctx          context.Context
+	chMsgCapsule chan MsgCapsule
 
 	topic *types.Topic
 	sub   *types.Sub
@@ -39,8 +39,8 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 		return nil, err
 	}
 	box := Box{
-		ctx:      ctx,
-		msgSubCh: nil,
+		ctx:          ctx,
+		chMsgCapsule: nil,
 
 		topic: topic,
 		sub:   nil,
@@ -160,33 +160,39 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 			fmt.Println(err)
 			continue
 		}
-		data := received.GetData()
-		msg, err := box.Decapsulate(data)
+		msgCapsule := MsgCapsule{}
+		err = json.Unmarshal(received.GetData(), &msgCapsule)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		err = box.Verify(msg)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		eos, err := handler(box, msg)
-		if err != nil {
-			// TODO: replace fmt.Println() to logger.Println()
-			fmt.Println(err)
-			continue
-		}
+		box.chMsgCapsule <- msgCapsule
+		// msg, err := box.Decapsulate(data)
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	continue
+		// }
+		// err = box.Verify(msg)
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	continue
+		// }
+		// eos, err := handler(box, msg)
+		// if err != nil {
+		// 	// TODO: replace fmt.Println() to logger.Println()
+		// 	fmt.Println(err)
+		// 	continue
+		// }
 
-		// eos shoud be the only way to break for loop
-		if eos {
-			box.sub.Cancel()
-			err = box.topic.Close()
-			if err != nil {
-				fmt.Println(err)
-			}
-			break
-		}
+		// // eos shoud be the only way to break for loop
+		// if eos {
+		// 	box.sub.Cancel()
+		// 	err = box.topic.Close()
+		// 	if err != nil {
+		// 		fmt.Println(err)
+		// 	}
+		// 	break
+		// }
 	}
 
 	return nil
@@ -318,8 +324,8 @@ func (box *Box) Subscribing() bool {
 	return box.sub != nil
 }
 
-func (box *Box) SetMsgSubCh(msgSubCh chan *Msg) {
-	box.msgSubCh = msgSubCh
+func (box *Box) SetChMsgCapsule(chMsgCapsule chan MsgCapsule) {
+	box.chMsgCapsule = chMsgCapsule
 }
 
 func (box *Box) GetSecretKey() *crypto.SecretKey {

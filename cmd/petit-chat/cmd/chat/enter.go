@@ -77,28 +77,29 @@ func enterFunc(reader *bufio.Reader) error {
 
 	// get and print out new msgs
 	var (
-		msgSubCh     = make(chan *msg.Msg, 1)
-		msgStopSubCh = make(chan bool, 1)
+		chMsgCapsuleSub = make(chan msg.MsgCapsule, 1)
+		msgStopSubCh    = make(chan bool, 1)
 	)
-	defer close(msgSubCh)
+	defer close(chMsgCapsuleSub)
 	defer close(msgStopSubCh)
 
-	msgBox.SetMsgSubCh(msgSubCh)
-	defer msgBox.SetMsgSubCh(nil)
+	msgBox.SetChMsgCapsule(chMsgCapsuleSub)
+	defer msgBox.SetChMsgCapsule(nil)
 
 	wait.Add(1)
 	go func() {
 		var (
-			err  error    = nil
-			stop bool     = false
-			m    *msg.Msg = nil
+			err        error = nil
+			stop       bool  = false
+			msgCapsule msg.MsgCapsule
 		)
 		for {
 			select {
 			case err = <-errs:
 				fmt.Printf("%s\n> ", err)
-			case m = <-msgSubCh:
-				printMsg(msgBox, m)
+			case msgCapsule = <-chMsgCapsuleSub:
+				fmt.Printf("%s\n", string(msgCapsule.Data))
+				// printMsg(msgBox, m)
 			case <-msgStopSubCh:
 				stop = true
 			}
