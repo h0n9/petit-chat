@@ -38,24 +38,24 @@ func (msg *HelloSyn) Check(box *Box) error {
 }
 
 func (msg *HelloSyn) Execute(box *Box) error {
-	err := box.join(msg.Body.Persona)
-	if err != nil {
-		return err
-	}
+	// err := box.join(msg.Body.Persona)
+	// if err != nil {
+	// 	return err
+	// }
 
-	secretKey := box.vault.GetSecretKey()
-	encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(secretKey.Bytes())
-	if err != nil {
-		return err
-	}
+	// secretKey := box.vault.GetSecretKey()
+	// encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(secretKey.Bytes())
+	// if err != nil {
+	// 	return err
+	// }
 
-	personae := box.state.GetPersonae()
-	auth := box.state.GetAuth()
-	msgAck := NewMsgHelloAck(box, Hash(msg), personae, auth, encryptedSecretKey)
-	err = box.Publish(msgAck, false)
-	if err != nil {
-		return err
-	}
+	// personae := box.state.GetPersonae()
+	// auth := box.state.GetAuth()
+	// msgAck := NewMsgHelloAck(box, Hash(msg), personae, auth, encryptedSecretKey)
+	// err = box.Publish(msgAck, false)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

@@ -38,19 +38,19 @@ func printPeer(p *types.Persona) {
 }
 
 func readMsg(b *msg.Box, m *msg.Msg) error {
-	printMsg(b, m)
-	if m.GetType() <= msg.TypeMeta {
-		return nil
-	}
-	if m.GetClientAddr() == b.GetHostPersona().Address {
-		return nil
-	}
-	meta := types.NewMeta(false, true, false)
-	msgMeta := msg.NewMsgMeta(b, types.EmptyHash, m.GetHash(), meta)
-	err := b.Publish(msgMeta, true)
-	if err != nil {
-		return err
-	}
+	// printMsg(b, m)
+	// if m.GetType() <= msg.TypeMeta {
+	// 	return nil
+	// }
+	// if m.GetClientAddr() == b.GetHostPersona().Address {
+	// 	return nil
+	// }
+	// meta := types.NewMeta(false, true, false)
+	// msgMeta := msg.NewMsgMeta(b, types.EmptyHash, m.GetHash(), meta)
+	// err := b.Publish(msgMeta, true)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }
 

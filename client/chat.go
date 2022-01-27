@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -19,7 +20,7 @@ type Chat struct {
 	wg              sync.WaitGroup
 	chStopReceive   chan bool
 	chError         chan error
-	chMsgCapsuleSub chan msg.MsgCapsule
+	chMsgCapsuleSub chan *msg.MsgCapsule
 
 	reader *bufio.Reader
 }
@@ -37,7 +38,7 @@ func NewChat(box *msg.Box, reader *bufio.Reader) (*Chat, error) {
 	}, nil
 }
 
-func (c *Chat) SetChMsgCapsule(chMsgCapsule chan msg.MsgCapsule) {
+func (c *Chat) setChMsgCapsule(chMsgCapsule chan *msg.MsgCapsule) {
 	c.chMsgCapsuleSub = chMsgCapsule
 }
 
@@ -46,7 +47,7 @@ func (c *Chat) Close() {
 	close(c.chError)
 }
 
-func (c *Chat) input() {
+func (c *Chat) Input() {
 	var stop bool = false
 	for {
 		fmt.Printf("> ")
@@ -130,20 +131,19 @@ func (c *Chat) input() {
 
 		// CLI supports ONLY TypeText
 		msg := msg.NewMsgRaw(c.box, types.EmptyHash, []byte(input), nil)
-		err = c.box.Publish(msg, true)
+		err = c.publish(msg, false)
 		if err != nil {
 			c.chError <- err
-			return
 		}
 	}
 	c.wg.Done()
 }
 
-func (c *Chat) output() {
+func (c *Chat) Output() {
 	var (
 		stop       bool  = false
 		err        error = nil
-		msgCapsule msg.MsgCapsule
+		msgCapsule *msg.MsgCapsule
 	)
 	for {
 		select {
@@ -160,4 +160,51 @@ func (c *Chat) output() {
 		}
 	}
 	c.wg.Done()
+}
+
+func (c *Chat) encapsulate(m *msg.Msg, encrypt bool) (*msg.MsgCapsule, error) {
+	data, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	if encrypt {
+		// TODO: encrypt data with c.vault.GetSecretKey()
+	}
+
+	return msg.NewMsgCapsule(encrypt, m.GetType(), data), nil
+}
+
+func (c *Chat) decapsulate(msgCapsule *msg.MsgCapsule) (*msg.Msg, error) {
+	if msgCapsule.Encrypted {
+		// TODO: decrypt with c.vault.GetSecretKey()
+	}
+
+	m := msg.NewMsg(msgCapsule.Type.Base())
+	if m == nil {
+		return nil, code.UnknownMsgType
+	}
+
+	err := json.Unmarshal(msgCapsule.Data, m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
+func (c *Chat) publish(m *msg.Msg, encrypt bool) error {
+	// TODO: sign msg with c.vault.GetPrivKey()
+
+	msgCapsule, err := c.encapsulate(m, encrypt)
+	if err != nil {
+		return err
+	}
+
+	err = c.box.Publish(msgCapsule)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -14,7 +14,7 @@ import (
 // Box refers to a chat room
 type Box struct {
 	ctx          context.Context
-	chMsgCapsule chan MsgCapsule
+	chMsgCapsule chan *MsgCapsule
 
 	topic *types.Topic
 	sub   *types.Sub
@@ -40,7 +40,7 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 	}
 	box := Box{
 		ctx:          ctx,
-		chMsgCapsule: make(chan MsgCapsule, 1),
+		chMsgCapsule: make(chan *MsgCapsule, 1),
 
 		topic: topic,
 		sub:   nil,
@@ -64,74 +64,16 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 	if err != nil {
 		return nil, err
 	}
-	msg := NewMsgHelloSyn(&box, types.EmptyHash, hostPersona)
-	err = box.Publish(msg, false)
-	if err != nil {
-		return nil, err
-	}
+	// msg := NewMsgHelloSyn(&box, types.EmptyHash, hostPersona)
+	// err = box.Publish(msg, false)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	return &box, nil
 }
 
-func (box *Box) Encapsulate(msg *Msg, encrypt bool) ([]byte, error) {
-	data, err := json.Marshal(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	if encrypt {
-		secretKey := box.vault.GetSecretKey()
-		data, err = secretKey.Encrypt(data)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	data, err = json.Marshal(&MsgCapsule{
-		Encrypted: encrypt,
-		Type:      msg.GetType(),
-		Data:      data,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
-}
-
-func (box *Box) Decapsulate(data []byte) (*Msg, error) {
-	msgCapsule := MsgCapsule{}
-	err := json.Unmarshal(data, &msgCapsule)
-	if err != nil {
-		return nil, err
-	}
-
-	if msgCapsule.Encrypted {
-		secretKey := box.vault.GetSecretKey()
-		msgCapsule.Data, err = secretKey.Decrypt(msgCapsule.Data)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	msg := NewMsg(msgCapsule.Type.Base())
-	if msg == nil {
-		return nil, code.UnknownMsgType
-	}
-
-	err = json.Unmarshal(msgCapsule.Data, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return msg, nil
-}
-
-func (box *Box) Publish(msg *Msg, encrypt bool) error {
-	err := box.Sign(msg)
-	if err != nil {
-		return err
-	}
-	data, err := box.Encapsulate(msg, encrypt)
+func (box *Box) Publish(msgCapsule *MsgCapsule) error {
+	data, err := msgCapsule.Bytes()
 	if err != nil {
 		return err
 	}
@@ -142,7 +84,7 @@ func (box *Box) Publish(msg *Msg, encrypt bool) error {
 	return nil
 }
 
-func (box *Box) Subscribe(handler MsgHandler) error {
+func (box *Box) Subscribe() error {
 	if box.sub != nil {
 		return code.AlreadySubscribingTopic
 	}
@@ -160,12 +102,11 @@ func (box *Box) Subscribe(handler MsgHandler) error {
 			fmt.Println(err)
 			continue
 		}
-		msgCapsule := MsgCapsule{}
-		err = json.Unmarshal(received.GetData(), &msgCapsule)
+		msgCapsule, err := NewMsgCapsuleFromBytes(received.GetData())
 		if err != nil {
-			fmt.Println(err)
-			continue
+			return err
 		}
+		// TODO: add constraints to msgCapsule
 		box.chMsgCapsule <- msgCapsule
 		// msg, err := box.Decapsulate(data)
 		// if err != nil {
@@ -316,15 +257,16 @@ func (box *Box) Revoke(addr crypto.Addr) error {
 
 func (box *Box) Close() error {
 	// Announe EOS to others (application layer)
-	msg := NewMsgBye(box, types.EmptyHash, box.vault.GetPersona())
-	return box.Publish(msg, true)
+	// msg := NewMsgBye(box, types.EmptyHash, box.vault.GetPersona())
+	// return box.Publish(msg, true)
+	return nil
 }
 
 func (box *Box) Subscribing() bool {
 	return box.sub != nil
 }
 
-func (box *Box) GetChMsgCapsule() chan MsgCapsule {
+func (box *Box) GetChMsgCapsule() chan *MsgCapsule {
 	return box.chMsgCapsule
 }
 
@@ -397,10 +339,10 @@ func (box *Box) leave(targetPersona *types.Persona) error {
 }
 
 func (box *Box) propagate(auth *types.Auth, personae types.Personae) error {
-	msg := NewMsgUpdate(box, types.EmptyHash, auth, personae)
-	err := box.Publish(msg, true)
-	if err != nil {
-		return err
-	}
+	// msg := NewMsgUpdate(box, types.EmptyHash, auth, personae)
+	// err := box.Publish(msg, true)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }

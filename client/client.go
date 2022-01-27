@@ -119,7 +119,7 @@ func (cli *Client) StartChat(topic string, reader *bufio.Reader) error {
 	defer chat.Close()
 
 	// open subscription
-	go box.Subscribe(msg.DefaultMsgHandler)
+	go box.Subscribe()
 
 	// get and print out received msgs
 	msgs := box.GetUnreadMsgs()
@@ -132,11 +132,11 @@ func (cli *Client) StartChat(topic string, reader *bufio.Reader) error {
 
 	// get and print out new msgs
 	chat.wg.Add(1)
-	go chat.output()
+	go chat.Output()
 
 	// get user input
 	chat.wg.Add(1)
-	go chat.input()
+	go chat.Input()
 
 	chat.wg.Wait()
 

@@ -103,12 +103,6 @@ func NewHead(box *Box, parentHash types.Hash, msgType Type) Head {
 	}
 }
 
-type MsgCapsule struct {
-	Encrypted bool   `json:"encrpyted"`
-	Type      Type   `json:"type"`
-	Data      []byte `json:"data"`
-}
-
 func (msg *Head) GetTimestamp() time.Time {
 	return msg.Timestamp
 }
