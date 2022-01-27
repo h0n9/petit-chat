@@ -40,7 +40,7 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 	}
 	box := Box{
 		ctx:          ctx,
-		chMsgCapsule: nil,
+		chMsgCapsule: make(chan MsgCapsule, 1),
 
 		topic: topic,
 		sub:   nil,
@@ -324,8 +324,8 @@ func (box *Box) Subscribing() bool {
 	return box.sub != nil
 }
 
-func (box *Box) SetChMsgCapsule(chMsgCapsule chan MsgCapsule) {
-	box.chMsgCapsule = chMsgCapsule
+func (box *Box) GetChMsgCapsule() chan MsgCapsule {
+	return box.chMsgCapsule
 }
 
 func (box *Box) GetSecretKey() *crypto.SecretKey {
