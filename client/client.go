@@ -132,11 +132,11 @@ func (cli *Client) StartChat(topic string, reader *bufio.Reader) error {
 
 	// get and print out new msgs
 	chat.wg.Add(1)
-	go chat.Output()
+	go chat.Receive()
 
 	// get user input
 	chat.wg.Add(1)
-	go chat.Input()
+	go chat.Send()
 
 	chat.wg.Wait()
 

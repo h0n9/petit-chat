@@ -47,7 +47,7 @@ func (c *Chat) Close() {
 	close(c.chError)
 }
 
-func (c *Chat) Input() {
+func (c *Chat) Send() {
 	var stop bool = false
 	for {
 		fmt.Printf("> ")
@@ -139,7 +139,7 @@ func (c *Chat) Input() {
 	c.wg.Done()
 }
 
-func (c *Chat) Output() {
+func (c *Chat) Receive() {
 	var (
 		stop       bool  = false
 		err        error = nil
