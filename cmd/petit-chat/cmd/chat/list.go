@@ -15,7 +15,7 @@ var listCmd = util.NewCmd(
 )
 
 func listFunc(reader *bufio.Reader) error {
-	msgCenter := cli.GetMsgCenter()
+	msgCenter := svr.GetMsgCenter()
 	msgBoxes := msgCenter.GetBoxes()
 	printBoxes(msgBoxes)
 	return nil

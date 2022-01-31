@@ -13,6 +13,6 @@ var infoCmd = util.NewCmd(
 )
 
 func infoFunc(reader *bufio.Reader) error {
-	cli.Info()
+	svr.PrintInfo()
 	return nil
 }

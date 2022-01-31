@@ -135,8 +135,6 @@ func (box *Box) Subscribe() error {
 		// 	break
 		// }
 	}
-
-	return nil
 }
 
 func Hash(base Base) types.Hash {
