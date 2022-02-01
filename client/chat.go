@@ -32,7 +32,7 @@ func NewChat(box *msg.Box, reader *bufio.Reader) (*Chat, error) {
 		wg:              sync.WaitGroup{},
 		chStopReceive:   make(chan bool, 1),
 		chError:         make(chan error, 1),
-		chMsgCapsuleSub: box.GetChMsgCapsule(),
+		chMsgCapsuleSub: nil,
 
 		reader: reader,
 	}, nil
@@ -45,6 +45,15 @@ func (c *Chat) setChMsgCapsule(chMsgCapsule chan *msg.MsgCapsule) {
 func (c *Chat) Close() {
 	close(c.chStopReceive)
 	close(c.chError)
+}
+
+func (c *Chat) Subscribe() error {
+	c.setChMsgCapsule(c.box.GetChMsgCapsule())
+	return c.box.Subscribe()
+}
+
+func (c *Chat) Stop() {
+	c.setChMsgCapsule(nil)
 }
 
 func (c *Chat) Send() {
