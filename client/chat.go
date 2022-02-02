@@ -143,8 +143,12 @@ func (c *Chat) Send() {
 		// CLI supports ONLY TypeText
 		peerID := c.box.GetHostID()
 		clientAddr := c.vault.GetAddr()
-		msg := msg.NewMsgRaw(peerID, clientAddr, types.EmptyHash, []byte(input), nil)
-		err = c.publish(msg, false)
+		m := msg.NewMsgRaw(peerID, clientAddr, types.EmptyHash, []byte(input), nil)
+		err = m.Sign(c.vault.GetPrivKey())
+		if err != nil {
+			c.chError <- err
+		}
+		err = c.publish(m, true)
 		if err != nil {
 			c.chError <- err
 		}
@@ -161,7 +165,15 @@ func (c *Chat) Receive() {
 	for {
 		select {
 		case msgCapsule = <-c.chMsgCapsuleSub:
-			fmt.Printf("%s\n", string(msgCapsule.Data))
+			m, err := c.decapsulate(msgCapsule)
+			if err != nil {
+				c.chError <- err
+			}
+			err = m.Verify()
+			if err != nil {
+				c.chError <- err
+			}
+			printMsg(c.box, m)
 			// TODO: handler comes here
 		case err = <-c.chError:
 			fmt.Println(err)
@@ -182,15 +194,26 @@ func (c *Chat) encapsulate(m *msg.Msg, encrypt bool) (*msg.MsgCapsule, error) {
 	}
 
 	if encrypt {
-		// TODO: encrypt data with c.vault.GetSecretKey()
+		secretKey := c.vault.GetSecretKey()
+		encryptedData, err := secretKey.Encrypt(data)
+		if err != nil {
+			return nil, err
+		}
+		data = encryptedData
 	}
 
 	return msg.NewMsgCapsule(encrypt, m.GetType(), data), nil
 }
 
 func (c *Chat) decapsulate(msgCapsule *msg.MsgCapsule) (*msg.Msg, error) {
+	data := msgCapsule.Data
 	if msgCapsule.Encrypted {
-		// TODO: decrypt with c.vault.GetSecretKey()
+		secretKey := c.vault.GetSecretKey()
+		decryptedData, err := secretKey.Decrypt(msgCapsule.Data)
+		if err != nil {
+			return nil, err
+		}
+		data = decryptedData
 	}
 
 	m := msg.NewMsg(msgCapsule.Type.Base())
@@ -198,7 +221,7 @@ func (c *Chat) decapsulate(msgCapsule *msg.MsgCapsule) (*msg.Msg, error) {
 		return nil, code.UnknownMsgType
 	}
 
-	err := json.Unmarshal(msgCapsule.Data, m)
+	err := json.Unmarshal(data, m)
 	if err != nil {
 		return nil, err
 	}

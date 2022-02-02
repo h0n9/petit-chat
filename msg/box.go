@@ -136,37 +136,6 @@ func Hash(base Base) types.Hash {
 	return util.ToSHA256(data)
 }
 
-// func (box *Box) Sign(msg *Msg) error {
-// 	data, err := json.Marshal(msg.Base)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	privKey := box.vault.GetPrivKey()
-// 	sigBytes, err := privKey.Sign(data)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	msg.SetHash(util.ToSHA256(data))
-// 	msg.SetSignature(Signature{
-// 		SigBytes: sigBytes,
-// 		PubKey:   box.vault.GetPubKey(),
-// 	})
-// 	return nil
-// }
-//
-// func (box *Box) Verify(msg *Msg) error {
-// 	data, err := json.Marshal(msg.Base)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	signature := msg.GetSignature()
-// 	ok := signature.PubKey.Verify(data, signature.SigBytes)
-// 	if !ok {
-// 		return code.FailedToVerify
-// 	}
-// 	return nil
-// }
-
 func (box *Box) GetPersonae() map[crypto.Addr]*types.Persona {
 	return box.state.GetPersonae()
 }

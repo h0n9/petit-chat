@@ -1,11 +1,13 @@
 package msg
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
+	"github.com/h0n9/petit-chat/util"
 )
 
 type Body interface{}
@@ -67,6 +69,43 @@ func (msg *Msg) MergeMeta(addr crypto.Addr, newMeta types.Meta) {
 		newMeta |= oldMeta
 	}
 	msg.SetMeta(addr, newMeta)
+}
+
+func (msg *Msg) Sign(privKey *crypto.PrivKey) error {
+	data, err := json.Marshal(msg.Base)
+	if err != nil {
+		return err
+	}
+	hash := util.ToSHA256(data)
+	sigBytes, err := privKey.Sign(data)
+	if err != nil {
+		return err
+	}
+	msg.SetHash(hash)
+	msg.SetSignature(Signature{
+		SigBytes: sigBytes,
+		PubKey:   privKey.PubKey(),
+	})
+	return nil
+}
+
+func (msg *Msg) Verify() error {
+	signature := msg.GetSignature()
+	if signature.SigBytes == nil {
+		return code.ImproperSigBytes
+	}
+	if signature.PubKey == nil {
+		return code.ImproperPubKey
+	}
+	data, err := json.Marshal(msg.Base)
+	if err != nil {
+		return err
+	}
+	ok := signature.PubKey.Verify(data, signature.SigBytes)
+	if !ok {
+		return code.FailedToVerify
+	}
+	return nil
 }
 
 type Base interface {
