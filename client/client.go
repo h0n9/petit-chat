@@ -60,7 +60,7 @@ func (c *Client) StartChat(topic string, reader *bufio.Reader) error {
 		if err != nil {
 			return err
 		}
-		newChat, err := NewChat(box, reader)
+		newChat, err := NewChat(box, nil, reader)
 		if err != nil {
 			return err
 		}

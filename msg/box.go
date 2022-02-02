@@ -19,8 +19,9 @@ type Box struct {
 	topic *types.Topic
 	sub   *types.Sub
 
-	vault *types.Vault
-	state *types.State
+	hostID types.ID
+	vault  *types.Vault
+	state  *types.State
 
 	store struct {
 		msgs      []*Msg              // TODO: limit the size of msgs slice
@@ -45,8 +46,9 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 		topic: topic,
 		sub:   nil,
 
-		vault: types.NewVault(hostID, hostPersona, privKey, secretKey),
-		state: types.NewState(public),
+		hostID: hostID,
+		vault:  types.NewVault(hostPersona, privKey, secretKey),
+		state:  types.NewState(public),
 
 		store: struct {
 			msgs      []*Msg
@@ -189,7 +191,7 @@ func (box *Box) GetPersona(addr crypto.Addr) *types.Persona {
 }
 
 func (box *Box) GetHostID() types.ID {
-	return box.vault.GetID()
+	return box.hostID
 }
 
 func (box *Box) GetHostPersona() *types.Persona {

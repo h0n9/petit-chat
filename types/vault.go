@@ -5,23 +5,17 @@ import (
 )
 
 type Vault struct {
-	id        ID
-	persona   *Persona // TODO: move to client side permanently
+	persona   *Persona
 	privKey   *crypto.PrivKey
 	secretKey *crypto.SecretKey
 }
 
-func NewVault(id ID, persona *Persona, privKey *crypto.PrivKey, secretKey *crypto.SecretKey) *Vault {
+func NewVault(persona *Persona, privKey *crypto.PrivKey, secretKey *crypto.SecretKey) *Vault {
 	return &Vault{
-		id:        id,
 		persona:   persona,
 		privKey:   privKey,
 		secretKey: secretKey,
 	}
-}
-
-func (v *Vault) GetID() ID {
-	return v.id
 }
 
 func (v *Vault) GetPersona() *Persona {
