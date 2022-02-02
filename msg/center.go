@@ -30,7 +30,7 @@ func (mc *Center) CreateBox(tp *types.Topic, pub bool, pk *crypto.PrivKey, p *ty
 		return nil, code.AlreadyExistingTopic
 	}
 
-	msgBox, err := NewBox(mc.ctx, tp, pub, mc.myID, pk, p)
+	msgBox, err := NewBox(mc.ctx, tp, pub, mc.myID)
 	if err != nil {
 		return nil, err
 	}

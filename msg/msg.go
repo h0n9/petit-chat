@@ -93,11 +93,11 @@ type Head struct {
 	Type       Type        `json:"type"`
 }
 
-func NewHead(box *Box, parentHash types.Hash, msgType Type) Head {
+func NewHead(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash, msgType Type) Head {
 	return Head{
 		Timestamp:  time.Now(),
-		PeerID:     box.GetHostID(),
-		ClientAddr: box.GetHostPersona().Address,
+		PeerID:     peerID,
+		ClientAddr: clientAddr,
 		ParentHash: parentHash,
 		Type:       msgType,
 	}

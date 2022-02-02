@@ -4,7 +4,6 @@ import (
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
-	"github.com/h0n9/petit-chat/util"
 )
 
 type BodyHelloSyn struct {
@@ -16,9 +15,9 @@ type HelloSyn struct {
 	Body BodyHelloSyn `json:"body"`
 }
 
-func NewMsgHelloSyn(box *Box, parentHash types.Hash, persona *types.Persona) *Msg {
+func NewMsgHelloSyn(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash, persona *types.Persona) *Msg {
 	return NewMsg(&HelloSyn{
-		NewHead(box, parentHash, TypeHelloSyn),
+		NewHead(peerID, clientAddr, parentHash, TypeHelloSyn),
 		BodyHelloSyn{
 			Persona: persona,
 		},
@@ -71,10 +70,10 @@ type HelloAck struct {
 	Body BodyHelloAck `json:"body"`
 }
 
-func NewMsgHelloAck(box *Box, parentHash types.Hash,
+func NewMsgHelloAck(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash,
 	personae types.Personae, auth *types.Auth, encryptedSecretKey []byte) *Msg {
 	return NewMsg(&HelloAck{
-		NewHead(box, parentHash, TypeHelloAck),
+		NewHead(peerID, clientAddr, parentHash, TypeHelloAck),
 		BodyHelloAck{
 			Personae:           personae,
 			Auth:               auth,
@@ -99,26 +98,26 @@ func (msg HelloAck) Check(box *Box) error {
 }
 
 func (msg HelloAck) Execute(box *Box) error {
-	privKey := box.vault.GetPrivKey()
-	secretKeyByte, err := privKey.Decrypt(msg.Body.EncryptedSecretKey)
-	if err != nil {
-		// TODO: handle or log error somehow
-		// this could not be a real error
-		return nil
-	}
-	secretKey, err := crypto.NewSecretKey(secretKeyByte)
-	if err != nil {
-		return err
-	}
+	// privKey := box.vault.GetPrivKey()
+	// secretKeyByte, err := privKey.Decrypt(msg.Body.EncryptedSecretKey)
+	// if err != nil {
+	// 	// TODO: handle or log error somehow
+	// 	// this could not be a real error
+	// 	return nil
+	// }
+	// secretKey, err := crypto.NewSecretKey(secretKeyByte)
+	// if err != nil {
+	// 	return err
+	// }
 
-	// apply to msgBox struct values
-	if util.HasField("personae", box.state) {
-		box.state.SetPersonae(msg.Body.Personae)
-	}
-	if util.HasField("auth", box.state) {
-		box.state.SetAuth(msg.Body.Auth)
-	}
-	box.vault.SetSecretKey(secretKey)
+	// // apply to msgBox struct values
+	// if util.HasField("personae", box.state) {
+	// 	box.state.SetPersonae(msg.Body.Personae)
+	// }
+	// if util.HasField("auth", box.state) {
+	// 	box.state.SetAuth(msg.Body.Auth)
+	// }
+	// box.vault.SetSecretKey(secretKey)
 
 	return nil
 }

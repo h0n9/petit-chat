@@ -141,7 +141,9 @@ func (c *Chat) Send() {
 		}
 
 		// CLI supports ONLY TypeText
-		msg := msg.NewMsgRaw(c.box, types.EmptyHash, []byte(input), nil)
+		peerID := c.box.GetHostID()
+		clientAddr := c.vault.GetAddr()
+		msg := msg.NewMsgRaw(peerID, clientAddr, types.EmptyHash, []byte(input), nil)
 		err = c.publish(msg, false)
 		if err != nil {
 			c.chError <- err

@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -14,9 +15,9 @@ type Bye struct {
 	Body BodyBye `json:"body"`
 }
 
-func NewMsgBye(box *Box, parentHash types.Hash, persona *types.Persona) *Msg {
+func NewMsgBye(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash, persona *types.Persona) *Msg {
 	return NewMsg(&Bye{
-		NewHead(box, parentHash, TypeBye),
+		NewHead(peerID, clientAddr, parentHash, TypeBye),
 		BodyBye{
 			Persona: persona,
 		},

@@ -20,7 +20,6 @@ type Box struct {
 	sub   *types.Sub
 
 	hostID types.ID
-	vault  *types.Vault
 	state  *types.State
 
 	store struct {
@@ -29,17 +28,8 @@ type Box struct {
 	}
 }
 
-func NewBox(ctx context.Context, topic *types.Topic, public bool,
-	hostID types.ID, privKey *crypto.PrivKey, hostPersona *types.Persona) (*Box, error) {
-	err := hostPersona.Check()
-	if err != nil {
-		return nil, err
-	}
-	secretKey, err := crypto.GenSecretKey()
-	if err != nil {
-		return nil, err
-	}
-	box := Box{
+func NewBox(ctx context.Context, topic *types.Topic, public bool, hostID types.ID) (*Box, error) {
+	return &Box{
 		ctx:          ctx,
 		chMsgCapsule: make(chan *MsgCapsule, 1),
 
@@ -47,7 +37,6 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 		sub:   nil,
 
 		hostID: hostID,
-		vault:  types.NewVault(hostPersona, privKey, secretKey),
 		state:  types.NewState(public),
 
 		store: struct {
@@ -57,21 +46,21 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool,
 			msgs:      make([]*Msg, 0),
 			msgHashes: make(map[types.Hash]*Msg),
 		},
-	}
-	err = box.join(hostPersona)
-	if err != nil {
-		return nil, err
-	}
-	err = grant(box.state.GetAuth(), hostPersona.Address, true, true, true)
-	if err != nil {
-		return nil, err
-	}
+	}, nil
+	// err = box.join(hostPersona)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// err = grant(box.state.GetAuth(), hostPersona.Address, true, true, true)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	// msg := NewMsgHelloSyn(&box, types.EmptyHash, hostPersona)
 	// err = box.Publish(msg, false)
 	// if err != nil {
 	// 	return nil, err
 	// }
-	return &box, nil
+	// return &box, nil
 }
 
 func (box *Box) Publish(msgCapsule *MsgCapsule) error {
@@ -147,36 +136,36 @@ func Hash(base Base) types.Hash {
 	return util.ToSHA256(data)
 }
 
-func (box *Box) Sign(msg *Msg) error {
-	data, err := json.Marshal(msg.Base)
-	if err != nil {
-		return err
-	}
-	privKey := box.vault.GetPrivKey()
-	sigBytes, err := privKey.Sign(data)
-	if err != nil {
-		return err
-	}
-	msg.SetHash(util.ToSHA256(data))
-	msg.SetSignature(Signature{
-		SigBytes: sigBytes,
-		PubKey:   box.vault.GetPubKey(),
-	})
-	return nil
-}
-
-func (box *Box) Verify(msg *Msg) error {
-	data, err := json.Marshal(msg.Base)
-	if err != nil {
-		return err
-	}
-	signature := msg.GetSignature()
-	ok := signature.PubKey.Verify(data, signature.SigBytes)
-	if !ok {
-		return code.FailedToVerify
-	}
-	return nil
-}
+// func (box *Box) Sign(msg *Msg) error {
+// 	data, err := json.Marshal(msg.Base)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	privKey := box.vault.GetPrivKey()
+// 	sigBytes, err := privKey.Sign(data)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	msg.SetHash(util.ToSHA256(data))
+// 	msg.SetSignature(Signature{
+// 		SigBytes: sigBytes,
+// 		PubKey:   box.vault.GetPubKey(),
+// 	})
+// 	return nil
+// }
+//
+// func (box *Box) Verify(msg *Msg) error {
+// 	data, err := json.Marshal(msg.Base)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	signature := msg.GetSignature()
+// 	ok := signature.PubKey.Verify(data, signature.SigBytes)
+// 	if !ok {
+// 		return code.FailedToVerify
+// 	}
+// 	return nil
+// }
 
 func (box *Box) GetPersonae() map[crypto.Addr]*types.Persona {
 	return box.state.GetPersonae()
@@ -192,10 +181,6 @@ func (box *Box) GetPersona(addr crypto.Addr) *types.Persona {
 
 func (box *Box) GetHostID() types.ID {
 	return box.hostID
-}
-
-func (box *Box) GetHostPersona() *types.Persona {
-	return box.vault.GetPersona()
 }
 
 func grant(auth *types.Auth, addr crypto.Addr, r, w, x bool) error {
@@ -268,10 +253,6 @@ func (box *Box) Subscribing() bool {
 
 func (box *Box) GetChMsgCapsule() chan *MsgCapsule {
 	return box.chMsgCapsule
-}
-
-func (box *Box) GetSecretKey() *crypto.SecretKey {
-	return box.vault.GetSecretKey()
 }
 
 func (box *Box) GetMsgs() []*Msg {

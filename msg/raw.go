@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -21,9 +22,9 @@ type Raw struct {
 	Body BodyRaw `json:"body"`
 }
 
-func NewMsgRaw(box *Box, parentHash types.Hash, data []byte, metadata []byte) *Msg {
+func NewMsgRaw(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash, data []byte, metadata []byte) *Msg {
 	return NewMsg(&Raw{
-		NewHead(box, parentHash, TypeRaw),
+		NewHead(peerID, clientAddr, parentHash, TypeRaw),
 		BodyRaw{
 			Data:     data,
 			Metadata: metadata,

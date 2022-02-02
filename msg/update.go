@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
@@ -16,9 +17,9 @@ type Update struct {
 	Body BodyUpdate `json:"body"`
 }
 
-func NewMsgUpdate(box *Box, parentHash types.Hash, auth *types.Auth, personae types.Personae) *Msg {
+func NewMsgUpdate(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash, auth *types.Auth, personae types.Personae) *Msg {
 	return NewMsg(&Update{
-		NewHead(box, parentHash, TypeUpdate),
+		NewHead(peerID, clientAddr, parentHash, TypeUpdate),
 		BodyUpdate{
 			Auth:     auth,
 			Personae: personae,

@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -15,9 +16,9 @@ type Meta struct {
 	Body BodyMeta `json:"body"`
 }
 
-func NewMsgMeta(box *Box, parentHash types.Hash, targetMsgHash types.Hash, meta types.Meta) *Msg {
+func NewMsgMeta(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash, targetMsgHash types.Hash, meta types.Meta) *Msg {
 	return NewMsg(&Meta{
-		NewHead(box, parentHash, TypeMeta),
+		NewHead(peerID, clientAddr, parentHash, TypeMeta),
 		BodyMeta{
 			TargetMsgHash: targetMsgHash,
 			Meta:          meta,
