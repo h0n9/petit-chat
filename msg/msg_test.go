@@ -46,7 +46,7 @@ func TestMsgSignVerify(t *testing.T) {
 	assert.NotNil(t, pubKey2)
 
 	box := Box{
-		vault: types.NewVault(nil, &privKey1, nil),
+		vault: types.NewVault(nil, privKey1, nil),
 	}
 
 	msg := NewMsg(&MsgTest{

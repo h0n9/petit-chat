@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/server"
+	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
 
@@ -56,11 +58,25 @@ func (c *Client) StartChat(topic string, reader *bufio.Reader) error {
 		if err != nil {
 			return err
 		}
+		// init vault
+		privKey, err := crypto.GenPrivKey()
+		if err != nil {
+			return err
+		}
+		secretKey, err := crypto.GenSecretKey()
+		if err != nil {
+			return err
+		}
+		persona, err := types.NewPersona(nickname, nil, privKey.PubKey())
+		if err != nil {
+			return err
+		}
+		vault := types.NewVault(persona, privKey, secretKey)
 		box, err := c.svr.CreateMsgBox(topic, nickname, pub)
 		if err != nil {
 			return err
 		}
-		newChat, err := NewChat(box, nil, reader)
+		newChat, err := NewChat(box, vault, reader)
 		if err != nil {
 			return err
 		}

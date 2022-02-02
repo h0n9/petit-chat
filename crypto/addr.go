@@ -20,7 +20,7 @@ func (pubKey PubKey) Address() Addr {
 	return Addr(tmp)
 }
 
-func (addrA Addr) IsDrivenFrom(pubKey PubKey) bool {
+func (addrA Addr) IsDrivenFrom(pubKey *PubKey) bool {
 	addrB := pubKey.Address()
 	return addrA.Equals(addrB)
 }

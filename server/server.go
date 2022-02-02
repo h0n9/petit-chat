@@ -69,7 +69,7 @@ func (s *Server) CreateMsgBox(tStr, nickname string, pub bool) (*msg.Box, error)
 	if err != nil {
 		return nil, err
 	}
-	return s.msgCenter.CreateBox(topic, pub, &s.node.PrivKey, &persona)
+	return s.msgCenter.CreateBox(topic, pub, s.node.PrivKey, persona)
 }
 
 func (s *Server) LeaveMsgBox(topicStr string) error {

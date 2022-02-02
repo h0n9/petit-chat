@@ -26,7 +26,7 @@ func (v *Vault) GetPrivKey() *crypto.PrivKey {
 	return v.privKey
 }
 
-func (v *Vault) GetPubKey() crypto.PubKey {
+func (v *Vault) GetPubKey() *crypto.PubKey {
 	return v.privKey.PubKey()
 }
 

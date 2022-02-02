@@ -12,16 +12,16 @@ import (
 	lc "github.com/libp2p/go-libp2p-core/crypto"
 )
 
-func GenPrivKey() (PrivKey, error) {
+func GenPrivKey() (*PrivKey, error) {
 	privKey := PrivKey{}
 
 	p256, err := ecdsa.GenerateKey(c, rand.Reader)
 	if err != nil {
-		return privKey, err
+		return nil, err
 	}
 
 	copy(privKey[:], p256.D.Bytes())
-	return privKey, nil
+	return &privKey, nil
 }
 
 func (privKey PrivKey) Bytes() []byte {
@@ -88,7 +88,7 @@ func (privKey PrivKey) FromECDSA(*ecdsa.PrivateKey) {
 
 // PubKey related functions
 
-func (privKey PrivKey) PubKey() PubKey {
+func (privKey PrivKey) PubKey() *PubKey {
 	pubKey := PubKey{PubKeyPrefix}
 
 	priv := privKey.ToECDSA()
@@ -98,10 +98,10 @@ func (privKey PrivKey) PubKey() PubKey {
 	copy(pubKey[33-len(X):], X)
 	copy(pubKey[65-len(Y):], Y)
 
-	return pubKey
+	return &pubKey
 }
 
-func (pubKey PubKey) Check() error {
+func (pubKey *PubKey) Check() error {
 	if len(pubKey) != PubKeySize {
 		return code.ImproperPubKey
 	}
@@ -111,11 +111,11 @@ func (pubKey PubKey) Check() error {
 	return nil
 }
 
-func (pubKey PubKey) Bytes() []byte {
+func (pubKey *PubKey) Bytes() []byte {
 	return pubKey[:]
 }
 
-func (pubKey PubKey) ToECDSA() *ecdsa.PublicKey {
+func (pubKey *PubKey) ToECDSA() *ecdsa.PublicKey {
 	return &ecdsa.PublicKey{
 		Curve: c,
 		X:     new(big.Int).SetBytes(pubKey[1:33]),

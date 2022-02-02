@@ -11,8 +11,8 @@ import (
 type Body interface{}
 
 type Signature struct {
-	PubKey   crypto.PubKey `json:"pubkey"`
-	SigBytes []byte        `json:"sig_bytes"`
+	PubKey   *crypto.PubKey `json:"pubkey"`
+	SigBytes []byte         `json:"sig_bytes"`
 }
 
 type Msg struct {
