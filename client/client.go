@@ -76,7 +76,9 @@ func (c *Client) StartChat(topic string, reader *bufio.Reader) error {
 		if err != nil {
 			return err
 		}
-		newChat, err := NewChat(box, vault, reader)
+		// init state
+		state := types.NewState(pub)
+		newChat, err := NewChat(box, vault, state, reader)
 		if err != nil {
 			return err
 		}

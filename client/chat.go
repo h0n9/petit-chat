@@ -14,8 +14,10 @@ import (
 )
 
 type Chat struct {
-	box   *msg.Box
+	box *msg.Box
+
 	vault *types.Vault
+	state *types.State
 
 	wg              sync.WaitGroup
 	chStopReceive   chan bool
@@ -25,10 +27,12 @@ type Chat struct {
 	reader *bufio.Reader
 }
 
-func NewChat(box *msg.Box, vault *types.Vault, reader *bufio.Reader) (*Chat, error) {
+func NewChat(box *msg.Box, vault *types.Vault, state *types.State, reader *bufio.Reader) (*Chat, error) {
 	return &Chat{
-		box:   box,
+		box: box,
+
 		vault: vault,
+		state: state,
 
 		wg:              sync.WaitGroup{},
 		chStopReceive:   make(chan bool, 1),
