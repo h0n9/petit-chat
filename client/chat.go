@@ -2,7 +2,6 @@ package client
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -167,7 +166,7 @@ func (c *Chat) Receive() {
 				c.chError <- err
 				continue
 			}
-			m, err := c.decapsulate(msgCapsule)
+			m, err := msgCapsule.Decapsulate(c.vault.GetSecretKey())
 			if err != nil {
 				c.chError <- err
 				continue
@@ -191,55 +190,13 @@ func (c *Chat) Receive() {
 	c.wg.Done()
 }
 
-func (c *Chat) encapsulate(m *msg.Msg, encrypt bool) (*msg.MsgCapsule, error) {
-	data, err := json.Marshal(m)
-	if err != nil {
-		return nil, err
-	}
-
-	if encrypt {
-		secretKey := c.vault.GetSecretKey()
-		encryptedData, err := secretKey.Encrypt(data)
-		if err != nil {
-			return nil, err
-		}
-		data = encryptedData
-	}
-
-	return msg.NewMsgCapsule(encrypt, m.GetType(), data), nil
-}
-
-func (c *Chat) decapsulate(msgCapsule *msg.MsgCapsule) (*msg.Msg, error) {
-	data := msgCapsule.Data
-	if msgCapsule.Encrypted {
-		secretKey := c.vault.GetSecretKey()
-		decryptedData, err := secretKey.Decrypt(msgCapsule.Data)
-		if err != nil {
-			return nil, err
-		}
-		data = decryptedData
-	}
-
-	m := msg.NewMsg(msgCapsule.Type.Base())
-	if m == nil {
-		return nil, code.UnknownMsgType
-	}
-
-	err := json.Unmarshal(data, m)
-	if err != nil {
-		return nil, err
-	}
-
-	return m, nil
-}
-
 func (c *Chat) publish(m *msg.Msg, encrypt bool) error {
 	err := m.Sign(c.vault.GetPrivKey())
 	if err != nil {
 		return err
 	}
 
-	msgCapsule, err := c.encapsulate(m, encrypt)
+	msgCapsule, err := m.Encapsulate(encrypt, c.vault.GetSecretKey())
 	if err != nil {
 		return err
 	}

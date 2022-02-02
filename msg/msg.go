@@ -108,6 +108,23 @@ func (msg *Msg) Verify() error {
 	return nil
 }
 
+func (msg *Msg) Encapsulate(encrypt bool, secretKey *crypto.SecretKey) (*MsgCapsule, error) {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	if encrypt {
+		encryptedData, err := secretKey.Encrypt(data)
+		if err != nil {
+			return nil, err
+		}
+		data = encryptedData
+	}
+
+	return NewMsgCapsule(encrypt, msg.GetType(), data), nil
+}
+
 type Base interface {
 	// accessors
 	GetTimestamp() time.Time
