@@ -27,6 +27,14 @@ func NewMsgCapsuleFromBytes(data []byte) (*MsgCapsule, error) {
 	return &msgCapsule, nil
 }
 
+func (mc *MsgCapsule) Check() error {
+	err := mc.Type.Check()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (mc *MsgCapsule) Bytes() ([]byte, error) {
 	return json.Marshal(mc)
 }

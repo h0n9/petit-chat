@@ -144,13 +144,10 @@ func (c *Chat) Send() {
 		peerID := c.box.GetHostID()
 		clientAddr := c.vault.GetAddr()
 		m := msg.NewMsgRaw(peerID, clientAddr, types.EmptyHash, []byte(input), nil)
-		err = m.Sign(c.vault.GetPrivKey())
+		err = c.publish(m, false)
 		if err != nil {
 			c.chError <- err
-		}
-		err = c.publish(m, true)
-		if err != nil {
-			c.chError <- err
+			continue
 		}
 	}
 	c.wg.Done()
@@ -165,13 +162,20 @@ func (c *Chat) Receive() {
 	for {
 		select {
 		case msgCapsule = <-c.chMsgCapsuleSub:
+			err := msgCapsule.Check()
+			if err != nil {
+				c.chError <- err
+				continue
+			}
 			m, err := c.decapsulate(msgCapsule)
 			if err != nil {
 				c.chError <- err
+				continue
 			}
 			err = m.Verify()
 			if err != nil {
 				c.chError <- err
+				continue
 			}
 			printMsg(c.box, m)
 			// TODO: handler comes here
@@ -230,7 +234,10 @@ func (c *Chat) decapsulate(msgCapsule *msg.MsgCapsule) (*msg.Msg, error) {
 }
 
 func (c *Chat) publish(m *msg.Msg, encrypt bool) error {
-	// TODO: sign msg with c.vault.GetPrivKey()
+	err := m.Sign(c.vault.GetPrivKey())
+	if err != nil {
+		return err
+	}
 
 	msgCapsule, err := c.encapsulate(m, encrypt)
 	if err != nil {

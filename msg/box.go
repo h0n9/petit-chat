@@ -98,23 +98,12 @@ func (box *Box) Subscribe() error {
 			return err
 		}
 		// TODO: add constraints to msgCapsule
+		err = msgCapsule.Check()
+		if err != nil {
+			return err
+		}
+
 		box.chMsgCapsule <- msgCapsule
-		// msg, err := box.Decapsulate(data)
-		// if err != nil {
-		// 	fmt.Println(err)
-		// 	continue
-		// }
-		// err = box.Verify(msg)
-		// if err != nil {
-		// 	fmt.Println(err)
-		// 	continue
-		// }
-		// eos, err := handler(box, msg)
-		// if err != nil {
-		// 	// TODO: replace fmt.Println() to logger.Println()
-		// 	fmt.Println(err)
-		// 	continue
-		// }
 
 		// // eos shoud be the only way to break for loop
 		// if eos {
