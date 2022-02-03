@@ -89,10 +89,26 @@ func (c *Chat) Send() {
 			c.chStopReceive <- true
 			stop = true
 		case "/msgs":
-			msgs := c.box.GetCapsules()
-			for _, msg := range msgs {
-				fmt.Println(msg)
-				// printMsg(c.box, msg)
+			capsules := c.store.GetCapsules()
+			for _, capsule := range capsules {
+				if capsule.Encrypted {
+					err = capsule.Decrypt(c.vault.GetSecretKey())
+					if err != nil {
+						c.chError <- err
+						continue
+					}
+				}
+				err = capsule.Check()
+				if err != nil {
+					c.chError <- err
+					continue
+				}
+				m, err := capsule.Decapsulate()
+				if err != nil {
+					c.chError <- err
+					continue
+				}
+				printMsg(c.box, m)
 			}
 			continue
 		case "/peers":
@@ -180,11 +196,6 @@ func (c *Chat) Receive() {
 	for {
 		select {
 		case capsule = <-c.chCapsuleSub:
-			err := capsule.Check()
-			if err != nil {
-				c.chError <- err
-				continue
-			}
 			if capsule.Encrypted {
 				err = capsule.Decrypt(c.vault.GetSecretKey())
 				if err != nil {
@@ -203,7 +214,15 @@ func (c *Chat) Receive() {
 				continue
 			}
 			printMsg(c.box, m)
+
 			// TODO: handler comes here
+
+			index, err := c.store.Append(capsule)
+			if err != nil {
+				c.chError <- err
+				continue
+			}
+			c.state.SetReadUntilIndex(index)
 		case err = <-c.chError:
 			fmt.Println(err)
 		case <-c.chStopReceive:
