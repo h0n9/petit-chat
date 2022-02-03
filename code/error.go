@@ -3,6 +3,7 @@ package code
 import "fmt"
 
 var (
+	ImproperVault    = fmt.Errorf("improper vault")
 	ImproperPubKey   = fmt.Errorf("improper pubkey")
 	ImproperAddress  = fmt.Errorf("improper address")
 	ImproperSigBytes = fmt.Errorf("improper sigBytes")

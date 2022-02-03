@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/types"
 )
@@ -37,27 +38,32 @@ func printPeer(p *types.Persona) {
 	fmt.Printf("[%s] %s\n", p.Address, p.Nickname)
 }
 
-func readMsg(b *msg.Box, m *msg.Msg) error {
-	// printMsg(b, m)
-	// if m.GetType() <= msg.TypeMeta {
-	// 	return nil
-	// }
-	// if m.GetClientAddr() == b.GetHostPersona().Address {
-	// 	return nil
-	// }
-	// meta := types.NewMeta(false, true, false)
-	// msgMeta := msg.NewMsgMeta(b, types.EmptyHash, m.GetHash(), meta)
-	// err := b.Publish(msgMeta, true)
-	// if err != nil {
-	// 	return err
-	// }
+func (c *Chat) ReadMsg(m *msg.Msg, hash types.Hash) error {
+	if m.GetType() <= msg.TypeMeta {
+		return nil
+	}
+	vault := c.GetVault()
+	if vault == nil {
+		return code.ImproperVault
+	}
+	if m.GetClientAddr() == vault.GetAddr() {
+		return nil
+	}
+	peerID := c.GetPeerID()
+	clientAddr := vault.GetAddr()
+	meta := types.NewMeta(false, true, false)
+	msgMeta := msg.NewMsgMeta(peerID, clientAddr, types.EmptyHash, hash, meta)
+	err := c.publish(msgMeta, true)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func printMsg(box *msg.Box, m *msg.Msg) {
+func (c *Chat) PrintMsg(m *msg.Msg) {
 	timestamp := m.GetTimestamp()
 	addr := m.GetClientAddr()
-	persona := box.GetPersona(addr)
+	persona := c.GetPersona(addr)
 	nickname := "somebody"
 	if persona != nil {
 		nickname = persona.GetNickname()
@@ -68,7 +74,7 @@ func printMsg(box *msg.Box, m *msg.Msg) {
 		metas := m.GetMetas()
 		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, body.Data)
 		for addr, meta := range metas {
-			nickname = box.GetPersona(addr).Nickname
+			nickname = c.GetPersona(addr).Nickname
 			fmt.Printf("  - %s %s\n", nickname, printMeta(meta))
 		}
 	case msg.TypeHelloSyn:

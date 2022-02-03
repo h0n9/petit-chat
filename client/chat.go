@@ -61,6 +61,18 @@ func (c *Chat) setChCapsule(chCapsule chan *msg.Capsule) {
 	c.chCapsuleSub = chCapsule
 }
 
+func (c *Chat) GetPersona(addr crypto.Addr) *types.Persona {
+	return c.state.GetPersona(addr)
+}
+
+func (c *Chat) GetVault() *types.Vault {
+	return c.vault
+}
+
+func (c *Chat) GetPeerID() types.ID {
+	return c.box.GetHostID()
+}
+
 func (c *Chat) Close() {
 	close(c.chStopReceive)
 	close(c.chError)
@@ -108,7 +120,7 @@ func (c *Chat) Send() {
 					c.chError <- err
 					continue
 				}
-				printMsg(c.box, m)
+				c.PrintMsg(m)
 			}
 			continue
 		case "/peers":
@@ -175,7 +187,7 @@ func (c *Chat) Send() {
 		}
 
 		// CLI supports ONLY TypeText
-		peerID := c.box.GetHostID()
+		peerID := c.GetPeerID()
 		clientAddr := c.vault.GetAddr()
 		m := msg.NewMsgRaw(peerID, clientAddr, types.EmptyHash, []byte(input), nil)
 		err = c.publish(m, false)
@@ -213,7 +225,7 @@ func (c *Chat) Receive() {
 				c.chError <- err
 				continue
 			}
-			printMsg(c.box, m)
+			c.PrintMsg(m)
 
 			// TODO: handler comes here
 
