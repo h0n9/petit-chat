@@ -18,6 +18,7 @@ type Chat struct {
 
 	vault *types.Vault
 	state *types.State
+	store *msg.CapsuleStore
 
 	wg            sync.WaitGroup
 	chStopReceive chan bool
@@ -27,12 +28,25 @@ type Chat struct {
 	reader *bufio.Reader
 }
 
-func NewChat(box *msg.Box, vault *types.Vault, state *types.State, reader *bufio.Reader) (*Chat, error) {
+func NewChat(box *msg.Box, reader *bufio.Reader, nickname string, public bool) (*Chat, error) {
+	privKey, err := crypto.GenPrivKey()
+	if err != nil {
+		return nil, err
+	}
+	secretKey, err := crypto.GenSecretKey()
+	if err != nil {
+		return nil, err
+	}
+	persona, err := types.NewPersona(nickname, nil, privKey.PubKey())
+	if err != nil {
+		return nil, err
+	}
 	return &Chat{
 		box: box,
 
-		vault: vault,
-		state: state,
+		vault: types.NewVault(persona, privKey, secretKey),
+		state: types.NewState(public),
+		store: msg.NewCapsuleStore(),
 
 		wg:            sync.WaitGroup{},
 		chStopReceive: make(chan bool, 1),
