@@ -53,13 +53,13 @@ func (msg *Meta) Check(box *Box) error {
 }
 
 func (msg *Meta) Execute(box *Box) error {
-	if msg.Body.Meta.Received() || msg.Body.Meta.Read() {
-		targetMsg := box.GetMsg(msg.Body.TargetMsgHash)
-		if targetMsg == nil {
-			return code.NonExistingMsg
-		}
-		targetMsg.MergeMeta(msg.GetClientAddr(), msg.Body.Meta)
-	}
+	// if msg.Body.Meta.Received() || msg.Body.Meta.Read() {
+	// 	targetMsg := box.GetMsg(msg.Body.TargetMsgHash)
+	// 	if targetMsg == nil {
+	// 		return code.NonExistingMsg
+	// 	}
+	// 	targetMsg.MergeMeta(msg.GetClientAddr(), msg.Body.Meta)
+	// }
 	// if msg.Body.Meta.Typing() {
 	// 	// TODO: do something
 	// }

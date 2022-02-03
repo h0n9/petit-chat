@@ -23,8 +23,8 @@ type Box struct {
 	state  *types.State
 
 	store struct {
-		msgs      []*Msg              // TODO: limit the size of msgs slice
-		msgHashes map[types.Hash]*Msg // TODO: limit the size of msgHashes map
+		msgCapsules      []*MsgCapsule              // TODO: limit the size of msgs slice
+		msgCapsuleHashes map[types.Hash]*MsgCapsule // TODO: limit the size of msgHashes map
 	}
 }
 
@@ -40,11 +40,11 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool, hostID types.I
 		state:  types.NewState(public),
 
 		store: struct {
-			msgs      []*Msg
-			msgHashes map[types.Hash]*Msg
+			msgCapsules      []*MsgCapsule
+			msgCapsuleHashes map[types.Hash]*MsgCapsule
 		}{
-			msgs:      make([]*Msg, 0),
-			msgHashes: make(map[types.Hash]*Msg),
+			msgCapsules:      make([]*MsgCapsule, 0),
+			msgCapsuleHashes: make(map[types.Hash]*MsgCapsule),
 		},
 	}, nil
 	// err = box.join(hostPersona)
@@ -106,6 +106,12 @@ func (box *Box) Subscribe() error {
 		}
 
 		box.chMsgCapsule <- msgCapsule
+
+		_, err = box.append(msgCapsule)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
 
 		// // eos shoud be the only way to break for loop
 		// if eos {
@@ -215,34 +221,34 @@ func (box *Box) GetChMsgCapsule() chan *MsgCapsule {
 	return box.chMsgCapsule
 }
 
-func (box *Box) GetMsgs() []*Msg {
-	return box.store.msgs
+func (box *Box) GetMsgCapsules() []*MsgCapsule {
+	return box.store.msgCapsules
 }
 
-func (box *Box) GetMsg(mh types.Hash) *Msg {
-	return box.store.msgHashes[mh]
+func (box *Box) GetMsgCapsule(hash types.Hash) *MsgCapsule {
+	return box.store.msgCapsuleHashes[hash]
 }
 
-func (box *Box) GetUnreadMsgs() []*Msg {
-	msgs := []*Msg{}
+func (box *Box) GetUnreadMsgs() []*MsgCapsule {
+	msgCapsules := []*MsgCapsule{}
 	readUntilIndex := box.state.GetReadUntilIndex()
-	if readUntilIndex+1 < uint64(len(box.store.msgs)) {
-		msgs = append(msgs, box.store.msgs[readUntilIndex+1:]...)
+	if readUntilIndex+1 < uint64(len(box.store.msgCapsules)) {
+		msgCapsules = append(msgCapsules, box.store.msgCapsules[readUntilIndex+1:]...)
 	}
-	box.state.SetReadUntilIndex(uint64(len(box.store.msgs) - 1))
-	return msgs
+	box.state.SetReadUntilIndex(uint64(len(box.store.msgCapsules) - 1))
+	return msgCapsules
 }
 
 func (box *Box) GetAuth() *types.Auth {
 	return box.state.GetAuth()
 }
 
-func (box *Box) append(msg *Msg) (types.Index, error) {
-	// hash := msg.GetHash()
-	// _, exist := box.store.msgHashes[hash]
-	// if exist {
-	// 	return 0, code.AlreadyAppendedMsg
-	// }
+func (box *Box) append(msgCapsule *MsgCapsule) (types.Index, error) {
+	hash := msgCapsule.GetHash()
+	_, exist := box.store.msgCapsuleHashes[hash]
+	if exist {
+		return 0, code.AlreadyAppendedMsg
+	}
 
 	// timestamp := msg.GetTimestamp()
 	// latestTimestamp := box.state.GetLatestTimestamp()
@@ -250,11 +256,10 @@ func (box *Box) append(msg *Msg) (types.Index, error) {
 	// 	box.state.SetLatestTimestamp(timestamp)
 	// }
 
-	// box.store.msgs = append(box.store.msgs, msg)
-	// box.store.msgHashes[hash] = msg
+	box.store.msgCapsules = append(box.store.msgCapsules, msgCapsule)
+	box.store.msgCapsuleHashes[hash] = msgCapsule
 
-	// return types.Index(len(box.store.msgs) - 1), nil
-	return 1, nil
+	return types.Index(len(box.store.msgCapsules) - 1), nil
 }
 
 func (box *Box) join(targetPersona *types.Persona) error {

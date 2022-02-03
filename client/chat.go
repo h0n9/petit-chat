@@ -75,9 +75,10 @@ func (c *Chat) Send() {
 			c.chStopReceive <- true
 			stop = true
 		case "/msgs":
-			msgs := c.box.GetMsgs()
+			msgs := c.box.GetMsgCapsules()
 			for _, msg := range msgs {
-				printMsg(c.box, msg)
+				fmt.Println(msg)
+				// printMsg(c.box, msg)
 			}
 			continue
 		case "/peers":

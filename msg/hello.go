@@ -87,13 +87,13 @@ func (msg *HelloAck) GetBody() Body {
 }
 
 func (msg HelloAck) Check(box *Box) error {
-	parentMsg, err := msg.getParentMsg(box)
-	if err != nil {
-		return err
-	}
-	if parentMsg == nil {
-		return code.NonExistingParent
-	}
+	// parentMsg, err := msg.getParentMsg(box)
+	// if err != nil {
+	// 	return err
+	// }
+	// if parentMsg == nil {
+	// 	return code.NonExistingParent
+	// }
 	return nil
 }
 

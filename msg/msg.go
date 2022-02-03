@@ -113,14 +113,14 @@ func (msg *Head) IsEOS() bool {
 	return msg.Type == TypeBye
 }
 
-func (msg *Head) getParentMsg(b *Box) (*Msg, error) {
+func (msg *Head) getParentMsgCapsule(b *Box) (*MsgCapsule, error) {
 	// check if parentMsgHash is empty
 	pmh := msg.ParentHash
 	if pmh.IsEmpty() {
 		return nil, nil
 	}
 	// get msg corresponding to msgHash
-	pm := b.GetMsg(pmh)
+	pm := b.GetMsgCapsule(pmh)
 	if pm == nil {
 		// TODO: this error should be optional
 		return nil, code.NonExistingParent
@@ -130,13 +130,13 @@ func (msg *Head) getParentMsg(b *Box) (*Msg, error) {
 
 func (msg *Head) check(b *Box) error {
 	// check msg.ParentMsgHash
-	pm, err := msg.getParentMsg(b)
-	if err != nil {
-		return err
-	}
-	if pm != nil && !pm.GetParentHash().IsEmpty() {
-		return code.AlreadyHavingParent
-	}
+	// pm, err := msg.getParentMsg(b)
+	// if err != nil {
+	// 	return err
+	// }
+	// if pm != nil && !pm.GetParentHash().IsEmpty() {
+	// 	return code.AlreadyHavingParent
+	// }
 
 	// TODO: add more constraints
 	return nil
