@@ -14,7 +14,7 @@ type Signature struct {
 	SigBytes []byte         `json:"sig_bytes"`
 }
 
-type MsgCapsule struct {
+type Capsule struct {
 	Hash      types.Hash `json:"hash"`
 	Signature Signature  `json:"signature"`
 	Type      Type       `json:"type"`
@@ -23,24 +23,24 @@ type MsgCapsule struct {
 	Encrypted bool `json:"encrpyted"`
 }
 
-func NewMsgCapsule(encrypted bool, msgType Type, data []byte) *MsgCapsule {
-	return &MsgCapsule{
+func NewCapsule(encrypted bool, msgType Type, data []byte) *Capsule {
+	return &Capsule{
 		Encrypted: encrypted,
 		Type:      msgType,
 		Data:      data,
 	}
 }
 
-func NewMsgCapsuleFromBytes(data []byte) (*MsgCapsule, error) {
-	msgCapsule := MsgCapsule{}
-	err := json.Unmarshal(data, &msgCapsule)
+func NewCapsuleFromBytes(data []byte) (*Capsule, error) {
+	capsule := Capsule{}
+	err := json.Unmarshal(data, &capsule)
 	if err != nil {
 		return nil, err
 	}
-	return &msgCapsule, nil
+	return &capsule, nil
 }
 
-func (mc *MsgCapsule) Check() error {
+func (mc *Capsule) Check() error {
 	err := mc.Type.Check()
 	if err != nil {
 		return err
@@ -54,23 +54,23 @@ func (mc *MsgCapsule) Check() error {
 	return nil
 }
 
-func (mc *MsgCapsule) GetHash() types.Hash {
+func (mc *Capsule) GetHash() types.Hash {
 	return mc.Hash
 }
 
-func (mc *MsgCapsule) SetHash(hash types.Hash) {
+func (mc *Capsule) SetHash(hash types.Hash) {
 	mc.Hash = hash
 }
 
-func (mc *MsgCapsule) GetSignature() Signature {
+func (mc *Capsule) GetSignature() Signature {
 	return mc.Signature
 }
 
-func (mc *MsgCapsule) SetSignature(signature Signature) {
+func (mc *Capsule) SetSignature(signature Signature) {
 	mc.Signature = signature
 }
 
-func (mc *MsgCapsule) Sign(privKey *crypto.PrivKey) error {
+func (mc *Capsule) Sign(privKey *crypto.PrivKey) error {
 	hash := util.ToSHA256(mc.Data)
 	sigBytes, err := privKey.Sign(mc.Data)
 	if err != nil {
@@ -84,7 +84,7 @@ func (mc *MsgCapsule) Sign(privKey *crypto.PrivKey) error {
 	return nil
 }
 
-func (mc *MsgCapsule) Verify() error {
+func (mc *Capsule) Verify() error {
 	signature := mc.GetSignature()
 	if signature.SigBytes == nil {
 		return code.ImproperSigBytes
@@ -99,7 +99,7 @@ func (mc *MsgCapsule) Verify() error {
 	return nil
 }
 
-func (mc *MsgCapsule) Encrypt(secretKey *crypto.SecretKey) error {
+func (mc *Capsule) Encrypt(secretKey *crypto.SecretKey) error {
 	encryptedData, err := secretKey.Encrypt(mc.Data)
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func (mc *MsgCapsule) Encrypt(secretKey *crypto.SecretKey) error {
 	return nil
 }
 
-func (mc *MsgCapsule) Decrypt(secretKey *crypto.SecretKey) error {
+func (mc *Capsule) Decrypt(secretKey *crypto.SecretKey) error {
 	decryptedData, err := secretKey.Decrypt(mc.Data)
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func (mc *MsgCapsule) Decrypt(secretKey *crypto.SecretKey) error {
 	return nil
 }
 
-func (mc *MsgCapsule) Decapsulate() (*Msg, error) {
+func (mc *Capsule) Decapsulate() (*Msg, error) {
 	m := NewMsg(mc.Type.Base())
 	if m == nil {
 		return nil, code.UnknownMsgType
@@ -133,6 +133,48 @@ func (mc *MsgCapsule) Decapsulate() (*Msg, error) {
 	return m, nil
 }
 
-func (mc *MsgCapsule) Bytes() ([]byte, error) {
+func (mc *Capsule) Bytes() ([]byte, error) {
 	return json.Marshal(mc)
+}
+
+type CapsuleStore struct {
+	length        types.Length
+	capsules      []*Capsule              // TODO: limit the size of msgs slice
+	capsuleHashes map[types.Hash]*Capsule // TODO: limit the size of msgHashes map
+}
+
+func NewCapsuleStore() *CapsuleStore {
+	return &CapsuleStore{
+		length:        types.Length(0),
+		capsules:      make([]*Capsule, 0),
+		capsuleHashes: make(map[types.Hash]*Capsule),
+	}
+}
+
+func (cs *CapsuleStore) Append(capsule *Capsule) (types.Index, error) {
+	hash := capsule.GetHash()
+	if cs.Has(hash) {
+		return 0, code.AlreadyAppendedCapsule
+	}
+
+	cs.capsules = append(cs.capsules, capsule)
+	cs.capsuleHashes[hash] = capsule
+
+	index := cs.length
+	cs.length += 1
+
+	return index, nil
+}
+
+func (cs *CapsuleStore) GetCapsules() []*Capsule {
+	return cs.capsules
+}
+
+func (cs *CapsuleStore) GetCapsule(hash types.Hash) *Capsule {
+	return cs.capsuleHashes[hash]
+}
+
+func (cs *CapsuleStore) Has(hash types.Hash) bool {
+	_, exist := cs.capsuleHashes[hash]
+	return exist
 }

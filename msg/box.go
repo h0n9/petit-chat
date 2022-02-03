@@ -13,39 +13,28 @@ import (
 
 // Box refers to a chat room
 type Box struct {
-	ctx          context.Context
-	chMsgCapsule chan *MsgCapsule
-
-	topic *types.Topic
-	sub   *types.Sub
+	ctx       context.Context
+	chCapsule chan *Capsule
 
 	hostID types.ID
-	state  *types.State
+	topic  *types.Topic
+	sub    *types.Sub
 
-	store struct {
-		msgCapsules      []*MsgCapsule              // TODO: limit the size of msgs slice
-		msgCapsuleHashes map[types.Hash]*MsgCapsule // TODO: limit the size of msgHashes map
-	}
+	state *types.State
+	store *CapsuleStore
 }
 
 func NewBox(ctx context.Context, topic *types.Topic, public bool, hostID types.ID) (*Box, error) {
 	return &Box{
-		ctx:          ctx,
-		chMsgCapsule: make(chan *MsgCapsule, 1),
-
-		topic: topic,
-		sub:   nil,
+		ctx:       ctx,
+		chCapsule: make(chan *Capsule, 1),
 
 		hostID: hostID,
-		state:  types.NewState(public),
+		topic:  topic,
+		sub:    nil,
 
-		store: struct {
-			msgCapsules      []*MsgCapsule
-			msgCapsuleHashes map[types.Hash]*MsgCapsule
-		}{
-			msgCapsules:      make([]*MsgCapsule, 0),
-			msgCapsuleHashes: make(map[types.Hash]*MsgCapsule),
-		},
+		state: types.NewState(public),
+		store: NewCapsuleStore(),
 	}, nil
 	// err = box.join(hostPersona)
 	// if err != nil {
@@ -63,8 +52,8 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool, hostID types.I
 	// return &box, nil
 }
 
-func (box *Box) Publish(msgCapsule *MsgCapsule) error {
-	data, err := msgCapsule.Bytes()
+func (box *Box) Publish(capsule *Capsule) error {
+	data, err := capsule.Bytes()
 	if err != nil {
 		return err
 	}
@@ -93,21 +82,21 @@ func (box *Box) Subscribe() error {
 			fmt.Println(err)
 			continue
 		}
-		msgCapsule, err := NewMsgCapsuleFromBytes(received.GetData())
+		capsule, err := NewCapsuleFromBytes(received.GetData())
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		// TODO: add constraints to msgCapsule
-		err = msgCapsule.Check()
+		// TODO: add constraints to capsule
+		err = capsule.Check()
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
 
-		box.chMsgCapsule <- msgCapsule
+		box.chCapsule <- capsule
 
-		_, err = box.append(msgCapsule)
+		_, err = box.append(capsule)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -217,49 +206,34 @@ func (box *Box) Subscribing() bool {
 	return box.sub != nil
 }
 
-func (box *Box) GetChMsgCapsule() chan *MsgCapsule {
-	return box.chMsgCapsule
+func (box *Box) GetChCapsule() chan *Capsule {
+	return box.chCapsule
 }
 
-func (box *Box) GetMsgCapsules() []*MsgCapsule {
-	return box.store.msgCapsules
+func (box *Box) GetCapsules() []*Capsule {
+	return box.store.GetCapsules()
 }
 
-func (box *Box) GetMsgCapsule(hash types.Hash) *MsgCapsule {
-	return box.store.msgCapsuleHashes[hash]
+func (box *Box) GetCapsule(hash types.Hash) *Capsule {
+	return box.store.GetCapsule(hash)
 }
 
-func (box *Box) GetUnreadMsgs() []*MsgCapsule {
-	msgCapsules := []*MsgCapsule{}
-	readUntilIndex := box.state.GetReadUntilIndex()
-	if readUntilIndex+1 < uint64(len(box.store.msgCapsules)) {
-		msgCapsules = append(msgCapsules, box.store.msgCapsules[readUntilIndex+1:]...)
-	}
-	box.state.SetReadUntilIndex(uint64(len(box.store.msgCapsules) - 1))
-	return msgCapsules
-}
+// func (box *Box) GetUnreadMsgs() []*Capsule {
+// 	Capsules := []*Capsule{}
+// 	readUntilIndex := box.state.GetReadUntilIndex()
+// 	if readUntilIndex+1 < uint64(len(box.store.Capsules)) {
+// 		Capsules = append(Capsules, box.store.Capsules[readUntilIndex+1:]...)
+// 	}
+// 	box.state.SetReadUntilIndex(uint64(len(box.store.Capsules) - 1))
+// 	return Capsules
+// }
 
 func (box *Box) GetAuth() *types.Auth {
 	return box.state.GetAuth()
 }
 
-func (box *Box) append(msgCapsule *MsgCapsule) (types.Index, error) {
-	hash := msgCapsule.GetHash()
-	_, exist := box.store.msgCapsuleHashes[hash]
-	if exist {
-		return 0, code.AlreadyAppendedMsg
-	}
-
-	// timestamp := msg.GetTimestamp()
-	// latestTimestamp := box.state.GetLatestTimestamp()
-	// if latestTimestamp.Before(timestamp) {
-	// 	box.state.SetLatestTimestamp(timestamp)
-	// }
-
-	box.store.msgCapsules = append(box.store.msgCapsules, msgCapsule)
-	box.store.msgCapsuleHashes[hash] = msgCapsule
-
-	return types.Index(len(box.store.msgCapsules) - 1), nil
+func (box *Box) append(capsule *Capsule) (types.Index, error) {
+	return box.store.Append(capsule)
 }
 
 func (box *Box) join(targetPersona *types.Persona) error {

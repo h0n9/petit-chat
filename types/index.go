@@ -2,7 +2,10 @@ package types
 
 import "strconv"
 
-type Index = uint64
+type (
+	Index  = uint64
+	Length = uint64
+)
 
 func IndexToByteSlice(index Index) []byte {
 	return []byte(strconv.FormatUint(index, 10))

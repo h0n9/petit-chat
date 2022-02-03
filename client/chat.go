@@ -19,10 +19,10 @@ type Chat struct {
 	vault *types.Vault
 	state *types.State
 
-	wg              sync.WaitGroup
-	chStopReceive   chan bool
-	chError         chan error
-	chMsgCapsuleSub chan *msg.MsgCapsule
+	wg            sync.WaitGroup
+	chStopReceive chan bool
+	chError       chan error
+	chCapsuleSub  chan *msg.Capsule
 
 	reader *bufio.Reader
 }
@@ -34,17 +34,17 @@ func NewChat(box *msg.Box, vault *types.Vault, state *types.State, reader *bufio
 		vault: vault,
 		state: state,
 
-		wg:              sync.WaitGroup{},
-		chStopReceive:   make(chan bool, 1),
-		chError:         make(chan error, 1),
-		chMsgCapsuleSub: nil,
+		wg:            sync.WaitGroup{},
+		chStopReceive: make(chan bool, 1),
+		chError:       make(chan error, 1),
+		chCapsuleSub:  nil,
 
 		reader: reader,
 	}, nil
 }
 
-func (c *Chat) setChMsgCapsule(chMsgCapsule chan *msg.MsgCapsule) {
-	c.chMsgCapsuleSub = chMsgCapsule
+func (c *Chat) setChCapsule(chCapsule chan *msg.Capsule) {
+	c.chCapsuleSub = chCapsule
 }
 
 func (c *Chat) Close() {
@@ -53,12 +53,12 @@ func (c *Chat) Close() {
 }
 
 func (c *Chat) Subscribe() error {
-	c.setChMsgCapsule(c.box.GetChMsgCapsule())
+	c.setChCapsule(c.box.GetChCapsule())
 	return c.box.Subscribe()
 }
 
 func (c *Chat) Stop() {
-	c.setChMsgCapsule(nil)
+	c.setChCapsule(nil)
 }
 
 func (c *Chat) Send() {
@@ -75,7 +75,7 @@ func (c *Chat) Send() {
 			c.chStopReceive <- true
 			stop = true
 		case "/msgs":
-			msgs := c.box.GetMsgCapsules()
+			msgs := c.box.GetCapsules()
 			for _, msg := range msgs {
 				fmt.Println(msg)
 				// printMsg(c.box, msg)
@@ -159,31 +159,31 @@ func (c *Chat) Send() {
 
 func (c *Chat) Receive() {
 	var (
-		stop       bool  = false
-		err        error = nil
-		msgCapsule *msg.MsgCapsule
+		stop    bool  = false
+		err     error = nil
+		capsule *msg.Capsule
 	)
 	for {
 		select {
-		case msgCapsule = <-c.chMsgCapsuleSub:
-			err := msgCapsule.Check()
+		case capsule = <-c.chCapsuleSub:
+			err := capsule.Check()
 			if err != nil {
 				c.chError <- err
 				continue
 			}
-			if msgCapsule.Encrypted {
-				err = msgCapsule.Decrypt(c.vault.GetSecretKey())
+			if capsule.Encrypted {
+				err = capsule.Decrypt(c.vault.GetSecretKey())
 				if err != nil {
 					c.chError <- err
 					continue
 				}
 			}
-			err = msgCapsule.Check()
+			err = capsule.Check()
 			if err != nil {
 				c.chError <- err
 				continue
 			}
-			m, err := msgCapsule.Decapsulate()
+			m, err := capsule.Decapsulate()
 			if err != nil {
 				c.chError <- err
 				continue
@@ -203,21 +203,21 @@ func (c *Chat) Receive() {
 }
 
 func (c *Chat) publish(m *msg.Msg, encrypt bool) error {
-	msgCapsule, err := m.Encapsulate()
+	capsule, err := m.Encapsulate()
 	if err != nil {
 		return err
 	}
-	err = msgCapsule.Sign(c.vault.GetPrivKey())
+	err = capsule.Sign(c.vault.GetPrivKey())
 	if err != nil {
 		return err
 	}
 	if encrypt {
-		err = msgCapsule.Encrypt(c.vault.GetSecretKey())
+		err = capsule.Encrypt(c.vault.GetSecretKey())
 		if err != nil {
 			return err
 		}
 	}
-	err = c.box.Publish(msgCapsule)
+	err = c.box.Publish(capsule)
 	if err != nil {
 		return err
 	}

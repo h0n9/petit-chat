@@ -47,12 +47,12 @@ func (msg *Msg) MergeMeta(addr crypto.Addr, newMeta types.Meta) {
 	msg.SetMeta(addr, newMeta)
 }
 
-func (msg *Msg) Encapsulate() (*MsgCapsule, error) {
+func (msg *Msg) Encapsulate() (*Capsule, error) {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
 	}
-	return NewMsgCapsule(false, msg.GetType(), data), nil
+	return NewCapsule(false, msg.GetType(), data), nil
 }
 
 type Base interface {
@@ -113,14 +113,14 @@ func (msg *Head) IsEOS() bool {
 	return msg.Type == TypeBye
 }
 
-func (msg *Head) getParentMsgCapsule(b *Box) (*MsgCapsule, error) {
+func (msg *Head) getParentCapsule(b *Box) (*Capsule, error) {
 	// check if parentMsgHash is empty
 	pmh := msg.ParentHash
 	if pmh.IsEmpty() {
 		return nil, nil
 	}
 	// get msg corresponding to msgHash
-	pm := b.GetMsgCapsule(pmh)
+	pm := b.GetCapsule(pmh)
 	if pm == nil {
 		// TODO: this error should be optional
 		return nil, code.NonExistingParent
