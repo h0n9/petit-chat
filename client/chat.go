@@ -269,3 +269,57 @@ func (c *Chat) publish(m *msg.Msg, encrypt bool) error {
 
 	return nil
 }
+
+func (c *Chat) ReadMsg(m *msg.Msg, hash types.Hash) error {
+	if m.GetType() <= msg.TypeMeta {
+		return nil
+	}
+	vault := c.GetVault()
+	if vault == nil {
+		return code.ImproperVault
+	}
+	if m.GetClientAddr() == vault.GetAddr() {
+		return nil
+	}
+	peerID := c.GetPeerID()
+	clientAddr := vault.GetAddr()
+	meta := types.NewMeta(false, true, false)
+	msgMeta := msg.NewMsgMeta(peerID, clientAddr, types.EmptyHash, hash, meta)
+	err := c.publish(msgMeta, true)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Chat) PrintMsg(m *msg.Msg) {
+	timestamp := m.GetTimestamp()
+	addr := m.GetClientAddr()
+	persona := c.GetPersona(addr)
+	nickname := "somebody"
+	if persona != nil {
+		nickname = persona.GetNickname()
+	}
+	switch m.GetType() {
+	case msg.TypeRaw:
+		body := m.GetBody().(msg.BodyRaw)
+		metas := m.GetMetas()
+		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, body.Data)
+		for addr, meta := range metas {
+			nickname = c.GetPersona(addr).Nickname
+			fmt.Printf("  - %s %s\n", nickname, printMeta(meta))
+		}
+	case msg.TypeHelloSyn:
+		fmt.Printf("[%s, %s] entered\n", timestamp, nickname)
+	case msg.TypeHelloAck:
+	case msg.TypeBye:
+		fmt.Printf("[%s, %s] left\n", timestamp, nickname)
+	case msg.TypeUpdate:
+	case msg.TypeMeta:
+		body := m.GetBody().(msg.BodyMeta)
+		done := printMeta(body.Meta)
+		fmt.Printf("[%s, %s] %s %x\n", timestamp, nickname, done, m.GetParentHash())
+	default:
+		fmt.Println("Unknown Type")
+	}
+}
