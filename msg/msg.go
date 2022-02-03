@@ -7,21 +7,13 @@ import (
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
-	"github.com/h0n9/petit-chat/util"
 )
 
 type Body interface{}
 
-type Signature struct {
-	PubKey   *crypto.PubKey `json:"pubkey"`
-	SigBytes []byte         `json:"sig_bytes"`
-}
-
 type Msg struct {
-	Hash      types.Hash `json:"hash"`
-	Signature Signature  `json:"signature"`
-	Base      `json:"base"`
-	Metas     types.Metas `json:"-"`
+	Base  `json:"base"`
+	Metas types.Metas `json:"-"`
 }
 
 func NewMsg(base Base) *Msg {
@@ -29,22 +21,6 @@ func NewMsg(base Base) *Msg {
 		Base:  base,
 		Metas: make(types.Metas),
 	}
-}
-
-func (msg *Msg) GetHash() types.Hash {
-	return msg.Hash
-}
-
-func (msg *Msg) SetHash(hash types.Hash) {
-	msg.Hash = hash
-}
-
-func (msg *Msg) GetSignature() Signature {
-	return msg.Signature
-}
-
-func (msg *Msg) SetSignature(signature Signature) {
-	msg.Signature = signature
 }
 
 func (msg *Msg) GetMetas() types.Metas {
@@ -71,58 +47,12 @@ func (msg *Msg) MergeMeta(addr crypto.Addr, newMeta types.Meta) {
 	msg.SetMeta(addr, newMeta)
 }
 
-func (msg *Msg) Sign(privKey *crypto.PrivKey) error {
-	data, err := json.Marshal(msg.Base)
-	if err != nil {
-		return err
-	}
-	hash := util.ToSHA256(data)
-	sigBytes, err := privKey.Sign(data)
-	if err != nil {
-		return err
-	}
-	msg.SetHash(hash)
-	msg.SetSignature(Signature{
-		SigBytes: sigBytes,
-		PubKey:   privKey.PubKey(),
-	})
-	return nil
-}
-
-func (msg *Msg) Verify() error {
-	signature := msg.GetSignature()
-	if signature.SigBytes == nil {
-		return code.ImproperSigBytes
-	}
-	if signature.PubKey == nil {
-		return code.ImproperPubKey
-	}
-	data, err := json.Marshal(msg.Base)
-	if err != nil {
-		return err
-	}
-	ok := signature.PubKey.Verify(data, signature.SigBytes)
-	if !ok {
-		return code.FailedToVerify
-	}
-	return nil
-}
-
-func (msg *Msg) Encapsulate(encrypt bool, secretKey *crypto.SecretKey) (*MsgCapsule, error) {
+func (msg *Msg) Encapsulate() (*MsgCapsule, error) {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
 	}
-
-	if encrypt {
-		encryptedData, err := secretKey.Encrypt(data)
-		if err != nil {
-			return nil, err
-		}
-		data = encryptedData
-	}
-
-	return NewMsgCapsule(encrypt, msg.GetType(), data), nil
+	return NewMsgCapsule(false, msg.GetType(), data), nil
 }
 
 type Base interface {

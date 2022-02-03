@@ -95,12 +95,14 @@ func (box *Box) Subscribe() error {
 		}
 		msgCapsule, err := NewMsgCapsuleFromBytes(received.GetData())
 		if err != nil {
-			return err
+			fmt.Println(err)
+			continue
 		}
 		// TODO: add constraints to msgCapsule
 		err = msgCapsule.Check()
 		if err != nil {
-			return err
+			fmt.Println(err)
+			continue
 		}
 
 		box.chMsgCapsule <- msgCapsule
@@ -236,22 +238,23 @@ func (box *Box) GetAuth() *types.Auth {
 }
 
 func (box *Box) append(msg *Msg) (types.Index, error) {
-	hash := msg.GetHash()
-	_, exist := box.store.msgHashes[hash]
-	if exist {
-		return 0, code.AlreadyAppendedMsg
-	}
+	// hash := msg.GetHash()
+	// _, exist := box.store.msgHashes[hash]
+	// if exist {
+	// 	return 0, code.AlreadyAppendedMsg
+	// }
 
-	timestamp := msg.GetTimestamp()
-	latestTimestamp := box.state.GetLatestTimestamp()
-	if latestTimestamp.Before(timestamp) {
-		box.state.SetLatestTimestamp(timestamp)
-	}
+	// timestamp := msg.GetTimestamp()
+	// latestTimestamp := box.state.GetLatestTimestamp()
+	// if latestTimestamp.Before(timestamp) {
+	// 	box.state.SetLatestTimestamp(timestamp)
+	// }
 
-	box.store.msgs = append(box.store.msgs, msg)
-	box.store.msgHashes[hash] = msg
+	// box.store.msgs = append(box.store.msgs, msg)
+	// box.store.msgHashes[hash] = msg
 
-	return types.Index(len(box.store.msgs) - 1), nil
+	// return types.Index(len(box.store.msgs) - 1), nil
+	return 1, nil
 }
 
 func (box *Box) join(targetPersona *types.Persona) error {

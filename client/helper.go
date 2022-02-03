@@ -56,7 +56,7 @@ func readMsg(b *msg.Box, m *msg.Msg) error {
 
 func printMsg(box *msg.Box, m *msg.Msg) {
 	timestamp := m.GetTimestamp()
-	addr := m.GetSignature().PubKey.Address()
+	addr := m.GetClientAddr()
 	persona := box.GetPersona(addr)
 	nickname := "somebody"
 	if persona != nil {

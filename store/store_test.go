@@ -1,9 +1,7 @@
 package store
 
 import (
-	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	tmdb "github.com/tendermint/tm-db"
@@ -66,44 +64,44 @@ func (msg *MsgTest) Execute(box *msg.Box) error {
 	return nil
 }
 
-func TestAppend(t *testing.T) {
-	// prepare msg to append
-	m := msg.NewMsg(&MsgTest{
-		msg.Head{
-			Timestamp:  time.Now(),
-			PeerID:     types.ID(""),
-			ParentHash: types.Hash{},
-		},
-		BodyTest{
-			Name:    "nothing",
-			Content: "this is nothing.",
-		},
-	})
-	hash := msg.Hash(m)
-	m.SetHash(hash)
-	mData, err := json.Marshal(m)
-	assert.NoError(t, err)
-
-	s, err := NewStore(tmdb.NewMemDB())
-	assert.NoError(t, err)
-
-	nextIndex, err := s.GetNextIndex()
-	assert.NoError(t, err)
-	assert.Equal(t, types.Index(0), nextIndex)
-
-	index, err := s.Append(hash, mData)
-	assert.NoError(t, err)
-	assert.Equal(t, types.Index(0), index)
-
-	nextIndex, err = s.GetNextIndex()
-	assert.NoError(t, err)
-	assert.Equal(t, types.Index(1), nextIndex)
-
-	mmData, err := s.GetDataByHash(hash)
-	assert.NoError(t, err)
-	assert.EqualValues(t, mData, mmData)
-
-	mmData, err = s.GetDataByIndex(index)
-	assert.NoError(t, err)
-	assert.EqualValues(t, mData, mmData)
-}
+// func TestAppend(t *testing.T) {
+// 	// prepare msg to append
+// 	m := msg.NewMsg(&MsgTest{
+// 		msg.Head{
+// 			Timestamp:  time.Now(),
+// 			PeerID:     types.ID(""),
+// 			ParentHash: types.Hash{},
+// 		},
+// 		BodyTest{
+// 			Name:    "nothing",
+// 			Content: "this is nothing.",
+// 		},
+// 	})
+// 	hash := msg.Hash(m)
+// 	m.SetHash(hash)
+// 	mData, err := json.Marshal(m)
+// 	assert.NoError(t, err)
+//
+// 	s, err := NewStore(tmdb.NewMemDB())
+// 	assert.NoError(t, err)
+//
+// 	nextIndex, err := s.GetNextIndex()
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, types.Index(0), nextIndex)
+//
+// 	index, err := s.Append(hash, mData)
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, types.Index(0), index)
+//
+// 	nextIndex, err = s.GetNextIndex()
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, types.Index(1), nextIndex)
+//
+// 	mmData, err := s.GetDataByHash(hash)
+// 	assert.NoError(t, err)
+// 	assert.EqualValues(t, mData, mmData)
+//
+// 	mmData, err = s.GetDataByIndex(index)
+// 	assert.NoError(t, err)
+// 	assert.EqualValues(t, mData, mmData)
+// }

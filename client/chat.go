@@ -170,12 +170,19 @@ func (c *Chat) Receive() {
 				c.chError <- err
 				continue
 			}
-			m, err := msgCapsule.Decapsulate(c.vault.GetSecretKey())
+			if msgCapsule.Encrypted {
+				err = msgCapsule.Decrypt(c.vault.GetSecretKey())
+				if err != nil {
+					c.chError <- err
+					continue
+				}
+			}
+			err = msgCapsule.Check()
 			if err != nil {
 				c.chError <- err
 				continue
 			}
-			err = m.Verify()
+			m, err := msgCapsule.Decapsulate()
 			if err != nil {
 				c.chError <- err
 				continue
@@ -195,16 +202,20 @@ func (c *Chat) Receive() {
 }
 
 func (c *Chat) publish(m *msg.Msg, encrypt bool) error {
-	err := m.Sign(c.vault.GetPrivKey())
+	msgCapsule, err := m.Encapsulate()
 	if err != nil {
 		return err
 	}
-
-	msgCapsule, err := m.Encapsulate(encrypt, c.vault.GetSecretKey())
+	err = msgCapsule.Sign(c.vault.GetPrivKey())
 	if err != nil {
 		return err
 	}
-
+	if encrypt {
+		err = msgCapsule.Encrypt(c.vault.GetSecretKey())
+		if err != nil {
+			return err
+		}
+	}
 	err = c.box.Publish(msgCapsule)
 	if err != nil {
 		return err
