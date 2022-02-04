@@ -65,10 +65,11 @@ type Base interface {
 	GetBody() Body
 	IsEOS() bool
 
-	// ops
 	check(*Box) error
-	Check(*Box) error
-	Execute(*Box) error
+
+	// ops
+	Check(*types.Vault, *types.State) error
+	Execute(*types.Vault, *types.State) error
 }
 
 type Head struct {

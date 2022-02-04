@@ -31,19 +31,19 @@ func (msg *Update) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *Update) Check(box *Box) error {
-	auth := box.state.GetAuth()
+func (msg *Update) Check(vault *types.Vault, state *types.State) error {
+	auth := state.GetAuth()
 	if !auth.CanExecute(msg.GetClientAddr()) {
 		return code.NonExecutePermission
 	}
 	return nil
 }
-func (msg *Update) Execute(box *Box) error {
-	if util.HasField("auth", box.state) {
-		box.state.SetAuth(msg.Body.Auth)
+func (msg *Update) Execute(vault *types.Vault, state *types.State) error {
+	if util.HasField("auth", state) {
+		state.SetAuth(msg.Body.Auth)
 	}
-	if util.HasField("personae", box.state) {
-		box.state.SetPersonae(msg.Body.Personae)
+	if util.HasField("personae", state) {
+		state.SetPersonae(msg.Body.Personae)
 	}
 	return nil
 }

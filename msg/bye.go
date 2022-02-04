@@ -28,19 +28,19 @@ func (msg *Bye) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *Bye) Check(box *Box) error {
-	auth := box.state.GetAuth()
+func (msg *Bye) Check(vault *types.Vault, state *types.State) error {
+	auth := state.GetAuth()
 	if !auth.IsPublic() && !auth.CanRead(msg.ClientAddr) {
 		return code.NonReadPermission
 	}
-	if persona := box.getPersona(msg.ClientAddr); persona == nil {
+	if persona := state.GetPersona(msg.ClientAddr); persona == nil {
 		return code.NonExistingPersonaInBox
 	}
 	return nil
 }
 
-func (msg *Bye) Execute(box *Box) error {
-	err := box.leave(msg.Body.Persona)
+func (msg *Bye) Execute(vault *types.Vault, state *types.State) error {
+	err := state.Leave(msg.Body.Persona)
 	if err != nil {
 		return err
 	}

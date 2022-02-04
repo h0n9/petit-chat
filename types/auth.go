@@ -98,6 +98,10 @@ func (a *Auth) CanExecute(addr crypto.Addr) bool {
 	return ok
 }
 
+func (a *Auth) Grant(persona *Persona, r, w, x bool) error {
+	return a.SetPerm(persona.Address, NewPerm(r, w, x))
+}
+
 func (oldAuth *Auth) Copy() (*Auth, error) {
 	var newAuth Auth
 	data, err := json.Marshal(oldAuth)

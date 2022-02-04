@@ -1,62 +1,62 @@
 package client
 
-//
-// import (
-// 	"github.com/h0n9/petit-chat/code"
-// 	"github.com/h0n9/petit-chat/msg"
-// )
-//
-// type MsgHandler func(box *msg.Box, msg *msg.Msg) (bool, error)
-//
-// func DefaultMsgHandler(box *msg.Box, msg *msg.Msg) (bool, error) {
-// 	eos := msg.IsEOS() && (msg.GetPeerID() == box.vault.GetID())
-//
-// 	// msg handling flow:
-// 	//   check -> append -> execute -> (received)
-//
-// 	// check if msg is proper and can be supported on protocol
-// 	// improper msgs are dropped here
-// 	err := msg.check(box)
-// 	if err != nil {
-// 		return eos, err
-// 	}
-//
-// 	// check msg.Body
-// 	err = msg.Check(box)
-// 	if err != nil && err != code.SelfMsg {
-// 		return eos, err
-// 	}
-//
-// 	// execute msg.Body
-// 	err = msg.Execute(box)
-// 	if err != nil {
-// 		return eos, err
-// 	}
-//
-// 	// append msg
-// 	// readUntilIndex, err := box.append(msg)
-// 	// if err != nil {
-// 	// 	return eos, err
-// 	// }
-//
-// 	// canRead := box.msgSubCh != nil
-// 	// if canRead {
-// 	// 	box.msgSubCh <- msg
-// 	// 	box.state.SetReadUntilIndex(readUntilIndex)
-// 	// }
-// 	// if msg.GetType() <= TypeMeta {
-// 	// 	return eos, nil
-// 	// }
-// 	// if msg.GetClientAddr() == box.vault.GetAddr() {
-// 	// 	return eos, nil
-// 	// }
-// 	// meta := types.NewMeta(true, canRead, false)
-// 	// msgMeta := NewMsgMeta(box, types.EmptyHash, msg.GetHash(), meta)
-// 	// err = box.Publish(msgMeta, true)
-// 	// if err != nil {
-// 	// 	return eos, err
-// 	// }
-//
-// 	return eos, nil
-// }
-//
+import (
+	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/msg"
+	"github.com/h0n9/petit-chat/types"
+)
+
+type MsgHandler func(m *msg.Msg, hostID types.ID) (bool, error)
+
+func (c *Chat) Handler(capsule *msg.Capsule) (*msg.Msg, error) {
+	if capsule.Encrypted {
+		err := capsule.Decrypt(c.vault.GetSecretKey())
+		if err != nil {
+			return nil, err
+		}
+	}
+	err := capsule.Check()
+	if err != nil {
+		return nil, err
+	}
+	m, err := capsule.Decapsulate()
+	if err != nil {
+		return nil, err
+	}
+
+	vault := c.GetVault()
+	state := c.GetState()
+
+	// msg handling flow:
+	//   check -> append -> execute -> (received)
+
+	// check msg.Body
+	err = m.Check(vault, state)
+	if err != nil && err != code.SelfMsg {
+		return nil, err
+	}
+
+	// execute msg.Body
+	err = m.Execute(vault, state)
+	if err != nil {
+		return nil, err
+	}
+
+	index, err := c.store.Append(capsule)
+	if err != nil {
+		return nil, err
+	}
+	c.state.SetReadUntilIndex(index)
+
+	if m.GetType() <= msg.TypeMeta || m.GetClientAddr() == vault.GetAddr() {
+		return m, nil
+	}
+
+	// meta := types.NewMeta(true, canRead, false)
+	// msgMeta := NewMsgMeta(box, types.EmptyHash, msg.GetHash(), meta)
+	// err = box.Publish(msgMeta, true)
+	// if err != nil {
+	// 	return eos, err
+	// }
+	return m, nil
+}

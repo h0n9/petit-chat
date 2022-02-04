@@ -30,9 +30,9 @@ func (msg *Meta) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *Meta) Check(box *Box) error {
+func (msg *Meta) Check(vault *types.Vault, state *types.State) error {
 	clientAddr := msg.GetClientAddr()
-	auth := box.state.GetAuth()
+	auth := state.GetAuth()
 	if msg.Body.Meta.Received() || msg.Body.Meta.Read() {
 		if !auth.IsPublic() && !auth.CanRead(clientAddr) {
 			return code.NonReadPermission
@@ -52,16 +52,18 @@ func (msg *Meta) Check(box *Box) error {
 	return nil
 }
 
-func (msg *Meta) Execute(box *Box) error {
-	// if msg.Body.Meta.Received() || msg.Body.Meta.Read() {
-	// 	targetMsg := box.GetMsg(msg.Body.TargetMsgHash)
-	// 	if targetMsg == nil {
-	// 		return code.NonExistingMsg
-	// 	}
-	// 	targetMsg.MergeMeta(msg.GetClientAddr(), msg.Body.Meta)
-	// }
-	// if msg.Body.Meta.Typing() {
-	// 	// TODO: do something
-	// }
+func (msg *Meta) Execute(vault *types.Vault, state *types.State) error {
+	if msg.Body.Meta.Received() || msg.Body.Meta.Read() {
+		// targetMsg := box.GetMsg(msg.Body.TargetMsgHash)
+		// if targetMsg == nil {
+		// 	return code.NonExistingMsg
+		// }
+		// targetMsg.MergeMeta(msg.GetClientAddr(), msg.Body.Meta)
+
+		// TODO: update state.MergeMeta()
+	}
+	if msg.Body.Meta.Typing() {
+		// TODO: do something
+	}
 	return nil
 }

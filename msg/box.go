@@ -36,14 +36,6 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool, hostID types.I
 		state: types.NewState(public),
 		store: NewCapsuleStore(),
 	}, nil
-	// err = box.join(hostPersona)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// err = grant(box.state.GetAuth(), hostPersona.Address, true, true, true)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	// msg := NewMsgHelloSyn(&box, types.EmptyHash, hostPersona)
 	// err = box.Publish(msg, false)
 	// if err != nil {
@@ -234,29 +226,6 @@ func (box *Box) GetAuth() *types.Auth {
 
 func (box *Box) append(capsule *Capsule) (types.Index, error) {
 	return box.store.Append(capsule)
-}
-
-func (box *Box) join(targetPersona *types.Persona) error {
-	oldPersona := box.getPersona(targetPersona.Address)
-	if oldPersona != nil {
-		return nil // ignore even if existing
-		// return code.ExistingPersonaInBox
-	}
-	err := targetPersona.Check()
-	if err != nil {
-		return err
-	}
-	box.state.SetPersona(targetPersona.Address, targetPersona)
-	return nil
-}
-
-func (box *Box) leave(targetPersona *types.Persona) error {
-	oldPersona := box.getPersona(targetPersona.Address)
-	if oldPersona == nil {
-		return code.NonExistingPersonaInBox
-	}
-	box.state.DeletePersona(targetPersona.Address)
-	return nil
 }
 
 func (box *Box) propagate(auth *types.Auth, personae types.Personae) error {

@@ -41,7 +41,7 @@ func NewChat(box *msg.Box, reader *bufio.Reader, nickname string, public bool) (
 	if err != nil {
 		return nil, err
 	}
-	return &Chat{
+	chat := Chat{
 		box: box,
 
 		vault: types.NewVault(persona, privKey, secretKey),
@@ -54,7 +54,16 @@ func NewChat(box *msg.Box, reader *bufio.Reader, nickname string, public bool) (
 		chCapsuleSub:  nil,
 
 		reader: reader,
-	}, nil
+	}
+	err = chat.state.Join(persona)
+	if err != nil {
+		return nil, err
+	}
+	err = chat.state.Grant(persona, true, true, true)
+	if err != nil {
+		return nil, err
+	}
+	return &chat, nil
 }
 
 func (c *Chat) setChCapsule(chCapsule chan *msg.Capsule) {
@@ -67,6 +76,10 @@ func (c *Chat) GetPersona(addr crypto.Addr) *types.Persona {
 
 func (c *Chat) GetVault() *types.Vault {
 	return c.vault
+}
+
+func (c *Chat) GetState() *types.State {
+	return c.state
 }
 
 func (c *Chat) GetPeerID() types.ID {
@@ -208,33 +221,12 @@ func (c *Chat) Receive() {
 	for {
 		select {
 		case capsule = <-c.chCapsuleSub:
-			if capsule.Encrypted {
-				err = capsule.Decrypt(c.vault.GetSecretKey())
-				if err != nil {
-					c.chError <- err
-					continue
-				}
-			}
-			err = capsule.Check()
-			if err != nil {
-				c.chError <- err
-				continue
-			}
-			m, err := capsule.Decapsulate()
+			m, err := c.Handler(capsule)
 			if err != nil {
 				c.chError <- err
 				continue
 			}
 			c.PrintMsg(m)
-
-			// TODO: handler comes here
-
-			index, err := c.store.Append(capsule)
-			if err != nil {
-				c.chError <- err
-				continue
-			}
-			c.state.SetReadUntilIndex(index)
 		case err = <-c.chError:
 			fmt.Println(err)
 		case <-c.chStopReceive:

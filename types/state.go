@@ -3,6 +3,7 @@ package types
 import (
 	"time"
 
+	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 )
 
@@ -64,4 +65,28 @@ func (s *State) GetReadUntilIndex() Index {
 
 func (s *State) SetReadUntilIndex(readUntilIndex Index) {
 	s.readUntilIndex = readUntilIndex
+}
+
+func (s *State) Join(persona *Persona) error {
+	if s.GetPersona(persona.Address) != nil {
+		return nil // ignore even if existing
+	}
+	err := persona.Check()
+	if err != nil {
+		return err
+	}
+	s.SetPersona(persona.Address, persona)
+	return nil
+}
+
+func (s *State) Leave(persona *Persona) error {
+	if s.GetPersona(persona.Address) == nil {
+		return code.NonExistingPersonaInBox
+	}
+	s.DeletePersona(persona.Address)
+	return nil
+}
+
+func (s *State) Grant(persona *Persona, r, w, x bool) error {
+	return s.auth.Grant(persona, r, w, x)
 }

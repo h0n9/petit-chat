@@ -36,9 +36,9 @@ func (msg *Raw) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *Raw) Check(box *Box) error {
+func (msg *Raw) Check(vault *types.Vault, state *types.State) error {
 	clientAddr := msg.GetClientAddr()
-	auth := box.state.GetAuth()
+	auth := state.GetAuth()
 	if !auth.CanWrite(clientAddr) {
 		return code.NonWritePermission
 	}
@@ -54,6 +54,6 @@ func (msg *Raw) Check(box *Box) error {
 	return nil
 }
 
-func (msg *Raw) Execute(box *Box) error {
+func (msg *Raw) Execute(vault *types.Vault, state *types.State) error {
 	return nil
 }
