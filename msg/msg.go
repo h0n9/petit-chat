@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
@@ -65,7 +64,7 @@ type Base interface {
 	GetBody() Body
 	IsEOS() bool
 
-	check(*Box) error
+	check() error
 
 	// ops
 	Check(*types.Vault, *types.State) error
@@ -114,31 +113,11 @@ func (msg *Head) IsEOS() bool {
 	return msg.Type == TypeBye
 }
 
-func (msg *Head) getParentCapsule(b *Box) (*Capsule, error) {
-	// check if parentMsgHash is empty
-	pmh := msg.ParentHash
-	if pmh.IsEmpty() {
-		return nil, nil
+func (msg *Head) check() error {
+	err := msg.Type.Check()
+	if err != nil {
+		return err
 	}
-	// get msg corresponding to msgHash
-	pm := b.GetCapsule(pmh)
-	if pm == nil {
-		// TODO: this error should be optional
-		return nil, code.NonExistingParent
-	}
-	return pm, nil
-}
-
-func (msg *Head) check(b *Box) error {
-	// check msg.ParentMsgHash
-	// pm, err := msg.getParentMsg(b)
-	// if err != nil {
-	// 	return err
-	// }
-	// if pm != nil && !pm.GetParentHash().IsEmpty() {
-	// 	return code.AlreadyHavingParent
-	// }
-
 	// TODO: add more constraints
 	return nil
 }
