@@ -1,40 +1,39 @@
-package msg
+package control
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
+	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/types"
-	"github.com/h0n9/petit-chat/util"
 )
 
 // Box refers to a chat room
 type Box struct {
 	ctx       context.Context
-	chCapsule chan *Capsule
+	chCapsule chan *msg.Capsule
 
 	hostID types.ID
 	topic  *types.Topic
 	sub    *types.Sub
 
 	state *types.State
-	store *CapsuleStore
+	store *msg.CapsuleStore
 }
 
 func NewBox(ctx context.Context, topic *types.Topic, public bool, hostID types.ID) (*Box, error) {
 	return &Box{
 		ctx:       ctx,
-		chCapsule: make(chan *Capsule, 1),
+		chCapsule: make(chan *msg.Capsule, 1),
 
 		hostID: hostID,
 		topic:  topic,
 		sub:    nil,
 
 		state: types.NewState(public),
-		store: NewCapsuleStore(),
+		store: msg.NewCapsuleStore(),
 	}, nil
 	// msg := NewMsgHelloSyn(&box, types.EmptyHash, hostPersona)
 	// err = box.Publish(msg, false)
@@ -44,7 +43,7 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool, hostID types.I
 	// return &box, nil
 }
 
-func (box *Box) Publish(capsule *Capsule) error {
+func (box *Box) Publish(capsule *msg.Capsule) error {
 	data, err := capsule.Bytes()
 	if err != nil {
 		return err
@@ -74,7 +73,7 @@ func (box *Box) Subscribe() error {
 			fmt.Println(err)
 			continue
 		}
-		capsule, err := NewCapsuleFromBytes(received.GetData())
+		capsule, err := msg.NewCapsuleFromBytes(received.GetData())
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -104,14 +103,6 @@ func (box *Box) Subscribe() error {
 		// 	break
 		// }
 	}
-}
-
-func Hash(base Base) types.Hash {
-	data, err := json.Marshal(base)
-	if err != nil {
-		return types.EmptyHash
-	}
-	return util.ToSHA256(data)
 }
 
 func (box *Box) GetPersonae() map[crypto.Addr]*types.Persona {
@@ -198,20 +189,20 @@ func (box *Box) Subscribing() bool {
 	return box.sub != nil
 }
 
-func (box *Box) GetChCapsule() chan *Capsule {
+func (box *Box) GetChCapsule() chan *msg.Capsule {
 	return box.chCapsule
 }
 
-func (box *Box) GetCapsules() []*Capsule {
+func (box *Box) GetCapsules() []*msg.Capsule {
 	return box.store.GetCapsules()
 }
 
-func (box *Box) GetCapsule(hash types.Hash) *Capsule {
+func (box *Box) GetCapsule(hash types.Hash) *msg.Capsule {
 	return box.store.GetCapsule(hash)
 }
 
-// func (box *Box) GetUnreadMsgs() []*Capsule {
-// 	Capsules := []*Capsule{}
+// func (box *Box) GetUnreadMsgs() []*msg.Capsule {
+// 	Capsules := []*msg.Capsule{}
 // 	readUntilIndex := box.state.GetReadUntilIndex()
 // 	if readUntilIndex+1 < uint64(len(box.store.Capsules)) {
 // 		Capsules = append(Capsules, box.store.Capsules[readUntilIndex+1:]...)
@@ -224,7 +215,7 @@ func (box *Box) GetAuth() *types.Auth {
 	return box.state.GetAuth()
 }
 
-func (box *Box) append(capsule *Capsule) (types.Index, error) {
+func (box *Box) append(capsule *msg.Capsule) (types.Index, error) {
 	return box.store.Append(capsule)
 }
 

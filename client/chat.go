@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/control"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/types"
@@ -14,7 +15,7 @@ import (
 )
 
 type Chat struct {
-	box *msg.Box
+	box *control.Box
 
 	vault *types.Vault
 	state *types.State
@@ -28,7 +29,7 @@ type Chat struct {
 	reader *bufio.Reader
 }
 
-func NewChat(box *msg.Box, reader *bufio.Reader, nickname string, public bool) (*Chat, error) {
+func NewChat(box *control.Box, reader *bufio.Reader, nickname string, public bool) (*Chat, error) {
 	privKey, err := crypto.GenPrivKey()
 	if err != nil {
 		return nil, err

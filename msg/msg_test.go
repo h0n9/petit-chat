@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/h0n9/petit-chat/crypto"
+	"github.com/h0n9/petit-chat/types"
 )
 
 type BodyTest struct {
@@ -22,11 +23,11 @@ func (msg *MsgTest) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *MsgTest) Check(box *Box) error {
+func (msg *MsgTest) Check(vault *types.Vault, state *types.State) error {
 	return nil
 }
 
-func (msg *MsgTest) Execute(box *Box) error {
+func (msg *MsgTest) Execute(vault *types.Vault, state *types.State) error {
 	return nil
 }
 

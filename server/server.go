@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 
-	"github.com/h0n9/petit-chat/msg"
+	"github.com/h0n9/petit-chat/control"
 	"github.com/h0n9/petit-chat/p2p"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
@@ -14,7 +14,7 @@ type Server struct {
 	cfg *util.Config
 
 	node      *p2p.Node
-	msgCenter *msg.Center
+	msgCenter *control.Center
 }
 
 func NewServer(ctx context.Context, cfg *util.Config) (*Server, error) {
@@ -22,7 +22,7 @@ func NewServer(ctx context.Context, cfg *util.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	msgCenter, err := msg.NewCenter(ctx, node.GetHostID())
+	msgCenter, err := control.NewCenter(ctx, node.GetHostID())
 	if err != nil {
 		return nil, err
 	}
@@ -55,11 +55,11 @@ func (s *Server) PrintInfo() {
 	s.node.Info()
 }
 
-func (s *Server) GetMsgCenter() *msg.Center {
+func (s *Server) GetMsgCenter() *control.Center {
 	return s.msgCenter
 }
 
-func (s *Server) CreateMsgBox(tStr, nickname string, pub bool) (*msg.Box, error) {
+func (s *Server) CreateMsgBox(tStr, nickname string, pub bool) (*control.Box, error) {
 	topic, err := s.node.Join(tStr)
 	if err != nil {
 		return nil, err
@@ -76,6 +76,6 @@ func (s *Server) LeaveMsgBox(topicStr string) error {
 	return s.msgCenter.LeaveBox(topicStr)
 }
 
-func (s *Server) GetMsgBox(topicStr string) (*msg.Box, bool) {
+func (s *Server) GetMsgBox(topicStr string) (*control.Box, bool) {
 	return s.msgCenter.GetBox(topicStr)
 }
