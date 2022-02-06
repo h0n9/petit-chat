@@ -28,8 +28,10 @@ func (msg *Bye) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *Bye) Check(vault *types.Vault, state *types.State) error {
+func (msg *Bye) Check(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
 	auth := state.GetAuth()
+
 	if !auth.IsPublic() && !auth.CanRead(msg.ClientAddr) {
 		return code.NonReadPermission
 	}
@@ -39,7 +41,9 @@ func (msg *Bye) Check(vault *types.Vault, state *types.State) error {
 	return nil
 }
 
-func (msg *Bye) Execute(vault *types.Vault, state *types.State) error {
+func (msg *Bye) Execute(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
+
 	err := state.Leave(msg.Body.Persona)
 	if err != nil {
 		return err

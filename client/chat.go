@@ -83,6 +83,10 @@ func (c *Chat) GetState() *types.State {
 	return c.state
 }
 
+func (c *Chat) GetStore() *msg.CapsuleStore {
+	return c.store
+}
+
 func (c *Chat) GetPeerID() types.ID {
 	return c.box.GetHostID()
 }
@@ -204,7 +208,7 @@ func (c *Chat) Send() {
 		peerID := c.GetPeerID()
 		clientAddr := c.vault.GetAddr()
 		m := msg.NewMsgRaw(peerID, clientAddr, types.EmptyHash, []byte(input), nil)
-		err = c.publish(m, false)
+		err = c.Publish(m, false)
 		if err != nil {
 			c.chError <- err
 			continue
@@ -240,7 +244,7 @@ func (c *Chat) Receive() {
 	c.wg.Done()
 }
 
-func (c *Chat) publish(m *msg.Msg, encrypt bool) error {
+func (c *Chat) Publish(m *msg.Msg, encrypt bool) error {
 	capsule, err := m.Encapsulate()
 	if err != nil {
 		return err
@@ -278,7 +282,7 @@ func (c *Chat) ReadMsg(m *msg.Msg, hash types.Hash) error {
 	clientAddr := vault.GetAddr()
 	meta := types.NewMeta(false, true, false)
 	msgMeta := msg.NewMsgMeta(peerID, clientAddr, types.EmptyHash, hash, meta)
-	err := c.publish(msgMeta, true)
+	err := c.Publish(msgMeta, true)
 	if err != nil {
 		return err
 	}

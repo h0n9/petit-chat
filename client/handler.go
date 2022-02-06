@@ -24,20 +24,18 @@ func (c *Chat) Handler(capsule *msg.Capsule) (*msg.Msg, error) {
 		return nil, err
 	}
 
-	vault := c.GetVault()
-	state := c.GetState()
-
+	hash := capsule.GetHash()
 	// msg handling flow:
 	//   check -> append -> execute -> (received)
 
 	// check msg.Body
-	err = m.Check(vault, state)
+	err = m.Check(hash, c)
 	if err != nil && err != code.SelfMsg {
 		return nil, err
 	}
 
 	// execute msg.Body
-	err = m.Execute(vault, state)
+	err = m.Execute(hash, c)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +46,7 @@ func (c *Chat) Handler(capsule *msg.Capsule) (*msg.Msg, error) {
 	}
 	c.state.SetReadUntilIndex(index)
 
-	if m.GetType() <= msg.TypeMeta || m.GetClientAddr() == vault.GetAddr() {
+	if m.GetType() <= msg.TypeMeta || m.GetClientAddr() == c.vault.GetAddr() {
 		return m, nil
 	}
 

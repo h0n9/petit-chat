@@ -29,7 +29,9 @@ func (msg *HelloSyn) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *HelloSyn) Check(vault *types.Vault, state *types.State) error {
+func (msg *HelloSyn) Check(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
+
 	auth := state.GetAuth()
 	if !auth.IsPublic() && !auth.CanRead(msg.GetClientAddr()) {
 		return code.NonReadPermission
@@ -37,26 +39,29 @@ func (msg *HelloSyn) Check(vault *types.Vault, state *types.State) error {
 	return nil
 }
 
-func (msg *HelloSyn) Execute(vault *types.Vault, state *types.State) error {
+func (msg *HelloSyn) Execute(hash types.Hash, helper Helper) error {
+	vault := helper.GetVault()
+	state := helper.GetState()
+	peerID := helper.GetPeerID()
+
 	err := state.Join(msg.Body.Persona)
 	if err != nil {
 		return err
 	}
-	// secretKey := vault.GetSecretKey()
-	// encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(secretKey.Bytes())
-	// if err != nil {
-	// 	return err
-	// }
+	secretKey := vault.GetSecretKey()
+	encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(secretKey.Bytes())
+	if err != nil {
+		return err
+	}
 
-	// peerID := state.GetPeerID()
-	// clientAddr := vault.GetAddr()
-	// personae := state.GetPersonae()
-	// auth := state.GetAuth()
-	// msgAck := NewMsgHelloAck(peerID, clientAddr, Hash(msg), personae, auth, encryptedSecretKey)
-	// err = box.Publish(msgAck, false)
-	// if err != nil {
-	// 	return err
-	// }
+	clientAddr := vault.GetAddr()
+	personae := state.GetPersonae()
+	auth := state.GetAuth()
+	msgAck := NewMsgHelloAck(peerID, clientAddr, hash, personae, auth, encryptedSecretKey)
+	err = helper.Publish(msgAck, false)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -87,18 +92,21 @@ func (msg *HelloAck) GetBody() Body {
 	return msg.Body
 }
 
-func (msg HelloAck) Check(vault *types.Vault, state *types.State) error {
-	// parentMsg, err := msg.getParentMsg(box)
-	// if err != nil {
-	// 	return err
-	// }
-	// if parentMsg == nil {
-	// 	return code.NonExistingParent
-	// }
+func (msg *HelloAck) Check(hash types.Hash, helper Helper) error {
+	store := helper.GetStore()
+
+	pmh := msg.GetParentHash()
+	pc := store.GetCapsule(pmh)
+	if pc == nil {
+		return code.NonExistingParent
+	}
 	return nil
 }
 
-func (msg HelloAck) Execute(vault *types.Vault, state *types.State) error {
+func (msg *HelloAck) Execute(hash types.Hash, helper Helper) error {
+	vault := helper.GetVault()
+	state := helper.GetState()
+
 	privKey := vault.GetPrivKey()
 	secretKeyByte, err := privKey.Decrypt(msg.Body.EncryptedSecretKey)
 	if err != nil {

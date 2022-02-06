@@ -30,9 +30,11 @@ func (msg *Meta) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *Meta) Check(vault *types.Vault, state *types.State) error {
-	clientAddr := msg.GetClientAddr()
+func (msg *Meta) Check(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
 	auth := state.GetAuth()
+
+	clientAddr := msg.GetClientAddr()
 	if msg.Body.Meta.Received() || msg.Body.Meta.Read() {
 		if !auth.IsPublic() && !auth.CanRead(clientAddr) {
 			return code.NonReadPermission
@@ -52,7 +54,7 @@ func (msg *Meta) Check(vault *types.Vault, state *types.State) error {
 	return nil
 }
 
-func (msg *Meta) Execute(vault *types.Vault, state *types.State) error {
+func (msg *Meta) Execute(hash types.Hash, helper Helper) error {
 	if msg.Body.Meta.Received() || msg.Body.Meta.Read() {
 		// targetMsg := box.GetMsg(msg.Body.TargetMsgHash)
 		// if targetMsg == nil {

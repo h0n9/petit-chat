@@ -119,13 +119,17 @@ func (mc *Capsule) Decrypt(secretKey *crypto.SecretKey) error {
 	return nil
 }
 
+func (mc *Capsule) decode(m *Msg) error {
+	return json.Unmarshal(mc.Data, m)
+}
+
 func (mc *Capsule) Decapsulate() (*Msg, error) {
 	m := NewMsg(mc.Type.Base())
 	if m == nil {
 		return nil, code.UnknownMsgType
 	}
 
-	err := json.Unmarshal(mc.Data, m)
+	err := mc.decode(m)
 	if err != nil {
 		return nil, err
 	}

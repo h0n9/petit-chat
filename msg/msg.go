@@ -6,6 +6,7 @@ import (
 
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
+	"github.com/h0n9/petit-chat/util"
 )
 
 type Body interface{}
@@ -46,12 +47,24 @@ func (msg *Msg) MergeMeta(addr crypto.Addr, newMeta types.Meta) {
 	msg.SetMeta(addr, newMeta)
 }
 
+func (msg *Msg) encode() ([]byte, error) {
+	return json.Marshal(msg)
+}
+
 func (msg *Msg) Encapsulate() (*Capsule, error) {
-	data, err := json.Marshal(msg)
+	data, err := msg.encode()
 	if err != nil {
 		return nil, err
 	}
 	return NewCapsule(false, msg.GetType(), data), nil
+}
+
+func (msg *Msg) Hash() (types.Hash, error) {
+	data, err := msg.encode()
+	if err != nil {
+		return types.EmptyHash, err
+	}
+	return util.ToSHA256(data), nil
 }
 
 type Base interface {
@@ -67,8 +80,8 @@ type Base interface {
 	check() error
 
 	// ops
-	Check(*types.Vault, *types.State) error
-	Execute(*types.Vault, *types.State) error
+	Check(types.Hash, Helper) error
+	Execute(types.Hash, Helper) error
 }
 
 type Head struct {

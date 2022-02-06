@@ -31,14 +31,18 @@ func (msg *Update) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *Update) Check(vault *types.Vault, state *types.State) error {
+func (msg *Update) Check(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
 	auth := state.GetAuth()
+
 	if !auth.CanExecute(msg.GetClientAddr()) {
 		return code.NonExecutePermission
 	}
 	return nil
 }
-func (msg *Update) Execute(vault *types.Vault, state *types.State) error {
+func (msg *Update) Execute(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
+
 	if util.HasField("auth", state) {
 		state.SetAuth(msg.Body.Auth)
 	}
