@@ -112,6 +112,41 @@ func (c *Chat) Stop() {
 	c.setChCapsule(nil)
 }
 
+func (c *Chat) Propagate(auth *types.Auth, personae types.Personae) error {
+	peerID := c.GetPeerID()
+	clientAddr := c.vault.GetAddr()
+	msgUpdate := msg.NewMsgUpdate(peerID, clientAddr, types.EmptyHash, auth, personae)
+	return c.Publish(msgUpdate, true)
+}
+
+func (c *Chat) Grant(addr crypto.Addr, r, w, x bool) error {
+	auth := c.state.GetAuth()
+	newAuth, err := auth.Copy()
+	if err != nil {
+		return err
+	}
+	err = newAuth.SetPerm(addr, types.NewPerm(r, w, x))
+	if err != nil {
+		return err
+	}
+	personae := c.state.GetPersonae()
+	return c.Propagate(newAuth, personae)
+}
+
+func (c *Chat) Revoke(addr crypto.Addr) error {
+	auth := c.state.GetAuth()
+	newAuth, err := auth.Copy()
+	if err != nil {
+		return err
+	}
+	err = newAuth.DeletePerm(addr)
+	if err != nil {
+		return err
+	}
+	personae := c.state.GetPersonae()
+	return c.Propagate(newAuth, personae)
+}
+
 func (c *Chat) Send() {
 	var stop bool = false
 	for {
@@ -149,13 +184,13 @@ func (c *Chat) Send() {
 			}
 			continue
 		case "/peers":
-			peers := c.box.GetPersonae()
+			peers := c.state.GetPersonae()
 			for _, peer := range peers {
 				printPeer(peer)
 			}
 			continue
 		case "/auth":
-			auth := c.box.GetAuth()
+			auth := c.state.GetAuth()
 			printAuth(auth)
 			continue
 		case "/grant":
@@ -178,7 +213,7 @@ func (c *Chat) Send() {
 			}
 			r, w, x := parsePerm(strs[1])
 
-			err = c.box.Grant(addr, r, w, x)
+			err = c.Grant(addr, r, w, x)
 			if err != nil {
 				c.chError <- err
 				continue
@@ -198,7 +233,7 @@ func (c *Chat) Send() {
 				continue
 			}
 
-			err = c.box.Revoke(addr)
+			err = c.Revoke(addr)
 			if err != nil {
 				c.chError <- err
 				continue

@@ -115,63 +115,6 @@ func (box *Box) GetHostID() types.ID {
 	return box.hostID
 }
 
-func grant(auth *types.Auth, addr crypto.Addr, r, w, x bool) error {
-	perm := types.NewPerm(r, w, x)
-	err := auth.SetPerm(addr, perm)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (box *Box) Grant(addr crypto.Addr, r, w, x bool) error {
-	auth := box.state.GetAuth()
-	newAuth, err := auth.Copy()
-	if err != nil {
-		return err
-	}
-	err = grant(newAuth, addr, r, w, x)
-	if err != nil {
-		return err
-	}
-
-	personae := box.state.GetPersonae()
-	err = box.propagate(newAuth, personae)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func revoke(auth *types.Auth, addr crypto.Addr) error {
-	err := auth.DeletePerm(addr)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (box *Box) Revoke(addr crypto.Addr) error {
-	auth := box.state.GetAuth()
-	newAuth, err := auth.Copy()
-	if err != nil {
-		return err
-	}
-	err = revoke(newAuth, addr)
-	if err != nil {
-		return err
-	}
-
-	personae := box.state.GetPersonae()
-	err = box.propagate(newAuth, personae)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (box *Box) Close() error {
 	// Announe EOS to others (application layer)
 	// msg := NewMsgBye(box, types.EmptyHash, box.vault.GetPersona())
@@ -211,13 +154,4 @@ func (box *Box) GetAuth() *types.Auth {
 
 func (box *Box) append(capsule *msg.Capsule) (types.Index, error) {
 	return box.store.Append(capsule)
-}
-
-func (box *Box) propagate(auth *types.Auth, personae types.Personae) error {
-	// msg := NewMsgUpdate(box, types.EmptyHash, auth, personae)
-	// err := box.Publish(msg, true)
-	// if err != nil {
-	// 	return err
-	// }
-	return nil
 }
