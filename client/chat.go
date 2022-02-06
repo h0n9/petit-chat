@@ -64,6 +64,13 @@ func NewChat(box *control.Box, reader *bufio.Reader, nickname string, public boo
 	if err != nil {
 		return nil, err
 	}
+	peerID := chat.GetPeerID()
+	clientAddr := chat.vault.GetAddr()
+	msgHelloSyn := msg.NewMsgHelloSyn(peerID, clientAddr, types.EmptyHash, persona)
+	err = chat.Publish(msgHelloSyn, false)
+	if err != nil {
+		return nil, err
+	}
 	return &chat, nil
 }
 

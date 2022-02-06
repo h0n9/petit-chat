@@ -35,12 +35,6 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool, hostID types.I
 		state: types.NewState(public),
 		store: msg.NewCapsuleStore(),
 	}, nil
-	// msg := NewMsgHelloSyn(&box, types.EmptyHash, hostPersona)
-	// err = box.Publish(msg, false)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// return &box, nil
 }
 
 func (box *Box) Publish(capsule *msg.Capsule) error {
