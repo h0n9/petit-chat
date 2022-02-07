@@ -134,3 +134,14 @@ func (msg *Head) check() error {
 	// TODO: add more constraints
 	return nil
 }
+
+type Helper interface {
+	// accessors
+	GetVault() *types.Vault
+	GetState() *types.State
+	GetStore() *CapsuleStore
+	GetPeerID() types.ID
+
+	// operators
+	Publish(msg *Msg, encrypt bool) error
+}
