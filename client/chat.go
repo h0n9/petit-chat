@@ -65,7 +65,7 @@ func NewChat(box *control.Box, reader *bufio.Reader, nickname string, public boo
 		return nil, err
 	}
 	peerID := chat.GetPeerID()
-	clientAddr := chat.vault.GetAddr()
+	clientAddr := chat.GetClientAddr()
 	msgHelloSyn := msg.NewMsgHelloSyn(peerID, clientAddr, types.EmptyHash, persona)
 	err = chat.Publish(msgHelloSyn, false)
 	if err != nil {
@@ -102,6 +102,10 @@ func (c *Chat) GetPeerID() types.ID {
 	return c.box.GetHostID()
 }
 
+func (c *Chat) GetClientAddr() crypto.Addr {
+	return c.GetClientAddr()
+}
+
 func (c *Chat) Close() {
 	c.chStopReceive <- true
 	close(c.chStopReceive)
@@ -119,7 +123,7 @@ func (c *Chat) Stop() {
 
 func (c *Chat) Propagate(auth *types.Auth, personae types.Personae) error {
 	peerID := c.GetPeerID()
-	clientAddr := c.vault.GetAddr()
+	clientAddr := c.GetClientAddr()
 	msgUpdate := msg.NewMsgUpdate(peerID, clientAddr, types.EmptyHash, auth, personae)
 	return c.Publish(msgUpdate, true)
 }
@@ -253,7 +257,7 @@ func (c *Chat) Send() {
 
 		// CLI supports ONLY TypeText
 		peerID := c.GetPeerID()
-		clientAddr := c.vault.GetAddr()
+		clientAddr := c.GetClientAddr()
 		m := msg.NewMsgRaw(peerID, clientAddr, types.EmptyHash, []byte(input), nil)
 		err = c.Publish(m, false)
 		if err != nil {
@@ -322,11 +326,11 @@ func (c *Chat) ReadMsg(m *msg.Msg, hash types.Hash) error {
 	if vault == nil {
 		return code.ImproperVault
 	}
-	if m.GetClientAddr() == vault.GetAddr() {
+	if m.GetClientAddr() == c.GetClientAddr() {
 		return nil
 	}
 	peerID := c.GetPeerID()
-	clientAddr := vault.GetAddr()
+	clientAddr := c.GetClientAddr()
 	meta := types.NewMeta(false, true, false)
 	msgMeta := msg.NewMsgMeta(peerID, clientAddr, types.EmptyHash, hash, meta)
 	err := c.Publish(msgMeta, true)

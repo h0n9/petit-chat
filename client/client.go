@@ -107,7 +107,7 @@ func (c *Client) LeaveChat(topic string) error {
 
 	// publish msgBye first
 	peerID := chat.GetPeerID()
-	clientAddr := chat.vault.GetAddr()
+	clientAddr := chat.GetClientAddr()
 	persona := chat.vault.GetPersona()
 	msgBye := msg.NewMsgBye(peerID, clientAddr, types.EmptyHash, persona)
 	err := chat.Publish(msgBye, true)

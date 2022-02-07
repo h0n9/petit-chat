@@ -139,10 +139,6 @@ func (box *Box) GetCapsule(hash types.Hash) *msg.Capsule {
 // 	return Capsules
 // }
 
-func (box *Box) GetAuth() *types.Auth {
-	return box.state.GetAuth()
-}
-
 func (box *Box) append(capsule *msg.Capsule) (types.Index, error) {
 	return box.store.Append(capsule)
 }

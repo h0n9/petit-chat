@@ -46,7 +46,7 @@ func (c *Chat) Handler(capsule *msg.Capsule) (*msg.Msg, error) {
 	}
 	c.state.SetReadUntilIndex(index)
 
-	if m.GetType() <= msg.TypeMeta || m.GetClientAddr() == c.vault.GetAddr() {
+	if m.GetType() <= msg.TypeMeta || m.GetClientAddr() == c.GetClientAddr() {
 		return m, nil
 	}
 
