@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/server"
+	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
 
@@ -37,6 +39,10 @@ func (c *Client) SetChat(topic string, chat *Chat) error {
 	}
 	c.chats[topic] = chat
 	return nil
+}
+
+func (c *Client) RemoveChat(topic string) {
+	delete(c.chats, topic)
 }
 
 func (c *Client) StartChat(topic string, reader *bufio.Reader) error {
@@ -89,6 +95,35 @@ func (c *Client) StartChat(topic string, reader *bufio.Reader) error {
 
 	// wait for all of goroutines to stop
 	chat.wg.Wait()
+
+	return nil
+}
+
+func (c *Client) LeaveChat(topic string) error {
+	chat, exist := c.GetChat(topic)
+	if !exist {
+		return code.NonExistingTopic
+	}
+
+	// publish msgBye first
+	peerID := chat.GetPeerID()
+	clientAddr := chat.vault.GetAddr()
+	persona := chat.vault.GetPersona()
+	msgBye := msg.NewMsgBye(peerID, clientAddr, types.EmptyHash, persona)
+	err := chat.Publish(msgBye, true)
+	if err != nil {
+		return err
+	}
+
+	center := c.svr.GetCenter()
+	err = center.LeaveBox(topic)
+	if err != nil {
+		return err
+	}
+
+	// close chat and remove from chats
+	chat.Close()
+	c.RemoveChat(topic)
 
 	return nil
 }

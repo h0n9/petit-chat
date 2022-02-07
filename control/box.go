@@ -60,7 +60,7 @@ func (box *Box) Subscribe() error {
 	}
 	box.sub = sub
 
-	for {
+	for box.Subscribing() {
 		received, err := sub.Next(box.ctx)
 		if err != nil {
 			// TODO: replace fmt.Println() to logger.Println()
@@ -86,17 +86,8 @@ func (box *Box) Subscribe() error {
 			fmt.Println(err)
 			continue
 		}
-
-		// // eos shoud be the only way to break for loop
-		// if eos {
-		// 	box.sub.Cancel()
-		// 	err = box.topic.Close()
-		// 	if err != nil {
-		// 		fmt.Println(err)
-		// 	}
-		// 	break
-		// }
 	}
+	return nil
 }
 
 func (box *Box) GetPersonae() map[crypto.Addr]*types.Persona {
@@ -116,10 +107,10 @@ func (box *Box) GetHostID() types.ID {
 }
 
 func (box *Box) Close() error {
-	// Announe EOS to others (application layer)
-	// msg := NewMsgBye(box, types.EmptyHash, box.vault.GetPersona())
-	// return box.Publish(msg, true)
-	return nil
+	sub := box.sub
+	box.sub = nil
+	sub.Cancel()
+	return box.topic.Close()
 }
 
 func (box *Box) Subscribing() bool {

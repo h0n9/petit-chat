@@ -13,8 +13,8 @@ type Server struct {
 	ctx context.Context
 	cfg *util.Config
 
-	node      *p2p.Node
-	msgCenter *control.Center
+	node   *p2p.Node
+	center *control.Center
 }
 
 func NewServer(ctx context.Context, cfg *util.Config) (*Server, error) {
@@ -22,7 +22,7 @@ func NewServer(ctx context.Context, cfg *util.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	msgCenter, err := control.NewCenter(ctx, node.GetHostID())
+	center, err := control.NewCenter(ctx, node.GetHostID())
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +30,8 @@ func NewServer(ctx context.Context, cfg *util.Config) (*Server, error) {
 		ctx: ctx,
 		cfg: cfg,
 
-		node:      node,
-		msgCenter: msgCenter,
+		node:   node,
+		center: center,
 	}, nil
 }
 
@@ -55,8 +55,8 @@ func (s *Server) PrintInfo() {
 	s.node.Info()
 }
 
-func (s *Server) GetMsgCenter() *control.Center {
-	return s.msgCenter
+func (s *Server) GetCenter() *control.Center {
+	return s.center
 }
 
 func (s *Server) CreateMsgBox(tStr, nickname string, pub bool) (*control.Box, error) {
@@ -69,13 +69,13 @@ func (s *Server) CreateMsgBox(tStr, nickname string, pub bool) (*control.Box, er
 	if err != nil {
 		return nil, err
 	}
-	return s.msgCenter.CreateBox(topic, pub, s.node.PrivKey, persona)
+	return s.center.CreateBox(topic, pub, s.node.PrivKey, persona)
 }
 
 func (s *Server) LeaveMsgBox(topicStr string) error {
-	return s.msgCenter.LeaveBox(topicStr)
+	return s.center.LeaveBox(topicStr)
 }
 
 func (s *Server) GetMsgBox(topicStr string) (*control.Box, bool) {
-	return s.msgCenter.GetBox(topicStr)
+	return s.center.GetBox(topicStr)
 }

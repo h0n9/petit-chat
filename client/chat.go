@@ -74,6 +74,10 @@ func NewChat(box *control.Box, reader *bufio.Reader, nickname string, public boo
 	return &chat, nil
 }
 
+func (c *Chat) GetBox() *control.Box {
+	return c.box
+}
+
 func (c *Chat) setChCapsule(chCapsule chan *msg.Capsule) {
 	c.chCapsuleSub = chCapsule
 }
@@ -99,6 +103,7 @@ func (c *Chat) GetPeerID() types.ID {
 }
 
 func (c *Chat) Close() {
+	c.chStopReceive <- true
 	close(c.chStopReceive)
 	close(c.chError)
 }
