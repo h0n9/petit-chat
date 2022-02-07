@@ -26,7 +26,7 @@ func (c *Chat) Handler(capsule *msg.Capsule) (*msg.Msg, error) {
 
 	hash := capsule.GetHash()
 	// msg handling flow:
-	//   check -> append -> execute -> (received)
+	//   check -> execute -> append
 
 	// check msg.Body
 	err = m.Check(hash, c)

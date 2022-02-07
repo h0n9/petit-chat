@@ -32,7 +32,7 @@ func printAuth(a *types.Auth) {
 	fmt.Printf("%s", str)
 }
 
-func printPeer(p *types.Persona) {
+func printPersona(p *types.Persona) {
 	fmt.Printf("[%s] %s\n", p.Address, p.Nickname)
 }
 

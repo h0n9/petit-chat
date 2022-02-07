@@ -7,11 +7,6 @@ import (
 	"github.com/h0n9/petit-chat/crypto"
 )
 
-const (
-	minPermPublic  Perm = permNone
-	minPermPrivate Perm = permRead
-)
-
 type Auth struct {
 	Public bool                 `json:"public"`
 	Perms  map[crypto.Addr]Perm `json:"perms"`

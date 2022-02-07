@@ -103,7 +103,7 @@ func (c *Chat) GetPeerID() types.ID {
 }
 
 func (c *Chat) GetClientAddr() crypto.Addr {
-	return c.GetClientAddr()
+	return c.vault.GetAddr()
 }
 
 func (c *Chat) Close() {
@@ -192,10 +192,10 @@ func (c *Chat) Send() {
 				c.PrintMsg(m)
 			}
 			continue
-		case "/peers":
-			peers := c.state.GetPersonae()
-			for _, peer := range peers {
-				printPeer(peer)
+		case "/personae":
+			personae := c.state.GetPersonae()
+			for _, persona := range personae {
+				printPersona(persona)
 			}
 			continue
 		case "/auth":
