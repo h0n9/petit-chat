@@ -363,6 +363,7 @@ func (c *Chat) PrintMsg(m *msg.Msg) {
 	case msg.TypeBye:
 		fmt.Printf("[%s, %s] left\n", timestamp, nickname)
 	case msg.TypeUpdate:
+		fmt.Printf("[%s, %s] updated\n", timestamp, nickname)
 	case msg.TypeMeta:
 		body := m.GetBody().(msg.BodyMeta)
 		done := printMeta(body.Meta)

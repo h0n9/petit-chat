@@ -17,7 +17,7 @@ func TestNextIndex(t *testing.T) {
 	// check if successfully initialized with 0
 	nextIndex, err := s.GetNextIndex()
 	assert.NoError(t, err)
-	assert.NotEqual(t, types.Index(0), nextIndex)
+	assert.NotEqual(t, types.Index(1), nextIndex)
 
 	// non-equal
 	err = s.SetNextIndex(1)
@@ -56,11 +56,11 @@ func (msg *MsgTest) GetBody() msg.Body {
 	return msg.Body
 }
 
-func (msg *MsgTest) Check(box *msg.Box) error {
+func (msg *MsgTest) Check(hash types.Hash, helper msg.Helper) error {
 	return nil
 }
 
-func (msg *MsgTest) Execute(box *msg.Box) error {
+func (msg *MsgTest) Execute(hash types.Hash, helper msg.Helper) error {
 	return nil
 }
 
