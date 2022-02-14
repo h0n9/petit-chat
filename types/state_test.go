@@ -8,7 +8,7 @@ import (
 	"github.com/h0n9/petit-chat/crypto"
 )
 
-func TestState(t *testing.T) {
+func TestStateMeta(t *testing.T) {
 	state := NewState(true)
 	assert.NotNil(t, state)
 
@@ -33,8 +33,8 @@ func TestState(t *testing.T) {
 	assert.Equal(t, true, exist)
 	assert.Equal(t, Metas{addr: meta_0}, metas)
 
-	// 	meta := NewMeta(false, true, false)
-	// 	state.UpdateMeta(hash, addr, meta)
+	// meta := NewMeta(false, true, false)
+	// state.UpdateMeta(hash, addr, meta)
 	//
 	// metas, exist = state.GetMetas(hash)
 	// assert.Equal(t, true, exist)
