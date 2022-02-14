@@ -22,6 +22,12 @@ Brother'.
   - [x] Add msgBox authentication
   - [x] Refactor msg type, struct, interface, etc.
   - [x] Enhance msgBox internal metadata
+  - [x] Make msgBox only relay msgs
   - [ ] Advance msgBox store
 - [ ] Conduct sub-tasks
+  - [ ] Prettify CLI
+  - [ ] Increase test code coverage up to 80%
+  - [ ] Inspect open source licenses
+  - [ ] Update go modules to up to date
+  - [ ] Implement logger
 - [ ] Release `v0.0.1`
