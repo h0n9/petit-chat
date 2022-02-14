@@ -12,8 +12,8 @@ import (
 type Node struct {
 	ctx context.Context
 
-	PrivKey crypto.PrivKey
-	PubKey  crypto.PubKey
+	PrivKey *crypto.PrivKey
+	PubKey  *crypto.PubKey
 	Address crypto.Addr
 
 	host types.Host

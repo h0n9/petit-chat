@@ -30,9 +30,7 @@ func (pubKey PubKey) Verify(msg []byte, sig []byte) bool {
 	if len(sig) != SigSize {
 		return false
 	}
-
 	hash := h.Sum256(msg)
-
 	return ecdsa.Verify(
 		pubKey.ToECDSA(),
 		hash[:],

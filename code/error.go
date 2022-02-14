@@ -3,18 +3,21 @@ package code
 import "fmt"
 
 var (
-	ImproperPubKey  = fmt.Errorf("improper pubkey")
-	ImproperAddress = fmt.Errorf("improper address")
-	FailedToVerify  = fmt.Errorf("failed to verify")
+	ImproperVault    = fmt.Errorf("improper vault")
+	ImproperPubKey   = fmt.Errorf("improper pubkey")
+	ImproperAddress  = fmt.Errorf("improper address")
+	ImproperSigBytes = fmt.Errorf("improper sigBytes")
+	FailedToVerify   = fmt.Errorf("failed to verify")
 
 	AlreadySubscribingTopic = fmt.Errorf("already subscribing topic")
 	NonSubscribingTopic     = fmt.Errorf("non subscribing topic")
 	AlreadyExistingTopic    = fmt.Errorf("already existing topic")
 	NonExistingTopic        = fmt.Errorf("non existing topic")
 
-	NonExistingMsg     = fmt.Errorf("non existing msg")
-	AlreadyAppendedMsg = fmt.Errorf("already appended msg")
-	SelfMsg            = fmt.Errorf("self msg")
+	NonExistingMsg = fmt.Errorf("non existing msg")
+	SelfMsg        = fmt.Errorf("self msg")
+
+	AlreadyAppendedCapsule = fmt.Errorf("already appended capsule")
 
 	ImproperPubSub = fmt.Errorf("improper pubsub")
 	ImproperSub    = fmt.Errorf("improper sub")

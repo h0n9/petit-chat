@@ -8,6 +8,7 @@ import (
 
 	"github.com/h0n9/petit-chat/client"
 	"github.com/h0n9/petit-chat/cmd/petit-chat/cmd"
+	"github.com/h0n9/petit-chat/server"
 	"github.com/h0n9/petit-chat/util"
 )
 
@@ -25,9 +26,15 @@ func main() {
 		panic(err)
 	}
 
-	// init node
+	// init server
 	ctx := context.Background()
-	cli, err := client.NewClient(ctx, cfg)
+	svr, err := server.NewServer(ctx, cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	// init client
+	cli, err := client.NewClient(svr)
 	if err != nil {
 		panic(err)
 	}
@@ -38,20 +45,20 @@ func main() {
 
 	go func() {
 		<-sigs
-		err = cli.Close()
+		err = svr.Close()
 		if err != nil {
 			panic(err)
 		}
 		os.Exit(0)
 	}()
 
-	err = cli.DiscoverPeers()
+	err = svr.DiscoverPeers()
 	if err != nil {
 		panic(err)
 	}
 
 	// CLI
-	prompt := cmd.NewRootCmd(cli)
+	prompt := cmd.NewRootCmd(svr, cli)
 	err = prompt.Run()
 	if err != nil {
 		panic(err)

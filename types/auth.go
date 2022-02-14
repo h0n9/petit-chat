@@ -7,11 +7,6 @@ import (
 	"github.com/h0n9/petit-chat/crypto"
 )
 
-const (
-	minPermPublic  Perm = permNone
-	minPermPrivate Perm = permRead
-)
-
 type Auth struct {
 	Public bool                 `json:"public"`
 	Perms  map[crypto.Addr]Perm `json:"perms"`
@@ -96,6 +91,10 @@ func (a *Auth) CanExecute(addr crypto.Addr) bool {
 		return false
 	}
 	return ok
+}
+
+func (a *Auth) Grant(persona *Persona, r, w, x bool) error {
+	return a.SetPerm(persona.Address, NewPerm(r, w, x))
 }
 
 func (oldAuth *Auth) Copy() (*Auth, error) {

@@ -1,25 +1,19 @@
 package msg
 
 import (
+	"encoding/json"
 	"time"
 
-	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
+	"github.com/h0n9/petit-chat/util"
 )
 
 type Body interface{}
 
-type Signature struct {
-	PubKey   crypto.PubKey `json:"pubkey"`
-	SigBytes []byte        `json:"sig_bytes"`
-}
-
 type Msg struct {
-	Hash      types.Hash `json:"hash"`
-	Signature Signature  `json:"signature"`
-	Base      `json:"base"`
-	Metas     types.Metas `json:"-"`
+	Base  `json:"base"`
+	Metas types.Metas `json:"-"`
 }
 
 func NewMsg(base Base) *Msg {
@@ -29,44 +23,24 @@ func NewMsg(base Base) *Msg {
 	}
 }
 
-func (msg *Msg) GetHash() types.Hash {
-	return msg.Hash
+func (msg *Msg) encode() ([]byte, error) {
+	return json.Marshal(msg)
 }
 
-func (msg *Msg) SetHash(hash types.Hash) {
-	msg.Hash = hash
-}
-
-func (msg *Msg) GetSignature() Signature {
-	return msg.Signature
-}
-
-func (msg *Msg) SetSignature(signature Signature) {
-	msg.Signature = signature
-}
-
-func (msg *Msg) GetMetas() types.Metas {
-	return msg.Metas
-}
-
-func (msg *Msg) SetMetas(metas types.Metas) {
-	msg.Metas = metas
-}
-
-func (msg *Msg) GetMeta(addr crypto.Addr) types.Meta {
-	return msg.Metas[addr]
-}
-
-func (msg *Msg) SetMeta(addr crypto.Addr, meta types.Meta) {
-	msg.Metas[addr] = meta
-}
-
-func (msg *Msg) MergeMeta(addr crypto.Addr, newMeta types.Meta) {
-	oldMeta, exist := msg.Metas[addr]
-	if exist {
-		newMeta |= oldMeta
+func (msg *Msg) Encapsulate() (*Capsule, error) {
+	data, err := msg.encode()
+	if err != nil {
+		return nil, err
 	}
-	msg.SetMeta(addr, newMeta)
+	return NewCapsule(false, msg.GetType(), data), nil
+}
+
+func (msg *Msg) Hash() (types.Hash, error) {
+	data, err := msg.encode()
+	if err != nil {
+		return types.EmptyHash, err
+	}
+	return util.ToSHA256(data), nil
 }
 
 type Base interface {
@@ -79,10 +53,11 @@ type Base interface {
 	GetBody() Body
 	IsEOS() bool
 
+	check() error
+
 	// ops
-	check(*Box) error
-	Check(*Box) error
-	Execute(*Box) error
+	Check(types.Hash, Helper) error
+	Execute(types.Hash, Helper) error
 }
 
 type Head struct {
@@ -93,20 +68,14 @@ type Head struct {
 	Type       Type        `json:"type"`
 }
 
-func NewHead(box *Box, parentHash types.Hash, msgType Type) Head {
+func NewHead(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash, msgType Type) Head {
 	return Head{
 		Timestamp:  time.Now(),
-		PeerID:     box.GetHostID(),
-		ClientAddr: box.GetHostPersona().Address,
+		PeerID:     peerID,
+		ClientAddr: clientAddr,
 		ParentHash: parentHash,
 		Type:       msgType,
 	}
-}
-
-type MsgCapsule struct {
-	Encrypted bool   `json:"encrpyted"`
-	Type      Type   `json:"type"`
-	Data      []byte `json:"data"`
 }
 
 func (msg *Head) GetTimestamp() time.Time {
@@ -133,31 +102,22 @@ func (msg *Head) IsEOS() bool {
 	return msg.Type == TypeBye
 }
 
-func (msg *Head) getParentMsg(b *Box) (*Msg, error) {
-	// check if parentMsgHash is empty
-	pmh := msg.ParentHash
-	if pmh.IsEmpty() {
-		return nil, nil
-	}
-	// get msg corresponding to msgHash
-	pm := b.GetMsg(pmh)
-	if pm == nil {
-		// TODO: this error should be optional
-		return nil, code.NonExistingParent
-	}
-	return pm, nil
-}
-
-func (msg *Head) check(b *Box) error {
-	// check msg.ParentMsgHash
-	pm, err := msg.getParentMsg(b)
+func (msg *Head) check() error {
+	err := msg.Type.Check()
 	if err != nil {
 		return err
 	}
-	if pm != nil && !pm.GetParentHash().IsEmpty() {
-		return code.AlreadyHavingParent
-	}
-
 	// TODO: add more constraints
 	return nil
+}
+
+type Helper interface {
+	// accessors
+	GetVault() *types.Vault
+	GetState() *types.State
+	GetStore() *CapsuleStore
+	GetPeerID() types.ID
+
+	// operators
+	Publish(msg *Msg, encrypt bool) error
 }

@@ -21,7 +21,7 @@ func leaveFunc(reader *bufio.Reader) error {
 		return err
 	}
 
-	err = cli.LeaveMsgBox(data)
+	err = cli.LeaveChat(data)
 	if err != nil {
 		return err
 	}

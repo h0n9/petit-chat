@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -21,9 +22,9 @@ type Raw struct {
 	Body BodyRaw `json:"body"`
 }
 
-func NewMsgRaw(box *Box, parentHash types.Hash, data []byte, metadata []byte) *Msg {
+func NewMsgRaw(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash, data []byte, metadata []byte) *Msg {
 	return NewMsg(&Raw{
-		NewHead(box, parentHash, TypeRaw),
+		NewHead(peerID, clientAddr, parentHash, TypeRaw),
 		BodyRaw{
 			Data:     data,
 			Metadata: metadata,
@@ -35,9 +36,11 @@ func (msg *Raw) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *Raw) Check(box *Box) error {
+func (msg *Raw) Check(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
+	auth := state.GetAuth()
+
 	clientAddr := msg.GetClientAddr()
-	auth := box.state.GetAuth()
 	if !auth.CanWrite(clientAddr) {
 		return code.NonWritePermission
 	}
@@ -53,6 +56,6 @@ func (msg *Raw) Check(box *Box) error {
 	return nil
 }
 
-func (msg *Raw) Execute(box *Box) error {
+func (msg *Raw) Execute(hash types.Hash, helper Helper) error {
 	return nil
 }

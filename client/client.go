@@ -1,87 +1,129 @@
 package client
 
 import (
-	"context"
+	"bufio"
+	"fmt"
 
+	"github.com/h0n9/petit-chat/code"
 	"github.com/h0n9/petit-chat/msg"
-	"github.com/h0n9/petit-chat/p2p"
+	"github.com/h0n9/petit-chat/server"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
 
 type Client struct {
-	ctx context.Context
-
-	nickname string
-
-	node      *p2p.Node
-	msgCenter *msg.Center
-	cfg       *util.Config
+	svr   *server.Server
+	chats map[string]*Chat
 }
 
-func NewClient(ctx context.Context, cfg *util.Config) (*Client, error) {
-	node, err := p2p.NewNode(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	msgCenter, err := msg.NewCenter(ctx, node.GetHostID())
-	if err != nil {
-		return nil, err
-	}
+func NewClient(svr *server.Server) (*Client, error) {
 	return &Client{
-		ctx:       ctx,
-		nickname:  "",
-		node:      node,
-		msgCenter: msgCenter,
-		cfg:       cfg,
+		svr:   svr,
+		chats: make(map[string]*Chat),
 	}, nil
 }
 
-func (c *Client) Close() error {
-	return c.node.Close()
+func (c *Client) GetChats() map[string]*Chat {
+	return c.chats
 }
 
-func (c *Client) Info() {
-	c.node.Info()
+func (c *Client) GetChat(topic string) (*Chat, bool) {
+	chat, exist := c.chats[topic]
+	return chat, exist
 }
 
-func (c *Client) GetID() types.ID {
-	return c.node.GetHostID()
-}
-
-func (c *Client) GetNickname() string {
-	return c.nickname
-}
-
-func (c *Client) DiscoverPeers() error {
-	return c.node.DiscoverPeers(c.cfg.BootstrapNodes)
-}
-
-func (c *Client) GetPeers() []types.ID {
-	return c.node.GetPeers()
-}
-
-func (c *Client) GetMsgCenter() *msg.Center {
-	return c.msgCenter
-}
-
-func (c *Client) CreateMsgBox(tStr, nickname string, pub bool) (*msg.Box, error) {
-	topic, err := c.node.Join(tStr)
-	if err != nil {
-		return nil, err
+func (c *Client) SetChat(topic string, chat *Chat) error {
+	_, exist := c.GetChat(topic)
+	if exist {
+		return code.AlreadyExistingTopic
 	}
-	// TODO: get metdata from parameters
-	persona, err := types.NewPersona(nickname, []byte{}, c.node.PubKey)
-	if err != nil {
-		return nil, err
+	c.chats[topic] = chat
+	return nil
+}
+
+func (c *Client) RemoveChat(topic string) {
+	delete(c.chats, topic)
+}
+
+func (c *Client) StartChat(topic string, reader *bufio.Reader) error {
+	chat, exist := c.GetChat(topic)
+	if !exist {
+		fmt.Printf("Type nickname: ")
+		nickname, err := util.GetInput(reader, false, false)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Type public('true', 't' or 'false', 'f'): ")
+		pubStr, err := util.GetInput(reader, false, true)
+		if err != nil {
+			return err
+		}
+		public, err := util.ToBool(pubStr)
+		if err != nil {
+			return err
+		}
+
+		// create server-side msgBox
+		box, err := c.svr.CreateMsgBox(topic, nickname, public)
+		if err != nil {
+			return err
+		}
+
+		// create client-side chat
+		newChat, err := NewChat(box, reader, nickname, public)
+		if err != nil {
+			return err
+		}
+		err = c.SetChat(topic, newChat)
+		if err != nil {
+			return err
+		}
+		chat = newChat
 	}
-	return c.msgCenter.CreateBox(topic, pub, &c.node.PrivKey, &persona)
+
+	// open subscription
+	go chat.Subscribe()
+	defer chat.Stop()
+
+	// start goroutine for receiving msgs
+	chat.wg.Add(1)
+	go chat.Receive()
+
+	// start goroutine for sending msgs
+	chat.wg.Add(1)
+	go chat.Send()
+
+	// wait for all of goroutines to stop
+	chat.wg.Wait()
+
+	return nil
 }
 
-func (c *Client) LeaveMsgBox(topicStr string) error {
-	return c.msgCenter.LeaveBox(topicStr)
-}
+func (c *Client) LeaveChat(topic string) error {
+	chat, exist := c.GetChat(topic)
+	if !exist {
+		return code.NonExistingTopic
+	}
 
-func (c *Client) GetMsgBox(topicStr string) (*msg.Box, bool) {
-	return c.msgCenter.GetBox(topicStr)
+	// publish msgBye first
+	peerID := chat.GetPeerID()
+	clientAddr := chat.GetClientAddr()
+	persona := chat.vault.GetPersona()
+	msgBye := msg.NewMsgBye(peerID, clientAddr, types.EmptyHash, persona)
+	err := chat.Publish(msgBye, true)
+	if err != nil {
+		return err
+	}
+
+	center := c.svr.GetCenter()
+	err = center.LeaveBox(topic)
+	if err != nil {
+		return err
+	}
+
+	// close chat and remove from chats
+	chat.Close()
+	c.RemoveChat(topic)
+
+	return nil
 }

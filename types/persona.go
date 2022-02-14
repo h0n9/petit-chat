@@ -15,15 +15,15 @@ const (
 )
 
 type Persona struct {
-	Nickname string        `json:"nickname"`
-	Metadata []byte        `json:"metadata"`
-	PubKey   crypto.PubKey `json:"pubkey"`
-	Address  crypto.Addr   `json:"address"`
+	Nickname string         `json:"nickname"`
+	Metadata []byte         `json:"metadata"`
+	PubKey   *crypto.PubKey `json:"pubkey"`
+	Address  crypto.Addr    `json:"address"`
 }
 
 type Personae map[crypto.Addr]*Persona
 
-func NewPersona(nickname string, metadata []byte, pubKey crypto.PubKey) (Persona, error) {
+func NewPersona(nickname string, metadata []byte, pubKey *crypto.PubKey) (*Persona, error) {
 	p := Persona{
 		Nickname: nickname,
 		Metadata: metadata,
@@ -32,9 +32,9 @@ func NewPersona(nickname string, metadata []byte, pubKey crypto.PubKey) (Persona
 	}
 	err := p.Check()
 	if err != nil {
-		return Persona{}, err
+		return nil, err
 	}
-	return p, nil
+	return &p, nil
 }
 
 func (p *Persona) GetNickname() string {
@@ -59,7 +59,7 @@ func (p *Persona) SetMetadata(md []byte) error {
 	return nil
 }
 
-func (p *Persona) SetPubKey(pk crypto.PubKey) error {
+func (p *Persona) SetPubKey(pk *crypto.PubKey) error {
 	err := pk.Check()
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func checkMetadata(md []byte) error {
 	return nil
 }
 
-func checkPubKeyAddress(pk crypto.PubKey, addr crypto.Addr) error {
+func checkPubKeyAddress(pk *crypto.PubKey, addr crypto.Addr) error {
 	err := pk.Check()
 	if err != nil {
 		return err

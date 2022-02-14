@@ -16,9 +16,9 @@ type HelloSyn struct {
 	Body BodyHelloSyn `json:"body"`
 }
 
-func NewMsgHelloSyn(box *Box, parentHash types.Hash, persona *types.Persona) *Msg {
+func NewMsgHelloSyn(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash, persona *types.Persona) *Msg {
 	return NewMsg(&HelloSyn{
-		NewHead(box, parentHash, TypeHelloSyn),
+		NewHead(peerID, clientAddr, parentHash, TypeHelloSyn),
 		BodyHelloSyn{
 			Persona: persona,
 		},
@@ -29,34 +29,39 @@ func (msg *HelloSyn) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *HelloSyn) Check(box *Box) error {
-	auth := box.state.GetAuth()
+func (msg *HelloSyn) Check(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
+
+	auth := state.GetAuth()
 	if !auth.IsPublic() && !auth.CanRead(msg.GetClientAddr()) {
 		return code.NonReadPermission
 	}
 	return nil
 }
 
-func (msg *HelloSyn) Execute(box *Box) error {
-	err := box.join(msg.Body.Persona)
+func (msg *HelloSyn) Execute(hash types.Hash, helper Helper) error {
+	vault := helper.GetVault()
+	state := helper.GetState()
+	peerID := helper.GetPeerID()
+
+	err := state.Join(msg.Body.Persona)
 	if err != nil {
 		return err
 	}
-
-	secretKey := box.vault.GetSecretKey()
+	secretKey := vault.GetSecretKey()
 	encryptedSecretKey, err := msg.Body.Persona.PubKey.Encrypt(secretKey.Bytes())
 	if err != nil {
 		return err
 	}
 
-	personae := box.state.GetPersonae()
-	auth := box.state.GetAuth()
-	msgAck := NewMsgHelloAck(box, Hash(msg), personae, auth, encryptedSecretKey)
-	err = box.Publish(msgAck, false)
+	clientAddr := vault.GetAddr()
+	personae := state.GetPersonae()
+	auth := state.GetAuth()
+	msgAck := NewMsgHelloAck(peerID, clientAddr, hash, personae, auth, encryptedSecretKey)
+	err = helper.Publish(msgAck, false)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -71,10 +76,10 @@ type HelloAck struct {
 	Body BodyHelloAck `json:"body"`
 }
 
-func NewMsgHelloAck(box *Box, parentHash types.Hash,
+func NewMsgHelloAck(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash,
 	personae types.Personae, auth *types.Auth, encryptedSecretKey []byte) *Msg {
 	return NewMsg(&HelloAck{
-		NewHead(box, parentHash, TypeHelloAck),
+		NewHead(peerID, clientAddr, parentHash, TypeHelloAck),
 		BodyHelloAck{
 			Personae:           personae,
 			Auth:               auth,
@@ -87,19 +92,22 @@ func (msg *HelloAck) GetBody() Body {
 	return msg.Body
 }
 
-func (msg HelloAck) Check(box *Box) error {
-	parentMsg, err := msg.getParentMsg(box)
-	if err != nil {
-		return err
-	}
-	if parentMsg == nil {
+func (msg *HelloAck) Check(hash types.Hash, helper Helper) error {
+	store := helper.GetStore()
+
+	pmh := msg.GetParentHash()
+	pc := store.GetCapsule(pmh)
+	if pc == nil {
 		return code.NonExistingParent
 	}
 	return nil
 }
 
-func (msg HelloAck) Execute(box *Box) error {
-	privKey := box.vault.GetPrivKey()
+func (msg *HelloAck) Execute(hash types.Hash, helper Helper) error {
+	vault := helper.GetVault()
+	state := helper.GetState()
+
+	privKey := vault.GetPrivKey()
 	secretKeyByte, err := privKey.Decrypt(msg.Body.EncryptedSecretKey)
 	if err != nil {
 		// TODO: handle or log error somehow
@@ -112,13 +120,14 @@ func (msg HelloAck) Execute(box *Box) error {
 	}
 
 	// apply to msgBox struct values
-	if util.HasField("personae", box.state) {
-		box.state.SetPersonae(msg.Body.Personae)
+	if util.HasField("personae", state) {
+		state.SetPersonae(msg.Body.Personae)
 	}
-	if util.HasField("auth", box.state) {
-		box.state.SetAuth(msg.Body.Auth)
+	if util.HasField("auth", state) {
+		state.SetAuth(msg.Body.Auth)
 	}
-	box.vault.SetSecretKey(secretKey)
-
+	if util.HasField("secretKey", vault) {
+		vault.SetSecretKey(secretKey)
+	}
 	return nil
 }

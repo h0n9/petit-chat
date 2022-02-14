@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 
-	"github.com/h0n9/petit-chat/msg"
+	"github.com/h0n9/petit-chat/client"
 	"github.com/h0n9/petit-chat/util"
 )
 
@@ -15,19 +15,18 @@ var listCmd = util.NewCmd(
 )
 
 func listFunc(reader *bufio.Reader) error {
-	msgCenter := cli.GetMsgCenter()
-	msgBoxes := msgCenter.GetBoxes()
-	printBoxes(msgBoxes)
+	chats := cli.GetChats()
+	printChats(chats)
 	return nil
 }
 
-func printBoxes(msgBoxes map[string]*msg.Box) {
-	if len(msgBoxes) == 0 {
+func printChats(chats map[string]*client.Chat) {
+	if len(chats) == 0 {
 		fmt.Printf("none\n")
 		return
 	}
 	n := 1
-	for topic := range msgBoxes {
+	for topic := range chats {
 		fmt.Printf("%d. %s\n", n, topic)
 		n++
 	}

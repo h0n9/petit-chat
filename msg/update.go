@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 	"github.com/h0n9/petit-chat/util"
 )
@@ -16,9 +17,9 @@ type Update struct {
 	Body BodyUpdate `json:"body"`
 }
 
-func NewMsgUpdate(box *Box, parentHash types.Hash, auth *types.Auth, personae types.Personae) *Msg {
+func NewMsgUpdate(peerID types.ID, clientAddr crypto.Addr, parentHash types.Hash, auth *types.Auth, personae types.Personae) *Msg {
 	return NewMsg(&Update{
-		NewHead(box, parentHash, TypeUpdate),
+		NewHead(peerID, clientAddr, parentHash, TypeUpdate),
 		BodyUpdate{
 			Auth:     auth,
 			Personae: personae,
@@ -30,19 +31,23 @@ func (msg *Update) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *Update) Check(box *Box) error {
-	auth := box.state.GetAuth()
+func (msg *Update) Check(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
+	auth := state.GetAuth()
+
 	if !auth.CanExecute(msg.GetClientAddr()) {
 		return code.NonExecutePermission
 	}
 	return nil
 }
-func (msg *Update) Execute(box *Box) error {
-	if util.HasField("auth", box.state) {
-		box.state.SetAuth(msg.Body.Auth)
+func (msg *Update) Execute(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
+
+	if util.HasField("auth", state) {
+		state.SetAuth(msg.Body.Auth)
 	}
-	if util.HasField("personae", box.state) {
-		box.state.SetPersonae(msg.Body.Personae)
+	if util.HasField("personae", state) {
+		state.SetPersonae(msg.Body.Personae)
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package msg
 
 import (
 	"github.com/h0n9/petit-chat/code"
+	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/types"
 )
 
@@ -15,9 +16,9 @@ type Meta struct {
 	Body BodyMeta `json:"body"`
 }
 
-func NewMsgMeta(box *Box, parentHash types.Hash, targetMsgHash types.Hash, meta types.Meta) *Msg {
+func NewMsgMeta(peerID types.ID, clientAddr crypto.Addr, parentHash, targetMsgHash types.Hash, meta types.Meta) *Msg {
 	return NewMsg(&Meta{
-		NewHead(box, parentHash, TypeMeta),
+		NewHead(peerID, clientAddr, parentHash, TypeMeta),
 		BodyMeta{
 			TargetMsgHash: targetMsgHash,
 			Meta:          meta,
@@ -29,9 +30,11 @@ func (msg *Meta) GetBody() Body {
 	return msg.Body
 }
 
-func (msg *Meta) Check(box *Box) error {
+func (msg *Meta) Check(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
+	auth := state.GetAuth()
+
 	clientAddr := msg.GetClientAddr()
-	auth := box.state.GetAuth()
 	if msg.Body.Meta.Received() || msg.Body.Meta.Read() {
 		if !auth.IsPublic() && !auth.CanRead(clientAddr) {
 			return code.NonReadPermission
@@ -51,16 +54,16 @@ func (msg *Meta) Check(box *Box) error {
 	return nil
 }
 
-func (msg *Meta) Execute(box *Box) error {
-	if msg.Body.Meta.Received() || msg.Body.Meta.Read() {
-		targetMsg := box.GetMsg(msg.Body.TargetMsgHash)
-		if targetMsg == nil {
-			return code.NonExistingMsg
-		}
-		targetMsg.MergeMeta(msg.GetClientAddr(), msg.Body.Meta)
+func (msg *Meta) Execute(hash types.Hash, helper Helper) error {
+	state := helper.GetState()
+	targetMsgHash := msg.Body.TargetMsgHash
+	clientAddr := msg.GetClientAddr()
+	meta := msg.Body.Meta
+	if meta.Received() || meta.Read() {
+		state.UpdateMeta(targetMsgHash, clientAddr, meta)
 	}
-	// if msg.Body.Meta.Typing() {
-	// 	// TODO: do something
-	// }
+	if msg.Body.Meta.Typing() {
+		// TODO: do something
+	}
 	return nil
 }
