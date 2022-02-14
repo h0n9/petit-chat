@@ -23,30 +23,6 @@ func NewMsg(base Base) *Msg {
 	}
 }
 
-func (msg *Msg) GetMetas() types.Metas {
-	return msg.Metas
-}
-
-func (msg *Msg) SetMetas(metas types.Metas) {
-	msg.Metas = metas
-}
-
-func (msg *Msg) GetMeta(addr crypto.Addr) types.Meta {
-	return msg.Metas[addr]
-}
-
-func (msg *Msg) SetMeta(addr crypto.Addr, meta types.Meta) {
-	msg.Metas[addr] = meta
-}
-
-func (msg *Msg) MergeMeta(addr crypto.Addr, newMeta types.Meta) {
-	oldMeta, exist := msg.Metas[addr]
-	if exist {
-		newMeta |= oldMeta
-	}
-	msg.SetMeta(addr, newMeta)
-}
-
 func (msg *Msg) encode() ([]byte, error) {
 	return json.Marshal(msg)
 }

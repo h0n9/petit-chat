@@ -46,15 +46,5 @@ func (c *Chat) Handler(capsule *msg.Capsule) (*msg.Msg, error) {
 	}
 	c.state.SetReadUntilIndex(index)
 
-	if m.GetType() <= msg.TypeMeta || m.GetClientAddr() == c.GetClientAddr() {
-		return m, nil
-	}
-
-	// meta := types.NewMeta(true, canRead, false)
-	// msgMeta := NewMsgMeta(box, types.EmptyHash, msg.GetHash(), meta)
-	// err = box.Publish(msgMeta, true)
-	// if err != nil {
-	// 	return eos, err
-	// }
 	return m, nil
 }

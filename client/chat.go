@@ -189,7 +189,7 @@ func (c *Chat) Send() {
 					c.chError <- err
 					continue
 				}
-				c.PrintMsg(m)
+				c.PrintMsg(m, capsule.Hash)
 			}
 			continue
 		case "/personae":
@@ -282,7 +282,7 @@ func (c *Chat) Receive() {
 				c.chError <- err
 				continue
 			}
-			c.PrintMsg(m)
+			c.ReadMsg(m, capsule.Hash)
 		case err = <-c.chError:
 			fmt.Println(err)
 		case <-c.chStopReceive:
@@ -319,6 +319,10 @@ func (c *Chat) Publish(m *msg.Msg, encrypt bool) error {
 }
 
 func (c *Chat) ReadMsg(m *msg.Msg, hash types.Hash) error {
+	// print msg to stdout
+	c.PrintMsg(m, hash)
+
+	// send msgMeta
 	if m.GetType() <= msg.TypeMeta {
 		return nil
 	}
@@ -331,7 +335,7 @@ func (c *Chat) ReadMsg(m *msg.Msg, hash types.Hash) error {
 	}
 	peerID := c.GetPeerID()
 	clientAddr := c.GetClientAddr()
-	meta := types.NewMeta(false, true, false)
+	meta := types.NewMeta(true, true, false) // TODO: differentiate receieved, read time
 	msgMeta := msg.NewMsgMeta(peerID, clientAddr, types.EmptyHash, hash, meta)
 	err := c.Publish(msgMeta, true)
 	if err != nil {
@@ -340,10 +344,11 @@ func (c *Chat) ReadMsg(m *msg.Msg, hash types.Hash) error {
 	return nil
 }
 
-func (c *Chat) PrintMsg(m *msg.Msg) {
+func (c *Chat) PrintMsg(m *msg.Msg, hash types.Hash) {
 	timestamp := m.GetTimestamp()
 	addr := m.GetClientAddr()
 	persona := c.GetPersona(addr)
+	state := c.GetState()
 	nickname := "somebody"
 	if persona != nil {
 		nickname = persona.GetNickname()
@@ -351,8 +356,11 @@ func (c *Chat) PrintMsg(m *msg.Msg) {
 	switch m.GetType() {
 	case msg.TypeRaw:
 		body := m.GetBody().(msg.BodyRaw)
-		metas := m.GetMetas()
+		metas, exist := state.GetMetas(hash)
 		fmt.Printf("[%s, %s] %s\n", timestamp, nickname, body.Data)
+		if !exist {
+			break
+		}
 		for addr, meta := range metas {
 			nickname = c.GetPersona(addr).Nickname
 			fmt.Printf("  - %s %s\n", nickname, printMeta(meta))
@@ -365,9 +373,9 @@ func (c *Chat) PrintMsg(m *msg.Msg) {
 	case msg.TypeUpdate:
 		fmt.Printf("[%s, %s] updated\n", timestamp, nickname)
 	case msg.TypeMeta:
-		body := m.GetBody().(msg.BodyMeta)
-		done := printMeta(body.Meta)
-		fmt.Printf("[%s, %s] %s %x\n", timestamp, nickname, done, m.GetParentHash())
+		// body := m.GetBody().(msg.BodyMeta)
+		// done := printMeta(body.Meta)
+		// fmt.Printf("[%s, %s] %s %x\n", timestamp, nickname, done, body.TargetMsgHash)
 	default:
 		fmt.Println("Unknown Type")
 	}

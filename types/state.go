@@ -10,6 +10,7 @@ import (
 type State struct {
 	personae        Personae
 	auth            *Auth
+	msgHashMetas    map[Hash]Metas
 	latestTimestamp time.Time
 	readUntilIndex  Index
 }
@@ -18,6 +19,7 @@ func NewState(public bool) *State {
 	return &State{
 		personae:        make(Personae),
 		auth:            NewAuth(public, make(map[crypto.Addr]Perm)),
+		msgHashMetas:    make(map[Hash]Metas),
 		latestTimestamp: time.Now(),
 		readUntilIndex:  0,
 	}
@@ -49,6 +51,32 @@ func (s *State) GetAuth() *Auth {
 
 func (s *State) SetAuth(auth *Auth) {
 	s.auth = auth
+}
+
+func (s *State) GetMsgHashMetas() map[Hash]Metas {
+	return s.msgHashMetas
+}
+
+func (s *State) GetMetas(hash Hash) (Metas, bool) {
+	metas, exist := s.msgHashMetas[hash]
+	return metas, exist
+}
+
+func (s *State) SetMetas(hash Hash, metas Metas) {
+	s.msgHashMetas[hash] = metas
+}
+
+func (s *State) UpdateMeta(hash Hash, addr crypto.Addr, newMeta Meta) {
+	metas, exist := s.GetMetas(hash)
+	if !exist {
+		metas = make(Metas)
+	}
+	oldMeta, exist := metas[addr]
+	if exist {
+		newMeta |= oldMeta
+	}
+	metas[addr] = newMeta
+	s.SetMetas(hash, metas)
 }
 
 func (s *State) GetLatestTimestamp() time.Time {

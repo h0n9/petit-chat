@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/h0n9/petit-chat/code"
-	"github.com/h0n9/petit-chat/crypto"
 	"github.com/h0n9/petit-chat/msg"
 	"github.com/h0n9/petit-chat/types"
 )
@@ -19,7 +18,6 @@ type Box struct {
 	topic  *types.Topic
 	sub    *types.Sub
 
-	state *types.State
 	store *msg.CapsuleStore
 }
 
@@ -32,7 +30,6 @@ func NewBox(ctx context.Context, topic *types.Topic, public bool, hostID types.I
 		topic:  topic,
 		sub:    nil,
 
-		state: types.NewState(public),
 		store: msg.NewCapsuleStore(),
 	}, nil
 }
@@ -88,18 +85,6 @@ func (box *Box) Subscribe() error {
 		}
 	}
 	return nil
-}
-
-func (box *Box) GetPersonae() map[crypto.Addr]*types.Persona {
-	return box.state.GetPersonae()
-}
-
-func (box *Box) getPersona(addr crypto.Addr) *types.Persona {
-	return box.state.GetPersona(addr)
-}
-
-func (box *Box) GetPersona(addr crypto.Addr) *types.Persona {
-	return box.getPersona(addr)
 }
 
 func (box *Box) GetHostID() types.ID {
