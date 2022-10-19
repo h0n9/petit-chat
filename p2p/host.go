@@ -31,13 +31,12 @@ func (n *Node) NewHost(listenAddrs crypto.Addrs) error {
 		return err
 	}
 
-	tpt, err := quic.NewTransport(privKeyP2P, nil, nil)
+	tpt, err := quic.NewTransport(privKeyP2P, nil, nil, nil)
 	if err != nil {
 		return err
 	}
 
 	host, err := libp2p.New(
-		n.ctx,
 		libp2p.ListenAddrs(listenAddrs...),
 		libp2p.Identity(privKeyP2P),
 		libp2p.Transport(tpt),
